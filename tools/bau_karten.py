@@ -68,6 +68,10 @@ RLDEN01 = dict(
 )
 
 
+# Szenerie, die nicht im Weg steht (unsichtbare Lichtquelle)
+NICHT_BLOCKIEREND = {0x200008D}
+
+
 def built_tile(tile, ebene, rot):
     """Ziel von Treppen und Leitern: Hex | Ebene << 29 | Blickrichtung << 26."""
     return tile | (ebene << 29) | (rot << 26)
@@ -223,6 +227,14 @@ def pruefe(k, db):
         assert liste["anzahl"] == sum(b["laenge"] for b in liste["bloecke"])
     hexe = [o["kopf"]["tile"] for _, o in k.alle_objekte() if fomap.pid_typ(o["kopf"]["pid"]) == fomap.T_CRITTER]
     assert len(hexe) == len(set(hexe)), "zwei Figuren auf einem Feld"
+    # Figuren und Startpunkt nicht auf Waenden oder Einrichtung (Vorlagen aendern sich je RPU-Version)
+    belegt = {}
+    for _, o in k.alle_objekte():
+        p = o["kopf"]["pid"]
+        if fomap.pid_typ(p) in (fomap.T_WALL, fomap.T_SCENERY) and p not in NICHT_BLOCKIEREND:
+            belegt.setdefault(o["kopf"]["tile"], hex(p))
+    for name, t in [("Startpunkt", RLDEN01["eingang_hex"])] + [(f["name"], f["hex"]) for f in RLDEN01["figuren"]]:
+        assert t not in belegt, f"{name} steht auf Hex {t}, dort ist schon {belegt[t]}"
 
 
 def bauen(a):

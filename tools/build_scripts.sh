@@ -29,6 +29,7 @@ GVAR_BASE="${RL_GVAR_BASE:-791}"
 TEXT_ENCODING="${TEXT_ENCODING:-WINDOWS-1252}"
 OUT="${OUT:-$ROOT/build/scripts}"
 mkdir -p "$OUT"
+OUT="$(cd "$OUT" && pwd)"   # absolut: sslc laeuft im Ordner der Quelle
 
 # Vorab: stimmen Katalog und Texte mit den Skripten ueberein?
 if command -v python3 > /dev/null; then
@@ -56,6 +57,9 @@ cp -r "$ROOT/scripts_src" "$GEN/"
   if [ "${RL_DEBUG:-0}" = "1" ]; then echo "#define RL_DEBUG"; fi
 } > "$GEN/scripts_src/config/rl_build.h"
 echo "Build: RL_SCRIPT_BASE=$BASE RL_GVAR_BASE=$GVAR_BASE SELBSTTEST=${RL_SELBSTTEST:-0} DEBUG=${RL_DEBUG:-0}"
+# Einstellungen fuer tools/paket.py festhalten
+printf 'RL_SCRIPT_BASE=%s\nRL_GVAR_BASE=%s\nRL_MAP_INDEX=%s\nRL_DEBUG=%s\nRL_SELBSTTEST=%s\n' \
+  "$BASE" "$GVAR_BASE" "${RL_MAP_INDEX:-173}" "${RL_DEBUG:-0}" "${RL_SELBSTTEST:-0}" > "$OUT/rl_build.txt"
 
 FLAGS=(-q -l -p -O2 -I"$FO2_SCRIPTS_SRC/headers")
 

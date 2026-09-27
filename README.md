@@ -35,6 +35,7 @@ Konzept und Skripte für eine Addon-Modifikation für **Fallout 2** (sfall 4.x).
 - `tools/fomap.py`: liest und schreibt Fallout-2-Karten (.MAP). `pruefen` liest Karten ein und schreibt sie byte-gleich zurück, `info` zeigt den Kopf.
 - `tools/fomap_bild.py`: schematische Draufsicht einer Karte als PNG, mit Hexnummern zum Planen von Positionen.
 - `tools/bau_karten.py`: alle Kartenpositionen an einer Stelle. Baut die Innenkarten aus Vorlagen des RPU und erzeugt `rl_karten.h` (läuft bei jedem Build mit).
+- `tools/paket.py`: packt einen Build als sfall-Mod-Ordner `mods/rotlicht` für ein bestimmtes RPU-Release, mit Anleitung ([Umsetzung 2, Abschnitt 4.1](docs/umsetzung-2-die-gosse.md#41-testpaket-empfohlen)).
 
   ```
   python3 tools/ausbau_sim.py [stadt|alle] [fair|branchenueblich|ausbeuterisch]

@@ -29,8 +29,9 @@
 
 #define RL_TICK_FRAMES              (600)   // etwa alle 10 Sekunden pruefen
 #define RL_TASTE_SPAWN              (67)    // DIK_F9: Debug, Essie und Kolbe erscheinen lassen
-#define RL_TASTE_GOSSE              (68)    // DIK_F10: Debug, direkt in die Gosse (RLDEN01)
-#define RL_TASTE_TREPPE             (87)    // DIK_F11: Debug, auf Den Business 2 neben die Kellertreppe
+#define RL_TASTE_GOSSE              (87)    // DIK_F11: Debug, direkt in die Gosse (RLDEN01)
+#define RL_TASTE_TREPPE             (66)    // DIK_F8: Debug, auf Den Business 2 neben die Kellertreppe
+// Nicht F10: Das ist im Spiel "Beenden". F1-F7 und F12 sind ebenfalls belegt.
 
 procedure start;
 procedure map_enter_p_proc;
@@ -407,8 +408,8 @@ end
      F9   Essie und Kolbe erscheinen neben dem Spieler, damit sich der Prolog
           auch ohne die Innenkarte RLDEN01 testen laesst. Figuren wie in
           RLDEN01: Durchschnittsbaeuerin und Schlaeger aus Vanilla.
-     F10  direkt in die Gosse (Pruefliste der Karten)
-     F11  auf Den Business 2 neben die Kellertreppe (Pruefliste der Karten) */
+     F11  direkt in die Gosse (Pruefliste der Karten)
+     F8   auf Den Business 2 neben die Kellertreppe (Pruefliste der Karten) */
 procedure rl_taste begin
    variable gedrueckt := get_sfall_arg;
    variable taste := get_sfall_arg;

@@ -21,12 +21,13 @@
 | [`scripts_src/headers/rl_karten.h`](../scripts_src/headers/rl_karten.h) | **neu, erzeugt:** Hexfelder und PIDs für die Skripte |
 | [`scripts_src/rotlicht/rlgosse.ssl`](../scripts_src/rotlicht/rlgosse.ssl) | **neu:** die Kellertreppe auf Den Business 2 (Ansehen, Benutzen → RLDEN01) |
 | [`scripts_src/rotlicht/rlden01.ssl`](../scripts_src/rotlicht/rlden01.ssl) | **neu:** Kartenskript der Gosse (Kellerlicht, Satz beim ersten Besuch) |
-| [`scripts_src/global/gl_rotlicht.ssl`](../scripts_src/global/gl_rotlicht.ssl) | setzt die Treppe auf Den Business 2; Debug-Tasten F10 und F11 |
+| [`scripts_src/global/gl_rotlicht.ssl`](../scripts_src/global/gl_rotlicht.ssl) | setzt die Treppe auf Den Business 2; Debug-Tasten F11 (in die Gosse) und F8 (neben die Treppe) |
 | [`scripts_src/headers/rotlicht.h`](../scripts_src/headers/rotlicht.h) | Skripte `SCRIPT_RLGOSSE` (Basis + 2) und `SCRIPT_RLDEN01` (Basis + 3), Welt-Feld `RL_W_GOSSE_TREPPE` |
 | [`text_src/german/dialog/rlgosse.msg`](../text_src/german/dialog/rlgosse.msg), [`rlden01.msg`](../text_src/german/dialog/rlden01.msg) | **neu:** Texte der Treppe und der Karte |
 | [`install/maps.txt.add`](../install/maps.txt.add), [`install/city.txt.add`](../install/city.txt.add), [`text_src/german/game/map.msg.add`](../text_src/german/game/map.msg.add) | **neu:** Karteneintrag, Zuordnung zur Den, Kartenname |
 | [`install/scripts.lst.add`](../install/scripts.lst.add) | zwei Zeilen mehr (`rlgosse`, `rlden01`) |
-| [`tools/build_scripts.sh`](../tools/build_scripts.sh) | baut jetzt auch die Karte (`build/maps/rlden01.map`) |
+| [`tools/build_scripts.sh`](../tools/build_scripts.sh) | baut jetzt auch die Karte (`build/maps/rlden01.map`) und hält die Einstellungen in `build/scripts/rl_build.txt` fest |
+| [`tools/paket.py`](../tools/paket.py) | **neu:** fertiges Testpaket als sfall-Mod-Ordner für ein bestimmtes RPU-Release (Abschnitt 4.1) |
 | [`docs/bilder/`](bilder/) | **neu:** Draufsichten für die Prüfliste |
 
 ---
@@ -100,33 +101,58 @@ Wenn dir ein echtes Haus mit Tür lieber ist, lässt sich das nach der Sichtprü
 
 ## 4. Installation
 
-1. **Bauen** (mit Debug für die Prüfliste):
+Das RPU liegt nicht als lose Dateien in `data/`, sondern in `mods/rpu.dat` und `mods/rpu_german.dat`. Darin stecken auch die Dateien, in die das Addon Zeilen einfügt:
 
-   ```bash
-   RL_DEBUG=1 SSLC=/pfad/sslc FO2_SCRIPTS_SRC=/pfad/rpu/scripts_src tools/build_scripts.sh
-   ```
+- `scripts.lst`
+- `vault13.gam`
+- `maps.txt`
+- `city.txt`
+- `endgame.txt`
+- `karmavar.txt`
+- `map.msg`
+- `editor.msg`
 
-   `FO2_SCRIPTS_SRC` zeigt in einen Klon des RPU-Repositorys. Dessen `data/maps` dient als Vorlage. Wenn die Vorlage woanders liegt: `FO2_MAPS=/pfad/zu/maps`.
+Das Addon kommt deshalb als eigener sfall-Mod-Ordner `mods/rotlicht/`. In `mods_order.txt` steht es nach dem RPU und überschreibt diese Dateien mit vollständigen Kopien, die unsere Zeilen enthalten.
 
-2. **Kopieren** ins Spielverzeichnis:
+### 4.1 Testpaket (empfohlen)
 
-   | Quelle | Ziel |
-   |---|---|
-   | `build/scripts/*.int` | `data/scripts/` |
-   | `build/text/german/dialog/*.msg` | `data/text/german/dialog/` |
-   | `build/maps/rlden01.map` | `data/maps/` |
+`tools/paket.py` baut das Paket, samt `ANLEITUNG.txt`:
 
-3. **Einfügen** in Dateien der Installation:
+```bash
+RL_DEBUG=1 SSLC=/pfad/sslc FO2_SCRIPTS_SRC=/pfad/rpu-klon/scripts_src tools/build_scripts.sh
+python3 tools/paket.py --rpu /pfad/rpu-klon --release v2.4.34   # oder v2.3.34
+# -> build/paket/rotlicht_test_rpu-v2.4.34.zip
+```
 
-   | Quelle | Ziel | Wo |
-   |---|---|---|
-   | `install/scripts.lst.add` | `data/scripts/scripts.lst` | ans Ende. Die Reihenfolge ist wichtig: `rlessie`, `rlkolbe`, `rlgosse`, `rlden01` |
-   | `install/maps.txt.add` | `data/data/maps.txt` | ans Ende, als `[Map 173]` |
-   | `install/city.txt.add` | `data/data/city.txt` | im Abschnitt der Den (`[Area 01]`) nach `entrance_2` |
-   | `build/text/german/game/map.msg.add` | `data/text/german/game/map.msg` | ans Ende |
+- **Release:** Das Werkzeug nimmt die Systemdateien aus genau diesem RPU-Release (`git show <release>:…`). Die deutschen Texte wandelt es dabei in Windows-1252 um, wie das RPU sie ausliefert.
+- **Zählungen:** Es prüft, ob sie zum Build passen:
 
-   Stecken `maps.txt`, `city.txt` oder `map.msg` bei dir nur im Archiv des RPU, musst du sie zuerst herausziehen, zum Beispiel mit einem DAT-Werkzeug. Die Fassungen im RPU-Repository sollten gleich sein, **wenn sie zur installierten RPU-Version gehören**.
+  | Datei | Erwartet |
+  |---|---|
+  | `scripts.lst` | 1558 Zeilen |
+  | `vault13.gam` | 791 GVARs |
+  | `maps.txt` | 173 Karten |
 
+  Passt eine Zählung nicht, nennt es die richtige Build-Einstellung.
+- **Eingefügte Zeilen:**
+  - `city.txt`: der Eingang im Abschnitt der Den
+  - `endgame.txt`: unsere Slides nach dem New-Reno-Block
+  - `map.msg`: der Kartenname unter der richtigen Nummer
+- **Karte:** Es baut `rlden01.map` aus Beckys Keller **desselben Releases**. RPU 2.4 hat dort 20 Objekte mehr als 2.3, darunter neue Protos, die es in 2.3 nicht gibt.
+- **Neues Spiel:** Das Addon fügt fünf GVARs hinzu. Alte Spielstände laden damit nicht richtig.
+
+**Im Spiel:**
+1. Den Ordner `mods/rotlicht` nach `<Fallout 2>/mods/` kopieren.
+2. In `mods/mods_order.txt` als **letzte** Zeile `rotlicht` eintragen.
+3. Ein neues Spiel starten.
+
+**Entfernen:** die Zeile wieder löschen.
+
+### 4.2 Von Hand (andere Installationen)
+
+1. Wie oben bauen.
+2. Die Dateien aus `build/` an dieselben Stellen legen wie im Paket.
+3. Die Zeilen aus `install/` bzw. `build/text/german/game/*.add` in Kopien der Systemdateien der eigenen Installation einfügen. Bei `scripts.lst` fehlt im RPU der letzte Zeilenumbruch. Ohne ihn klebt die erste neue Zeile an der letzten alten.
 4. **Andere Kartennummer:** Hat deine `maps.txt` mehr oder weniger als 173 Einträge, nimm die nächste freie Nummer.
    - Trage sie in `maps.txt.add` ein.
    - Setze die Nummern in `map.msg.add` auf `200 + 3 × Nummer` (Ebenen 0 bis 2).
@@ -158,7 +184,7 @@ Die Bilder sind schematisch:
 
 | # | Prüfen | Erwartung | Wenn nicht |
 |---|---|---|---|
-| 1 | Zur Ruine östlich der Sklavengilde gehen (mit Debug: **F11**) | Eine Kellertreppe steht in der Ruine, an Hex 18458 | Hexnummer des Ortes notieren (Mapper oder ungefähr per Bild) |
+| 1 | Zur Ruine östlich der Sklavengilde gehen (mit Debug: **F8** auf Den Business 2) | Eine Kellertreppe steht in der Ruine, an Hex 18458 | Hexnummer des Ortes notieren (Mapper oder ungefähr per Bild) |
 | 2 | Wie sieht die Treppe aus? | Sie ragt nicht in eine Wand, steht nicht halb im Schutt und ist ganz zu sehen | Beschreiben, was stört. Ich verlege sie |
 | 3 | Unter das Dach der Ruine gehen | Das Dach blendet sich aus, die Treppe bleibt sichtbar | – |
 | 4 | Maus über die Treppe | „Eine Treppe führt unter die Ruine.“ | Skript fehlt: Zeilen in `scripts.lst` prüfen |
@@ -169,7 +195,7 @@ Die Bilder sind schematisch:
 
 | # | Prüfen | Erwartung | Wenn nicht |
 |---|---|---|---|
-| 7 | Ankunft (mit Debug direkt: **F10**) | Unten an der Treppe, gedämpftes Kellerlicht, beim ersten Mal der Satz „Die Gosse. Die Luft ist dick …“ | – |
+| 7 | Ankunft (mit Debug direkt von überall: **F11**) | Unten an der Treppe, gedämpftes Kellerlicht, beim ersten Mal der Satz „Die Gosse. Die Luft ist dick …“ | – |
 | 8 | Wo die Destille stand (Hex 17062) | Nichts Schwebendes, kein Schatten ohne Objekt | Beschreiben. Dann entferne ich weitere Reste |
 | 9 | Essie und Kolbe | Essie am Tisch, Blick zur Treppe. Kolbe an der Tür zum hinteren Raum. Beide ansprechbar, der Prolog läuft wie in Umsetzung 1 | Stehen sie in einer Wand? Hexnummern notieren |
 | 10 | Holztür zum hinteren Raum | Lässt sich öffnen, dahinter Couches und Bett | – |
@@ -205,6 +231,9 @@ Nicht im Mapper speichern: Der nächste Build würde die Änderungen überschrei
 - **Objekt-IDs:** In Vanilla-Karten sind sie nicht eindeutig, auch nicht bei Objekten mit Skript. Die Engine verbindet Objekt und Skript über die SID.
 - **Treppenziel** (Stairs, Ladder): `Hex | Ebene << 29 | Blickrichtung << 26`.
 - **Globale Skripte** bekommen `map_enter_p_proc` bei jedem Kartenwechsel, in sfall und in fallout2-ce.
+- **Umlaute:** Das RPU liefert deutsche Texte in Windows-1252 aus. Git speichert sie als UTF-8 und wandelt sie beim Auschecken um (`.gitattributes`: `working-tree-encoding=cp1252`). Der Standard des Builds (`TEXT_ENCODING=WINDOWS-1252`) passt also. Die offene Frage aus Phase 5 und Umsetzung 1 ist damit geklärt, sofern der Test nichts anderes zeigt.
+- **RPU-Versionen:** Die Skripte sind gegen die Header von RPU 2.3.34, 2.4.34 und den aktuellen Stand kompiliert byte-gleich. Unterschiede gibt es nur in den Systemdateien (eine Zeile in `scripts.lst`) und in den Karten (Beckys Keller). Beides nimmt `tools/paket.py` aus dem passenden Release.
+- **Debug-Tasten:** F9, F11 und F8. F10 ist im Spiel „Beenden“, F1 bis F7 und F12 sind ebenfalls belegt.
 
 ---
 
