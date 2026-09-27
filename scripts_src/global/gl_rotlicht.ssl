@@ -1,0 +1,288 @@
+/*
+   gl_rotlicht.ssl - Globales Skript fuer "Rotlicht ueber dem Oedland"
+
+   Aufgaben (Phase 5):
+     1. Wochenabrechnung aller eigenen Haeuser, auch nachtraeglich fuer
+        Wochen, in denen der Spieler unterwegs war (hoechstens 12).
+     2. Stadt-Modifikatoren aus dem Zustand der Vanilla-Welt ableiten.
+     3. Laeufer bringen das Geld ins Hauptquartier (Strumpfband).
+     4. Ereigniswurf pro Haus: kleine Ereignisse loest die Madame,
+        der Rest wird zur Krise, die der Spieler vor Ort loesen muss.
+     5. Selbsttest gegen tools/economy_sim.py (mit -mRL_SELBSTTEST).
+
+   sfall laedt alle gl*.int beim Spielstart. Die Wochenlogik laeuft nur
+   auf lokalen Karten; Reisezeit auf der Weltkarte wird beim naechsten
+   Tick nachgerechnet.
+*/
+
+#define SCRIPT_REALNAME "gl_rotlicht"
+#include "define.h"
+#include "command.h"
+#include "den.h"
+#include "../headers/rotlicht.h"
+
+// Aus newreno.h (der Header setzt ein Dialog-Skript mit NAME voraus):
+// big_jesus_dead = get_new_reno_flag(big_jesus_dead_bit, 2)
+#define rl_big_jesus_dead           gvar_bit(GVAR_NEW_RENO_FLAG_2, bit_26)
+
+#define RL_TICK_FRAMES              (600)   // etwa alle 10 Sekunden pruefen
+
+procedure start;
+procedure rl_tick;
+procedure rl_welt_modifikatoren;
+procedure rl_laeufer;
+procedure rl_ereignis_wurf(variable h);
+procedure rl_ereignis_waehlen(variable h);
+procedure rl_haus_name(variable h);
+procedure rl_selbsttest;
+
+variable haus;
+variable welt;
+
+procedure start begin
+   if (game_loaded) then begin
+      set_global_script_repeat(RL_TICK_FRAMES);
+      haus := rl_lade_haeuser;
+      welt := rl_lade_welt;
+#ifdef RL_SELBSTTEST
+      call rl_selbsttest;
+#endif
+   end else begin
+      call rl_tick;
+   end
+end
+
+procedure rl_tick begin
+   variable jetzt, wochen, h;
+
+   if (welt[RL_W_AKTIV] == 0) then return;
+
+   jetzt  := game_time_in_seconds / RL_SEKUNDEN_WOCHE;
+   wochen := jetzt - welt[RL_W_WOCHE];
+   if (wochen <= 0) then return;
+   if (wochen > RL_MAX_NACHRECHNUNG) then wochen := RL_MAX_NACHRECHNUNG;
+
+   call rl_welt_modifikatoren;
+   while (wochen > 0) do begin
+      h := 0;
+      while (h < RL_ANZAHL_HAEUSER) do begin
+         if (haus[rl_idx(h, RL_F_BESITZ)]) then begin
+            haus[rl_idx(h, RL_F_KASSE)] := haus[rl_idx(h, RL_F_KASSE)] + rl_rechne_woche(haus, h, h);
+            if (haus[rl_idx(h, RL_F_KRISE)] != RL_EV_KEINS) then begin
+               haus[rl_idx(h, RL_F_KRISENWOCHEN)] := haus[rl_idx(h, RL_F_KRISENWOCHEN)] + 1;
+               // Nach drei Wochen ohne Loesung eskaliert die Krise (Phase 4, Abschnitt 4.1)
+               if (haus[rl_idx(h, RL_F_KRISENWOCHEN)] == 3) then begin
+                  haus[rl_idx(h, RL_F_MORAL)] := rl_max(0, haus[rl_idx(h, RL_F_MORAL)] - 10);
+                  haus[rl_idx(h, RL_F_RUF)] := rl_max(0, haus[rl_idx(h, RL_F_RUF)] - 10);
+                  display_msg(rl_haus_name(h) + ": Die Krise ist ausser Kontrolle geraten.");
+               end
+            end else begin
+               call rl_ereignis_wurf(h);
+            end
+         end
+         h := h + 1;
+      end
+      call rl_laeufer;
+      wochen := wochen - 1;
+   end
+   welt[RL_W_WOCHE] := jetzt;
+end
+
+/* Stadt-Modifikatoren aus Phase 1 (Abschnitt 3.5) und Phase 3.
+   Die Vanilla-Zustaende sind gegen die Original-Skripte geprueft. */
+procedure rl_welt_modifikatoren begin
+   variable m, global_boom := 0;
+
+   if (Fallout2_enclave_destroyed) then global_boom := 10;
+
+   // The Den: Sklavengilde aktiv +20 %, Metzger tot -25 %
+   if (metzger_dead) then m := -25; else m := 20;
+   haus[rl_idx(RL_DEN, RL_F_STADTMOD)] := m + global_boom;
+
+   // New Reno: Cat's Paw als Konkurrenz
+   if (welt[RL_W_CATSPAW] == 0) then m := -15;
+   else if (welt[RL_W_CATSPAW] == 1) then m := -5;
+   else m := 0;
+   haus[rl_idx(RL_NEW_RENO, RL_F_STADTMOD)] := m + global_boom;
+
+   // Redding: Jet-Index, Wanamingo-Mine, Malamute, Kittys Kralle
+   if ((global_var(GVAR_REDDING_JET_LEVEL) == JET_ON_CURE) or (global_var(GVAR_REDDING_JET_LEVEL) == JET_CURED)) then
+      m := 25;                            // Antidot im Umlauf
+   else if (rl_big_jesus_dead) then
+      m := 10;                            // Mordino-Lieferkette gekappt
+   else
+      m := -20;                           // Jet-Flut
+   if (global_var(GVAR_WANAMINGO_OCCUPADO) == WANAMINGO_CLEARED_OUT) then m := m + 30;
+   if (welt[RL_W_MALAMUTE] == 0) then m := m - 10;
+   if (welt[RL_W_KITTY_RIVALIN]) then m := m - 10;
+   haus[rl_idx(RL_REDDING, RL_F_STADTMOD)] := m + global_boom;
+
+   // Vault City: Gecko friedlich geloest (repariert oder optimiert, nicht zerstoert)
+   m := 0;
+   if ((global_var(GVAR_VAULT_GECKO_PLANT) == PLANT_REPAIRED)
+       or (global_var(GVAR_VAULT_GECKO_PLANT) >= PLANT_FIXED_PLUS_KNOWN)) then m := 10;
+   haus[rl_idx(RL_VAULT_CITY, RL_F_STADTMOD)] := m + global_boom;
+
+   // NCR: Liga fuer eine reine Republik
+   m := get_array([0, -15, -5, -10, 20, 0], welt[RL_W_LIGA]);
+   haus[rl_idx(RL_NCR, RL_F_STADTMOD)] := m + global_boom;
+
+   // San Francisco: Hubologen
+   m := get_array([-10, 0, 10], welt[RL_W_HUBOLOGEN]);
+   haus[rl_idx(RL_SAN_FRAN, RL_F_STADTMOD)] := m + global_boom;
+
+   // Laeuferroute: Marcus' Vertrauen folgt aus seiner Vanilla-Quest
+   if ((welt[RL_W_MARCUS] == RL_MARCUS_KEIN) and (global_var(GVAR_BH_MISSING) >= MISSING_FINISHED_CASH)) then
+      welt[RL_W_MARCUS] := RL_MARCUS_RELAIS;
+end
+
+/* Laeufer: Gewinne aus allen Haeusern ins Strumpfband (Phase 1, Abschnitt 4).
+   Verlustchance = Hitze / 4 (hoechstens 25 %), ueber Broken Hills
+   veraendert durch Marcus (Phase 3, Abschnitt 6). */
+procedure rl_laeufer begin
+   variable h, chance, faktor;
+
+   if (haus[rl_idx(RL_NEW_RENO, RL_F_BESITZ)] == 0) then return;   // noch kein Hauptquartier
+
+   h := 0;
+   while (h < RL_ANZAHL_HAEUSER) do begin
+      if ((h != RL_NEW_RENO) and haus[rl_idx(h, RL_F_BESITZ)] and (haus[rl_idx(h, RL_F_KASSE)] > 0)) then begin
+         faktor := 100;
+         if ((h == RL_REDDING) or (h == RL_VAULT_CITY) or (h == RL_NCR)) then
+            faktor := get_array([100, 50, 25, 125], welt[RL_W_MARCUS]);
+         chance := rl_min(25, haus[rl_idx(h, RL_F_HITZE)] / 4) * faktor / 100;
+         if (random(1, 100) <= chance) then begin
+            display_msg(rl_haus_name(h) + ": Die Laeufer sind ueberfallen worden. "
+                        + haus[rl_idx(h, RL_F_KASSE)] + " $ sind weg.");
+         end else begin
+            welt[RL_W_HQ_KASSE] := welt[RL_W_HQ_KASSE] + haus[rl_idx(h, RL_F_KASSE)];
+         end
+         haus[rl_idx(h, RL_F_KASSE)] := 0;
+      end
+      h := h + 1;
+   end
+end
+
+/* Ereigniswurf (Phase 4, Abschnitt 4.1) */
+procedure rl_ereignis_wurf(variable h) begin
+   variable chance, bedrohung, ereignis;
+
+   bedrohung := rl_stadt(h, RL_S_RISIKO) * 20 + haus[rl_idx(h, RL_F_HITZE)];
+   chance := 10 + haus[rl_idx(h, RL_F_HITZE)] / 5
+           + rl_max(0, bedrohung - haus[rl_idx(h, RL_F_SICHERHEIT)]) / 2;
+   if (haus[rl_idx(h, RL_F_MORAL)] < 40) then chance := chance + 10;
+   if (haus[rl_idx(h, RL_F_ZWANG)]) then chance := chance + 10;
+   chance := rl_min(60, chance);
+   if (random(1, 100) > chance) then return;
+
+   ereignis := rl_ereignis_waehlen(h);
+   if (ereignis == RL_EV_KEINS) then return;
+
+   // Kleine Ereignisse loest die Madame mit ihrer Fuehrung
+   if (random(1, 100) <= haus[rl_idx(h, RL_F_FUEHRUNG)]) then begin
+      if (ereignis == RL_EV_STOFF) then
+         haus[rl_idx(h, RL_F_MORAL)] := rl_max(0, haus[rl_idx(h, RL_F_MORAL)] - 2);
+      else if (ereignis == RL_EV_FLUCHT) then
+         haus[rl_idx(h, RL_F_PERSONAL)] := rl_max(0, haus[rl_idx(h, RL_F_PERSONAL)] - 1);
+      else if (ereignis == RL_EV_FREIER) then
+         haus[rl_idx(h, RL_F_RUF)] := rl_max(0, haus[rl_idx(h, RL_F_RUF)] - 2);
+      else
+         haus[rl_idx(h, RL_F_KASSE)] := haus[rl_idx(h, RL_F_KASSE)] - 100;
+      display_msg(rl_haus_name(h) + ": Die Madame hat einen Vorfall selbst geregelt.");
+   end else begin
+      haus[rl_idx(h, RL_F_KRISE)] := ereignis;
+      haus[rl_idx(h, RL_F_KRISENWOCHEN)] := 0;
+      display_msg(rl_haus_name(h) + ": KRISE. Du wirst vor Ort gebraucht.");
+   end
+end
+
+/* Gewichtete Auswahl (Phase 4, Abschnitt 4.2/4.3) */
+procedure rl_ereignis_waehlen(variable h) begin
+   variable g, summe, wurf, i;
+   variable moral := haus[rl_idx(h, RL_F_MORAL)];
+   variable module := haus[rl_idx(h, RL_F_MODULE)];
+
+   g := temp_array(8, 0);
+   // Soldaten ohne Krieg: selten, nach dem Fall der Enklave dreimal so oft
+   g[RL_EV_SOLDATEN] := 3;
+   if (Fallout2_enclave_destroyed) then g[RL_EV_SOLDATEN] := 9;
+   // Der Stoff
+   g[RL_EV_STOFF] := 10;
+   if ((h == RL_REDDING) and (haus[rl_idx(h, RL_F_STADTMOD)] < 0)) then g[RL_EV_STOFF] := g[RL_EV_STOFF] * 2;
+   if (module bwand RL_MOD_JET_THEKE) then g[RL_EV_STOFF] := g[RL_EV_STOFF] * 2;
+   if (moral < 40) then g[RL_EV_STOFF] := g[RL_EV_STOFF] * 3 / 2;
+   // Razzia
+   g[RL_EV_RAZZIA] := 5 + rl_stadt(h, RL_S_RISIKO) * 3 + haus[rl_idx(h, RL_F_HITZE)] / 2;
+   // Gewalttaetiger Freier
+   g[RL_EV_FREIER] := 5;
+   if (haus[rl_idx(h, RL_F_SICHERHEIT)] < rl_stadt(h, RL_S_RISIKO) * 20) then g[RL_EV_FREIER] := 15;
+   // Seuche nur ohne Krankenstube
+   if ((module bwand RL_MOD_KRANKENSTUBE) == 0) then g[RL_EV_SEUCHE] := 8;
+   // Griff in die Kasse
+   g[RL_EV_KASSE] := 3;
+   if (moral < 40) then g[RL_EV_KASSE] := 10;
+   // Flucht
+   if ((moral < RL_FLUCHT_MORAL) or haus[rl_idx(h, RL_F_ZWANG)]) then g[RL_EV_FLUCHT] := 20;
+
+   summe := 0;
+   i := 1;
+   while (i < 8) do begin
+      summe := summe + g[i];
+      i := i + 1;
+   end
+   if (summe <= 0) then return RL_EV_KEINS;
+
+   wurf := random(1, summe);
+   i := 1;
+   while (i < 8) do begin
+      wurf := wurf - g[i];
+      if (wurf <= 0) then return i;
+      i := i + 1;
+   end
+   return RL_EV_KEINS;
+end
+
+procedure rl_haus_name(variable h) begin
+   return get_array(["Die Gosse", "Das Silberne Strumpfband", "Die Schlacke",
+                     "Die Kloake", "Die Traenke", "Die Bilge", "Testhaus"], h);
+end
+
+/* Selbsttest: rechnet das Beispielhaus aus Phase 1 (New Reno, mittlerer
+   Ausbau) 30 Wochen lang mit allen drei Anteilsstufen. Die Ausgabe muss
+   mit "python3 tools/economy_sim.py --vektoren" uebereinstimmen. */
+procedure rl_selbsttest begin
+   variable stufe, woche, gewinn, t := RL_TESTHAUS;
+
+   stufe := 0;
+   while (stufe <= RL_ANTEIL_FAIR) do begin
+      haus[rl_idx(t, RL_F_BESITZ)]      := 0;
+      haus[rl_idx(t, RL_F_ZIMMER)]      := 99;
+      haus[rl_idx(t, RL_F_PERSONAL)]    := 99;
+      haus[rl_idx(t, RL_F_QUALI)]       := 60;
+      haus[rl_idx(t, RL_F_MORAL)]       := 50;
+      haus[rl_idx(t, RL_F_RUF)]         := 55;
+      haus[rl_idx(t, RL_F_AUSSTATTUNG)] := 50;
+      haus[rl_idx(t, RL_F_SICHERHEIT)]  := 70;
+      haus[rl_idx(t, RL_F_HITZE)]       := 0;
+      haus[rl_idx(t, RL_F_PREISSTUFE)]  := RL_PREIS_STANDARD;
+      haus[rl_idx(t, RL_F_ANTEIL)]      := stufe;
+      haus[rl_idx(t, RL_F_BAR)]         := 1;
+      haus[rl_idx(t, RL_F_NEBEN)]       := 0;
+      haus[rl_idx(t, RL_F_MODULE)]      := RL_MOD_KONTOR;
+      haus[rl_idx(t, RL_F_STUFEN)]      := 4;
+      haus[rl_idx(t, RL_F_LOEHNE)]      := 310;
+      haus[rl_idx(t, RL_F_MORALBONUS)]  := 0;
+      haus[rl_idx(t, RL_F_STADTMOD)]    := 0;
+      haus[rl_idx(t, RL_F_TRIBUTMOD)]   := 0;
+      haus[rl_idx(t, RL_F_KRISE)]       := RL_EV_KEINS;
+      haus[rl_idx(t, RL_F_ZWANG)]       := 0;
+      woche := 1;
+      while (woche <= 30) do begin
+         gewinn := rl_rechne_woche(haus, t, t);
+         debug_msg("RLTEST " + stufe + " W" + woche + " " + gewinn);
+         woche := woche + 1;
+      end
+      stufe := stufe + 1;
+   end
+   display_msg("Rotlicht-Selbsttest fertig, Ausgabe in debug.log.");
+end

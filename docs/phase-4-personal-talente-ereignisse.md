@@ -1,7 +1,14 @@
 # Phase 4 – Personal, Unique Talent & Ereignisse
 
 **Arbeitstitel:** *Rotlicht über dem Ödland* – Addon-Modifikation für Fallout 2
-**Status:** Entwurf – wartet auf Freigabe, bevor Phase 5 beginnt.
+**Status:** Freigegeben (siehe Entscheidungen unten). Weiter in [Phase 5](phase-5-technik.md).
+
+> **Freigabe-Entscheidungen** (alle Empfehlungen übernommen)
+> 1. Die fünf Unique-Figuren bleiben: Vesper, Abigail Kessler, Talus, Julian Rook, Mara.
+> 2. Werben gegen Zwingen ist die zweite Moralachse.
+> 3. „An der Leine halten“ und alle Tyrannen-Quellen bleiben im Spiel.
+> 4. „Tod im Haus“ bleibt als Ereignis.
+> 5. Unique-Figuren können endgültig sterben, aber erst nach einer Vorwarnung: Sie sind eine Woche lang schwer verletzt, und in dieser Zeit kann der Spieler sie retten.
 **Grundlage:** [Phase 1](phase-1-core-loop-und-wirtschaft.md) bis [Phase 3](phase-3-quests-rivalen-uebernahmen.md) sind freigegeben. Der Ton ist düster und unbarmherzig, alle dunklen Optionen bleiben im Spiel.
 
 ---

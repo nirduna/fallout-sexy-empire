@@ -6,6 +6,7 @@ ueber N Wochen. Rechnet bewusst nur mit Ganzzahlen/Prozentwerten, damit
 die Formeln 1:1 nach SSL (sfall) uebertragbar bleiben.
 
 Aufruf:  python3 tools/economy_sim.py [wochen] [stadt]
+         python3 tools/economy_sim.py --vektoren   (Soll-Werte fuer den SSL-Selbsttest)
 """
 import sys
 
@@ -50,6 +51,12 @@ def clamp(v, lo, hi):
     return max(lo, min(hi, v))
 
 
+def tdiv(a, b):
+    """Ganzzahl-Division wie in SSL: schneidet Richtung null ab (Python // rundet ab)."""
+    q = abs(a) // abs(b)
+    return q if (a >= 0) == (b > 0) else -q
+
+
 def simulate(city, weeks=12, staff_q=60, furnishing=50, rep=55, moral=50,
              price_tier="standard", share_tier="branchenueblich",
              security=70, heat=0, accountant=True, doc=False, bar_level=1,
@@ -67,7 +74,14 @@ def simulate(city, weeks=12, staff_q=60, furnishing=50, rep=55, moral=50,
         attr = 40 + score * 2                             # Attraktivitaet in %
         threat = c["risk"] * 20 + heat
         sec = 100 if security >= threat else max(60, 100 - (threat - security) // 2)
-        clients = c["clients"] * attr * d_mult * sec * city_mod // 100 ** 4
+        # Schrittweise teilen, aber mit zwei Nachkommastellen bis zum Schluss:
+        # Das Gesamtprodukt wuerde in SSL (32 Bit) ueberlaufen, die Zwischen-
+        # werte bleiben so unter 3 Mio. und die Rundung wie beim Gesamtprodukt.
+        v = c["clients"] * attr
+        v = v * d_mult // 100
+        v = v * sec // 100
+        v = v * city_mod // 100
+        clients = v // 100
         if rooms is not None:                             # Phase 2: Kapazitaet
             clients = min(clients, rooms * ROOM_CAPACITY)
         rev_service = clients * c["price"] * p_mult // 100
@@ -97,7 +111,18 @@ def simulate(city, weeks=12, staff_q=60, furnishing=50, rep=55, moral=50,
     return rows, total, karma
 
 
+def vektoren():
+    """Erwartete Ausgabe des SSL-Selbsttests (gl_rotlicht mit -mRL_SELBSTTEST)."""
+    for stufe, share in enumerate(SHARE_TIERS):
+        rows, _, _ = simulate("new_reno", weeks=30, share_tier=share)
+        for r in rows:
+            print(f"RLTEST {stufe} W{r[0]} {r[6]}")
+
+
 def main():
+    if len(sys.argv) > 1 and sys.argv[1] == "--vektoren":
+        vektoren()
+        return
     weeks = int(sys.argv[1]) if len(sys.argv) > 1 else 24
     city = sys.argv[2] if len(sys.argv) > 2 else "new_reno"
     for share in SHARE_TIERS:

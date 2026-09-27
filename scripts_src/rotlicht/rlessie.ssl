@@ -1,0 +1,259 @@
+/*
+   rlessie.ssl - Madame Esther "Essie" Kowalski, Managerin der Gosse (The Den)
+
+   Phase 5, Beispiel fuer einen Manager-NPC:
+     - Wochenbericht (Kunden, Gewinn, Kasse)
+     - Auszahlung der Kasse an den Spieler
+     - Preisstufe und Personal-Anteil einstellen
+     - Moral des Personals erfragen
+     - Krise "Der Stoff" mit Skill-Check loesen (Phase 4)
+
+   Der Prolog "Essies Schulden" (Phase 1/3) kommt in einer spaeteren
+   Ausbaustufe dieses Skripts dazu. Bis dahin gibt es einen Platzhalter,
+   solange die Gosse nicht dem Spieler gehoert.
+
+   Texte: text_src/german/dialog/rlessie.msg
+*/
+
+#define SCRIPT_REALNAME "rlessie"
+#include "define.h"
+#include "../headers/rotlicht.h"
+
+#define NAME                    SCRIPT_RLESSIE
+#include "command.h"
+
+procedure start;
+procedure talk_p_proc;
+procedure look_at_p_proc;
+procedure description_p_proc;
+
+procedure Node001;      // Begruessung und Wochenbericht
+procedure Node010;      // Auszahlung
+procedure Node020;      // Preise
+procedure Node022;
+procedure Node023;
+procedure Node024;
+procedure Node030;      // Personal-Anteil
+procedure Node031;
+procedure Node032;
+procedure Node033;
+procedure Node040;      // Moral
+procedure Node050;      // Krise
+procedure Node051;
+procedure Node052;
+procedure Node053;
+procedure Node054;
+procedure Node055;
+procedure Node090;      // Platzhalter vor der Uebernahme
+procedure Node091;      // nur mit -mRL_DEBUG: Haus sofort uebernehmen
+procedure Node999;
+
+procedure rl_krise_loesen;
+
+variable haus;
+variable h := RL_DEN;
+
+procedure start begin
+end
+
+procedure look_at_p_proc begin
+   script_overrides;
+   display_mstr(200);
+end
+
+procedure description_p_proc begin
+   script_overrides;
+   display_mstr(201);
+end
+
+procedure talk_p_proc begin
+   haus := rl_lade_haeuser;
+   start_gdialog(NAME, self_obj, 4, -1, -1);
+   gSay_Start;
+      if (haus[rl_idx(h, RL_F_BESITZ)] == 0) then
+         call Node090;
+      else
+         call Node001;
+   gSay_End;
+   end_dialogue;
+end
+
+procedure Node001 begin
+   Reply(mstr(100) + " " + mstr(101) + haus[rl_idx(h, RL_F_KUNDEN)]
+         + mstr(102) + haus[rl_idx(h, RL_F_GEWINN)]
+         + mstr(103) + haus[rl_idx(h, RL_F_KASSE)] + mstr(104));
+
+   if (haus[rl_idx(h, RL_F_KASSE)] > 0) then
+      NOption(110, Node010, 004);
+   NOption(111, Node020, 004);
+   NOption(112, Node030, 004);
+   NOption(113, Node040, 004);
+   if (haus[rl_idx(h, RL_F_KRISE)] != RL_EV_KEINS) then
+      NOption(114, Node050, 004);
+   NOption(115, Node999, 004);
+   NLowOption(116, Node010);
+end
+
+procedure Node010 begin
+   variable betrag := haus[rl_idx(h, RL_F_KASSE)];
+   if (betrag > 0) then begin
+      item_caps_adjust(dude_obj, betrag);
+      haus[rl_idx(h, RL_F_KASSE)] := 0;
+      Reply(mstr(120) + betrag + mstr(121));
+   end else begin
+      Reply(122);
+   end
+   NOption(123, Node001, 004);
+   NOption(124, Node999, 004);
+   NLowOption(124, Node999);
+end
+
+procedure Node020 begin
+   Reply(mstr(130) + " " + mstr(135 + haus[rl_idx(h, RL_F_PREISSTUFE)]));
+   NOption(131, Node022, 004);
+   NOption(132, Node023, 004);
+   // Gehoben erst ab Ausstattung 40 und Moral 50 (Phase 1, Abschnitt 3.6)
+   if ((haus[rl_idx(h, RL_F_AUSSTATTUNG)] >= 40) and (haus[rl_idx(h, RL_F_MORAL)] >= 50)) then
+      NOption(133, Node024, 004);
+   NOption(134, Node001, 004);
+end
+
+procedure Node022 begin
+   haus[rl_idx(h, RL_F_PREISSTUFE)] := RL_PREIS_RAMSCH;
+   Reply(139);
+   NOption(123, Node001, 004);
+end
+
+procedure Node023 begin
+   haus[rl_idx(h, RL_F_PREISSTUFE)] := RL_PREIS_STANDARD;
+   Reply(139);
+   NOption(123, Node001, 004);
+end
+
+procedure Node024 begin
+   haus[rl_idx(h, RL_F_PREISSTUFE)] := RL_PREIS_GEHOBEN;
+   Reply(139);
+   NOption(123, Node001, 004);
+end
+
+procedure Node030 begin
+   Reply(mstr(140) + get_array([25, 35, 45], haus[rl_idx(h, RL_F_ANTEIL)]) + mstr(141));
+   BOption(142, Node031, 004);
+   NOption(143, Node032, 004);
+   GOption(144, Node033, 004);
+   NOption(148, Node001, 004);
+end
+
+procedure Node031 begin
+   haus[rl_idx(h, RL_F_ANTEIL)] := RL_ANTEIL_AUSBEUTERISCH;
+   Reply(145);
+   NOption(123, Node001, 004);
+end
+
+procedure Node032 begin
+   haus[rl_idx(h, RL_F_ANTEIL)] := RL_ANTEIL_BRANCHENUEBLICH;
+   Reply(146);
+   NOption(123, Node001, 004);
+end
+
+procedure Node033 begin
+   haus[rl_idx(h, RL_F_ANTEIL)] := RL_ANTEIL_FAIR;
+   Reply(147);
+   NOption(123, Node001, 004);
+end
+
+procedure Node040 begin
+   variable moral := haus[rl_idx(h, RL_F_MORAL)];
+   if (moral >= 70) then
+      Reply(150);
+   else if (moral >= 40) then
+      Reply(151);
+   else if (moral >= RL_FLUCHT_MORAL) then
+      Reply(152);
+   else
+      Reply(153);
+   NOption(123, Node001, 004);
+end
+
+procedure Node050 begin
+   if (haus[rl_idx(h, RL_F_KRISE)] == RL_EV_STOFF) then begin
+      Reply(160);
+      if (has_skill(dude_obj, SKILL_DOCTOR) >= 60) then
+         GOption(161, Node051, 004);
+      if (dude_caps >= 200) then
+         NOption(162, Node052, 004);
+      BOption(163, Node053, 004);
+      BOption(164, Node054, 004);
+   end else begin
+      Reply(mstr(170) + " " + mstr(180 + haus[rl_idx(h, RL_F_KRISE)]));
+      if (dude_caps >= 300) then
+         NOption(171, Node055, 004);
+   end
+   NOption(172, Node999, 004);
+end
+
+// Der Stoff: selbst behandeln (Doctor 60)
+procedure Node051 begin
+   call rl_krise_loesen;
+   haus[rl_idx(h, RL_F_MORAL)] := rl_min(100, haus[rl_idx(h, RL_F_MORAL)] + 5);
+   Reply(165);
+   NOption(123, Node001, 004);
+end
+
+// Der Stoff: Behandlung bezahlen
+procedure Node052 begin
+   item_caps_adjust(dude_obj, -200);
+   call rl_krise_loesen;
+   Reply(166);
+   NOption(123, Node001, 004);
+end
+
+// Der Stoff: an der Leine halten (Tyrannen-Variante, Phase 4)
+// Dauerhaft: Moral des Hauses hoechstens 40, Karma -3 pro Woche (rl_rechne_woche)
+procedure Node053 begin
+   call rl_krise_loesen;
+   haus[rl_idx(h, RL_F_MODULE)] := haus[rl_idx(h, RL_F_MODULE)] bwor RL_MOD_LEINE;
+   haus[rl_idx(h, RL_F_MORAL)] := rl_min(40, haus[rl_idx(h, RL_F_MORAL)]);
+   Reply(167);
+   NOption(123, Node001, 004);
+end
+
+// Der Stoff: rauswerfen
+procedure Node054 begin
+   call rl_krise_loesen;
+   haus[rl_idx(h, RL_F_PERSONAL)] := rl_max(0, haus[rl_idx(h, RL_F_PERSONAL)] - 1);
+   haus[rl_idx(h, RL_F_MORAL)] := rl_max(0, haus[rl_idx(h, RL_F_MORAL)] - 10);
+   Reply(168);
+   NOption(123, Node001, 004);
+end
+
+// Andere Krisen: mit Geld regeln (die ausfuehrlichen Loesungen kommen je Ereignis dazu)
+procedure Node055 begin
+   item_caps_adjust(dude_obj, -300);
+   call rl_krise_loesen;
+   Reply(173);
+   NOption(123, Node001, 004);
+end
+
+procedure Node090 begin
+   Reply(190);
+#ifdef RL_DEBUG
+   NOption(192, Node091, 001);
+#endif
+   NOption(191, Node999, 004);
+   NLowOption(191, Node999);
+end
+
+procedure Node091 begin
+   call rl_haus_uebernehmen(haus, rl_lade_welt, h);
+   Reply(193);
+   NOption(123, Node001, 001);
+end
+
+procedure Node999 begin
+end
+
+procedure rl_krise_loesen begin
+   haus[rl_idx(h, RL_F_KRISE)] := RL_EV_KEINS;
+   haus[rl_idx(h, RL_F_KRISENWOCHEN)] := 0;
+end
