@@ -46,12 +46,14 @@ procedure Node054;
 procedure Node055;
 procedure Node090;      // Platzhalter vor der Uebernahme
 procedure Node091;      // nur mit -mRL_DEBUG: Haus sofort uebernehmen
+procedure Node092;      // nur mit -mRL_DEBUG: Abspann zeigen (Phase 6)
 procedure Node999;
 
 procedure rl_krise_loesen;
 
 variable haus;
 variable h := RL_DEN;
+variable zeige_abspann := 0;
 
 procedure start begin
 end
@@ -76,6 +78,11 @@ procedure talk_p_proc begin
          call Node001;
    gSay_End;
    end_dialogue;
+   // Der Abspann darf erst nach dem Dialog starten
+   if (zeige_abspann) then begin
+      zeige_abspann := 0;
+      endgame_slideshow;
+   end
 end
 
 procedure Node001 begin
@@ -90,6 +97,9 @@ procedure Node001 begin
    NOption(113, Node040, 004);
    if (haus[rl_idx(h, RL_F_KRISE)] != RL_EV_KEINS) then
       NOption(114, Node050, 004);
+#ifdef RL_DEBUG
+   NOption(194, Node092, 001);
+#endif
    NOption(115, Node999, 004);
    NLowOption(116, Node010);
 end
@@ -248,6 +258,10 @@ procedure Node091 begin
    call rl_haus_uebernehmen(haus, rl_lade_welt, h);
    Reply(193);
    NOption(123, Node001, 001);
+end
+
+procedure Node092 begin
+   zeige_abspann := 1;
 end
 
 procedure Node999 begin

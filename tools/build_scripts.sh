@@ -3,31 +3,44 @@
 #
 # Benoetigt:
 #   SSLC             Pfad zum sslc-Compiler (sfall edition 4.5 oder neuer)
-#   FO2_SCRIPTS_SRC  Pfad zu scripts_src des Fallout 2 Unofficial Patch
-#                    (mit headers/ und den sfall-Headern in sfall/)
+#   FO2_SCRIPTS_SRC  Pfad zu scripts_src des Restoration Project (RPU) oder des
+#                    Unofficial Patch (mit headers/ und den sfall-Headern in sfall/)
 # Optional:
 #   RL_SCRIPT_BASE   Index des ersten Rotlicht-Skripts in scripts.lst
-#                    (Zeilenzahl der scripts.lst + 1; Standard 1309 = Unofficial Patch)
+#                    (Zeilenzahl der scripts.lst + 1; Standard 1559 = RPU, Unofficial Patch: 1309)
+#   RL_GVAR_BASE     erste neue GVAR (Anzahl der GVARs in vault13.gam; Standard 791 = RPU,
+#                    Unofficial Patch: 696)
 #   RL_SELBSTTEST=1  baut gl_rotlicht mit Selbsttest
 #   RL_DEBUG=1       baut Debug-Optionen ein (z. B. Haus sofort uebernehmen)
 #   OUT              Zielordner fuer die .int-Dateien (Standard build/scripts)
 #   TEXT_OUT         Zielordner fuer die .msg-Dateien (Standard build/text)
+#   TEXT_ENCODING    Kodierung der Texte im Spiel (Standard WINDOWS-1252, siehe Phase 5)
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 : "${SSLC:?SSLC muss auf den sslc-Compiler zeigen}"
-: "${FO2_SCRIPTS_SRC:?FO2_SCRIPTS_SRC muss auf scripts_src des Unofficial Patch zeigen}"
-BASE="${RL_SCRIPT_BASE:-1309}"
+: "${FO2_SCRIPTS_SRC:?FO2_SCRIPTS_SRC muss auf scripts_src des RPU (oder Unofficial Patch) zeigen}"
+BASE="${RL_SCRIPT_BASE:-1559}"
+GVAR_BASE="${RL_GVAR_BASE:-791}"
+TEXT_ENCODING="${TEXT_ENCODING:-WINDOWS-1252}"
 OUT="${OUT:-$ROOT/build/scripts}"
 mkdir -p "$OUT"
 
-FLAGS=(-q -l -p -O2 -I"$FO2_SCRIPTS_SRC/headers" -I"$ROOT/scripts_src/headers" "-mRL_SCRIPT_BASE=$BASE")
-if [ "${RL_SELBSTTEST:-0}" = "1" ]; then
-  FLAGS+=("-mRL_SELBSTTEST")
-fi
-if [ "${RL_DEBUG:-0}" = "1" ]; then
-  FLAGS+=("-mRL_DEBUG")
-fi
+# sslc wertet nur EINEN -m-Schalter und nur EINEN -I-Pfad aus. Deshalb
+# kompilieren wir eine Kopie von scripts_src und schreiben die Einstellungen
+# in deren config/rl_build.h. Der einzige -I-Pfad sind die Header der Basis.
+GEN="$(mktemp -d)"
+trap 'rm -rf "$GEN"' EXIT
+cp -r "$ROOT/scripts_src" "$GEN/"
+{
+  echo "#define RL_SCRIPT_BASE ($BASE)"
+  echo "#define RL_GVAR_BASE ($GVAR_BASE)"
+  if [ "${RL_SELBSTTEST:-0}" = "1" ]; then echo "#define RL_SELBSTTEST"; fi
+  if [ "${RL_DEBUG:-0}" = "1" ]; then echo "#define RL_DEBUG"; fi
+} > "$GEN/scripts_src/config/rl_build.h"
+echo "Build: RL_SCRIPT_BASE=$BASE RL_GVAR_BASE=$GVAR_BASE SELBSTTEST=${RL_SELBSTTEST:-0} DEBUG=${RL_DEBUG:-0}"
+
+FLAGS=(-q -l -p -O2 -I"$FO2_SCRIPTS_SRC/headers")
 
 status=0
 while IFS= read -r src; do
@@ -39,18 +52,18 @@ while IFS= read -r src; do
     echo "FEHLER $src"
     status=1
   fi
-done < <(find "$ROOT/scripts_src" -name '*.ssl' | sort)
+done < <(find "$GEN/scripts_src" -name '*.ssl' | sort)
 
-# Texte: UTF-8-Quellen nach Windows-1252 (Kodierung der deutschen Fallout-2-Schrift)
+# Texte: UTF-8-Quellen in die Kodierung der Installation (Standard Windows-1252)
 TEXT_OUT="${TEXT_OUT:-$ROOT/build/text}"
 while IFS= read -r msg; do
   rel="${msg#$ROOT/text_src/}"
   mkdir -p "$TEXT_OUT/$(dirname "$rel")"
-  if iconv -f UTF-8 -t WINDOWS-1252 "$msg" > "$TEXT_OUT/$rel"; then
+  if iconv -f UTF-8 -t "$TEXT_ENCODING" "$msg" > "$TEXT_OUT/$rel"; then
     echo "OK    $rel"
   else
-    echo "FEHLER $rel (Zeichen ausserhalb von Windows-1252?)"
+    echo "FEHLER $rel (Zeichen ausserhalb von $TEXT_ENCODING?)"
     status=1
   fi
-done < <(find "$ROOT/text_src" -name '*.msg' | sort)
+done < <(find "$ROOT/text_src" -type f | sort)   # .msg, cuts/*.txt, *.add
 exit $status

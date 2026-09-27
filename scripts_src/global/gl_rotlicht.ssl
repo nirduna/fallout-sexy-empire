@@ -8,7 +8,8 @@
      3. Laeufer bringen das Geld ins Hauptquartier (Strumpfband).
      4. Ereigniswurf pro Haus: kleine Ereignisse loest die Madame,
         der Rest wird zur Krise, die der Spieler vor Ort loesen muss.
-     5. Selbsttest gegen tools/economy_sim.py (mit -mRL_SELBSTTEST).
+     5. Stadtruf, Titel und Endslides nachfuehren (Phase 6).
+     6. Selbsttest gegen tools/economy_sim.py (mit -mRL_SELBSTTEST).
 
    sfall laedt alle gl*.int beim Spielstart. Die Wochenlogik laeuft nur
    auf lokalen Karten; Reisezeit auf der Weltkarte wird beim naechsten
@@ -34,6 +35,9 @@ procedure rl_laeufer;
 procedure rl_ereignis_wurf(variable h);
 procedure rl_ereignis_waehlen(variable h);
 procedure rl_haus_name(variable h);
+procedure rl_stadtruf(variable h, variable woche);
+procedure rl_ende_und_titel;
+procedure rl_setze_gvar(variable gvar, variable wert);
 procedure rl_selbsttest;
 
 variable haus;
@@ -53,20 +57,31 @@ procedure start begin
 end
 
 procedure rl_tick begin
-   variable jetzt, wochen, h;
+   variable jetzt, wochen, h, tyrann, ausbeutung;
 
    if (welt[RL_W_AKTIV] == 0) then return;
 
    jetzt  := game_time_in_seconds / RL_SEKUNDEN_WOCHE;
    wochen := jetzt - welt[RL_W_WOCHE];
-   if (wochen <= 0) then return;
+   if (wochen <= 0) then begin
+      // Quests koennen Enden und Titel mitten in der Woche aendern
+      call rl_ende_und_titel;
+      return;
+   end
    if (wochen > RL_MAX_NACHRECHNUNG) then wochen := RL_MAX_NACHRECHNUNG;
 
    call rl_welt_modifikatoren;
    while (wochen > 0) do begin
+      tyrann := 0;
+      ausbeutung := 0;
       h := 0;
       while (h < RL_ANZAHL_HAEUSER) do begin
          if (haus[rl_idx(h, RL_F_BESITZ)]) then begin
+            if (haus[rl_idx(h, RL_F_ZWANG)] or (haus[rl_idx(h, RL_F_MODULE)] bwand RL_MOD_LEINE)) then
+               tyrann := 1;
+            if (haus[rl_idx(h, RL_F_ANTEIL)] == RL_ANTEIL_AUSBEUTERISCH) then
+               ausbeutung := 1;
+            call rl_stadtruf(h, jetzt - wochen + 1);
             haus[rl_idx(h, RL_F_KASSE)] := haus[rl_idx(h, RL_F_KASSE)] + rl_rechne_woche(haus, h, h);
             if (haus[rl_idx(h, RL_F_KRISE)] != RL_EV_KEINS) then begin
                haus[rl_idx(h, RL_F_KRISENWOCHEN)] := haus[rl_idx(h, RL_F_KRISENWOCHEN)] + 1;
@@ -82,10 +97,13 @@ procedure rl_tick begin
          end
          h := h + 1;
       end
+      welt[RL_W_TYRANN_WOCHEN] := welt[RL_W_TYRANN_WOCHEN] + tyrann;
+      welt[RL_W_AUSBEUTUNG_WOCHEN] := welt[RL_W_AUSBEUTUNG_WOCHEN] + ausbeutung;
       call rl_laeufer;
       wochen := wochen - 1;
    end
    welt[RL_W_WOCHE] := jetzt;
+   call rl_ende_und_titel;
 end
 
 /* Stadt-Modifikatoren aus Phase 1 (Abschnitt 3.5) und Phase 3.
@@ -124,7 +142,7 @@ procedure rl_welt_modifikatoren begin
    haus[rl_idx(RL_VAULT_CITY, RL_F_STADTMOD)] := m + global_boom;
 
    // NCR: Liga fuer eine reine Republik
-   m := get_array([0, -15, -5, -10, 20, 0], welt[RL_W_LIGA]);
+   m := get_array([0, -15, -5, -10, 20, 0, 0], welt[RL_W_LIGA]);
    haus[rl_idx(RL_NCR, RL_F_STADTMOD)] := m + global_boom;
 
    // San Francisco: Hubologen
@@ -240,6 +258,91 @@ procedure rl_ereignis_waehlen(variable h) begin
       i := i + 1;
    end
    return RL_EV_KEINS;
+end
+
+/* Stadtruf (Phase 6, Abschnitt 2): Das Haus faerbt auf den Ruf des Spielers
+   in der Stadt ab. Schwellen der Vanilla-Welt: 15 = gemocht, 30 = verehrt,
+   -15 = gehasst, -30 = verachtet. */
+procedure rl_stadtruf(variable h, variable woche) begin
+   variable gvar, ruf, dunkel;
+   gvar := get_array([GVAR_TOWN_REP_THE_DEN, GVAR_TOWN_REP_NEW_RENO, GVAR_TOWN_REP_REDDING,
+                      GVAR_TOWN_REP_VAULT_CITY, GVAR_TOWN_REP_NCR, GVAR_TOWN_REP_SAN_FRANCISCO], h);
+   ruf := global_var(gvar);
+   dunkel := haus[rl_idx(h, RL_F_ZWANG)] or (haus[rl_idx(h, RL_F_MODULE)] bwand RL_MOD_LEINE);
+
+   if (dunkel and (woche % 2 == 0)) then
+      ruf := ruf - 1;                           // Zwang spricht sich herum
+   if ((haus[rl_idx(h, RL_F_HITZE)] >= 60) and (woche % 2 == 1)) then
+      ruf := ruf - 1;                           // Gewalt und Razzien
+   if ((not dunkel) and (haus[rl_idx(h, RL_F_MORAL)] >= 70) and (woche % 4 == 0) and (ruf < 15)) then
+      ruf := ruf + 1;                           // ein anstaendiges Haus, hoechstens bis "gemocht"
+
+   if (ruf != global_var(gvar)) then set_global_var(gvar, ruf);
+end
+
+/* Endslides und Titel (Phase 6, Abschnitte 3 und 4). Wird nach jeder
+   Abrechnung neu berechnet, damit die Werte beim Abspann aktuell sind. */
+procedure rl_ende_und_titel begin
+   variable h, besitz := 0, kassen, gewinn := 0, alle_anstaendig := 1;
+   variable tyrann, ende, nachsatz := RL_NACHSATZ_KEINER;
+
+   if (welt[RL_W_AKTIV] == 0) then return;
+
+   kassen := welt[RL_W_HQ_KASSE];
+   h := 0;
+   while (h < RL_ANZAHL_HAEUSER) do begin
+      if (haus[rl_idx(h, RL_F_BESITZ)]) then begin
+         besitz := besitz + 1;
+         kassen := kassen + haus[rl_idx(h, RL_F_KASSE)];
+         gewinn := gewinn + haus[rl_idx(h, RL_F_GEWINN)];
+         if (haus[rl_idx(h, RL_F_MORAL)] < 60) then alle_anstaendig := 0;
+      end
+      h := h + 1;
+   end
+
+   tyrann := (welt[RL_W_TYRANN_WOCHEN] >= 4)
+             or (welt[RL_W_AUSBEUTUNG_WOCHEN] >= 26)
+             or (welt[RL_W_KETTEN] == RL_KETTEN_NEUER_METZGER)
+             or (welt[RL_W_KETTEN] == RL_KETTEN_METZGERS_MANN)
+             or (welt[RL_W_VIRGIN] == RL_VIRGIN_UMARMUNG);
+
+   // Reihenfolge: Bankrott vor Tyrann vor Geschaeftsmann
+   if ((besitz == 0) or ((gewinn < 0) and (kassen < 1000))) then
+      ende := RL_ENDE_BANKROTT;
+   else if (tyrann) then
+      ende := RL_ENDE_TYRANN;
+   else
+      ende := RL_ENDE_GESCHAEFT;
+
+   // Ein Nachsatz, nach Gewicht
+   if (welt[RL_W_KETTEN] == RL_KETTEN_NEUER_METZGER) then
+      nachsatz := RL_NACHSATZ_KETTEN;
+   else if (welt[RL_W_LIGA] == RL_LIGA_LEX_NEUN) then
+      nachsatz := RL_NACHSATZ_LEX_NEUN;
+   else if (welt[RL_W_LIGA] == RL_LIGA_ZERSCHLAGEN) then
+      nachsatz := RL_NACHSATZ_SCHWEIGEN;
+   else if (welt[RL_W_MARA] == 1) then
+      nachsatz := RL_NACHSATZ_UEBERLEBENDE;
+   else if (welt[RL_W_KITTY_RIVALIN]) then
+      nachsatz := RL_NACHSATZ_KRALLE;
+   else if ((welt[RL_W_VESPER] == 1) and haus[rl_idx(RL_NEW_RENO, RL_F_BESITZ)]) then
+      nachsatz := RL_NACHSATZ_STIMME;
+
+   call rl_setze_gvar(GVAR_RL_ENDE, ende);
+   call rl_setze_gvar(GVAR_RL_NACHSATZ, nachsatz);
+
+   // Titel im Charakterbogen (sichtbar, solange ungleich 0)
+   call rl_setze_gvar(GVAR_RL_TITEL_SEELE, tyrann);
+   call rl_setze_gvar(GVAR_RL_TITEL_ANSTAND,
+                      (besitz >= 3) and alle_anstaendig and (not tyrann)
+                      and (welt[RL_W_TYRANN_WOCHEN] == 0));
+   call rl_setze_gvar(GVAR_RL_TITEL_FAMILIE,
+                      (haus[rl_idx(RL_NEW_RENO, RL_F_KLASSE)] >= 3)
+                      and (haus[rl_idx(RL_NEW_RENO, RL_F_EINFLUSS)] >= 80));
+end
+
+procedure rl_setze_gvar(variable gvar, variable wert) begin
+   if (global_var(gvar) != wert) then set_global_var(gvar, wert);
 end
 
 procedure rl_haus_name(variable h) begin

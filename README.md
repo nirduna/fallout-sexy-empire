@@ -10,8 +10,8 @@ Konzept und Skripte für eine Addon-Modifikation für **Fallout 2** (sfall 4.x).
 | 2 | Map-Integration & Standorte, Ausbaustufen | freigegeben: [docs/phase-2-standorte-und-ausbau.md](docs/phase-2-standorte-und-ausbau.md) |
 | 3 | Quests, Rivalen & feindliche Übernahmen | freigegeben: [docs/phase-3-quests-rivalen-uebernahmen.md](docs/phase-3-quests-rivalen-uebernahmen.md) |
 | 4 | Personal, Unique Workers & Zufallsereignisse | freigegeben: [docs/phase-4-personal-talente-ereignisse.md](docs/phase-4-personal-talente-ereignisse.md) |
-| 5 | Technische Umsetzung (GVARs, Timer, SSL-Skripte) | Entwurf, wartet auf Freigabe: [docs/phase-5-technik.md](docs/phase-5-technik.md) |
-| 6 | Karma, Ruf & Endings (Epilog-Slides) | offen |
+| 5 | Technische Umsetzung (GVARs, Timer, SSL-Skripte) | freigegeben: [docs/phase-5-technik.md](docs/phase-5-technik.md) |
+| 6 | Karma, Ruf & Endings (Epilog-Slides) | Entwurf, wartet auf Freigabe: [docs/phase-6-karma-ruf-endings.md](docs/phase-6-karma-ruf-endings.md) |
 
 ## Werkzeuge
 
@@ -31,9 +31,9 @@ Konzept und Skripte für eine Addon-Modifikation für **Fallout 2** (sfall 4.x).
 
 ## Skripte bauen
 
-Die Skripte liegen in `scripts_src/` (SSL, sfall-Dialekt), die Texte in `text_src/` (UTF-8). Gebaut wird mit dem sfall-Compiler `sslc` gegen die Header des Fallout 2 Unofficial Patch und die sfall-Header. Die genaue Anleitung steht in [Phase 5, Abschnitt 10](docs/phase-5-technik.md#10-bauen-und-testen).
+Die Skripte liegen in `scripts_src/` (SSL, sfall-Dialekt), die Texte in `text_src/` (UTF-8: Dialoge, Endslide-Untertitel, Titel). Zeilen, die in Dateien der Basisinstallation eingefügt werden (`scripts.lst`, `vault13.gam`, `endgame.txt`, `karmavar.txt`), liegen in `install/`. Gebaut wird mit dem sfall-Compiler `sslc` gegen die Header des Fallout 2 Restoration Project (RPU) und die sfall-Header. Die genaue Anleitung steht in [Phase 5, Abschnitt 10](docs/phase-5-technik.md#10-bauen-und-testen).
 
 ```
-SSLC=/pfad/zu/sslc FO2_SCRIPTS_SRC=/pfad/zu/upu/scripts_src tools/build_scripts.sh
+SSLC=/pfad/zu/sslc FO2_SCRIPTS_SRC=/pfad/zu/rpu/scripts_src tools/build_scripts.sh
 ```
 

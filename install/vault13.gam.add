@@ -1,0 +1,5 @@
+GVAR_RL_ENDE                            :=0;    //      (791) Rotlicht: Endslide (1 Tyrann, 2 Geschaeftsmann, 3 Bankrott)
+GVAR_RL_NACHSATZ                        :=0;    //      (792) Rotlicht: Nachsatz-Slide (1-6)
+GVAR_RL_TITEL_SEELE                     :=0;    //      (793) Rotlicht: Titel "Seelenverkaeufer"
+GVAR_RL_TITEL_ANSTAND                   :=0;    //      (794) Rotlicht: Titel "Anstaendiges Haus"
+GVAR_RL_TITEL_FAMILIE                   :=0;    //      (795) Rotlicht: Titel "Die Fuenfte Familie"

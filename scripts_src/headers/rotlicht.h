@@ -16,16 +16,47 @@
 #ifndef ROTLICHT_H
 #define ROTLICHT_H
 
+// Build-Einstellungen: RL_SCRIPT_BASE, RL_GVAR_BASE, RL_SELBSTTEST, RL_DEBUG
+#include "../config/rl_build.h"
+
 /* ------------------------------------------------------------------ */
 /* Skript-Indizes (Zeilennummer in scripts.lst, gezaehlt ab 1).         */
 /* RL_SCRIPT_BASE = Zeilenzahl der scripts.lst der Zielinstallation + 1 */
-/* Unofficial Patch: 1308 Zeilen -> 1309. Andere Basis (Restoration    */
-/* Project) -> beim Bauen mit RL_SCRIPT_BASE=... ueberschreiben.        */
+/* Restoration Project (RPU): 1558 Zeilen -> 1559 (Standard).           */
+/* Unofficial Patch: 1308 Zeilen -> 1309 (mit RL_SCRIPT_BASE=1309).     */
 /* ------------------------------------------------------------------ */
 #ifndef RL_SCRIPT_BASE
-#define RL_SCRIPT_BASE              (1309)
+#define RL_SCRIPT_BASE              (1559)
 #endif
 #define SCRIPT_RLESSIE              (RL_SCRIPT_BASE + 0)
+
+/* ------------------------------------------------------------------ */
+/* Echte GVARs (Phase 6). Nur dort, wo die Engine sie verlangt:        */
+/* Endslides (endgame.txt) und Titel im Charakterbogen (karmavar.txt). */
+/* RL_GVAR_BASE = Anzahl der GVARs in vault13.gam der Zielinstallation */
+/* RPU: 791 (Standard), Unofficial Patch: 696.                         */
+/* ------------------------------------------------------------------ */
+#ifndef RL_GVAR_BASE
+#define RL_GVAR_BASE                (791)
+#endif
+#define GVAR_RL_ENDE                (RL_GVAR_BASE + 0)
+#define GVAR_RL_NACHSATZ            (RL_GVAR_BASE + 1)
+#define GVAR_RL_TITEL_SEELE         (RL_GVAR_BASE + 2)   // "Seelenverkaeufer"
+#define GVAR_RL_TITEL_ANSTAND       (RL_GVAR_BASE + 3)   // "Anstaendiges Haus"
+#define GVAR_RL_TITEL_FAMILIE       (RL_GVAR_BASE + 4)   // "Die Fuenfte Familie"
+
+#define RL_ENDE_KEINS               (0)
+#define RL_ENDE_TYRANN              (1)
+#define RL_ENDE_GESCHAEFT           (2)
+#define RL_ENDE_BANKROTT            (3)
+
+#define RL_NACHSATZ_KEINER          (0)
+#define RL_NACHSATZ_KETTEN          (1)     // Der neue Metzger
+#define RL_NACHSATZ_LEX_NEUN        (2)
+#define RL_NACHSATZ_SCHWEIGEN       (3)     // Liga zerschlagen
+#define RL_NACHSATZ_UEBERLEBENDE    (4)     // Mara als Madame
+#define RL_NACHSATZ_KRALLE          (5)     // Kitty als Rivalin
+#define RL_NACHSATZ_STIMME          (6)     // Vesper im Strumpfband
 
 /* ------------------------------------------------------------------ */
 /* Speicherung                                                        */
@@ -98,6 +129,19 @@
 #define RL_W_KETTEN                 (9)     // Aktstand der Questline "Ketten"
 #define RL_W_VIRGIN                 (10)    // Aktstand "Blut auf der Virgin Street"
 #define RL_W_REINE                  (11)    // Aktstand "Die Reinen"
+#define RL_W_TYRANN_WOCHEN          (12)    // Wochen mit Zwangspersonal oder Leine (Phase 6)
+#define RL_W_AUSBEUTUNG_WOCHEN      (13)    // Wochen mit ausbeuterischem Anteil in mind. einem Haus
+#define RL_W_MARA                   (14)    // 1 = Mara ist Madame der Gosse
+#define RL_W_VESPER                 (15)    // 1 = Vesper singt im Strumpfband
+
+// Enden der Questlines (Werte in RL_W_KETTEN / RL_W_VIRGIN ab 10)
+#define RL_KETTEN_NEUER_METZGER     (10)
+#define RL_KETTEN_METZGERS_MANN     (11)
+#define RL_KETTEN_GILDE_FAELLT      (12)
+#define RL_KETTEN_STILLER_KRIEG     (13)
+#define RL_VIRGIN_UMARMUNG          (10)
+#define RL_VIRGIN_LEERER_STUHL      (11)
+#define RL_VIRGIN_WAFFENSTILLSTAND  (12)
 
 #define RL_MARCUS_KEIN              (0)
 #define RL_MARCUS_RELAIS            (1)     // Verluste -50 %
@@ -110,6 +154,7 @@
 #define RL_LIGA_GEGENKAMPAGNE       (3)     // -10 %
 #define RL_LIGA_LEX_NEUN            (4)     // +20 %
 #define RL_LIGA_VERBOT              (5)     // Haus illegal
+#define RL_LIGA_ZERSCHLAGEN         (6)     // Diskreditierung (normale Nachfrage)
 
 // Preisstufen und Anteilsstufen
 #define RL_PREIS_RAMSCH             (0)

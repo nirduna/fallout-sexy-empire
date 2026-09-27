@@ -82,6 +82,7 @@
 {191}{}{Ich komme wieder.}
 {192}{}{[Debug] Die Gosse übernehmen.}
 {193}{}{[Debug] Die Gosse gehört jetzt dir. Hausklasse 1, drei Zimmer, drei Leute.}
+{194}{}{[Debug] Zeig mir den Abspann.}
 
 # Ansehen
 {200}{}{Eine Frau um die fünfzig mit hartem Blick und zu viel Rouge.}

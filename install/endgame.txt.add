@@ -1,0 +1,12 @@
+# Rotlicht ueber dem Oedland (GVAR-Nummern fuer das Restoration Project).
+# Einfuegen direkt nach dem letzten New-Reno-Eintrag (412, ...).
+# Bilder: vorlaeufig Vanilla-Endbilder (442 Den 1, 454 Den 2, 455/456 NCR, 458 Redding 2, 459/460 New Reno).
+791, 1, 454, rl_tyr
+791, 2, 460, rl_ges
+791, 3, 442, rl_bank
+792, 1, 442, rl_n1
+792, 2, 456, rl_n2
+792, 3, 455, rl_n3
+792, 4, 442, rl_n4
+792, 5, 458, rl_n5
+792, 6, 459, rl_n6

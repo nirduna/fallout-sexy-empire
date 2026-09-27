@@ -1,7 +1,13 @@
 # Phase 5 – Technische Umsetzung (sfall & Scripting)
 
 **Arbeitstitel:** *Rotlicht über dem Ödland* – Addon-Modifikation für Fallout 2
-**Status:** Entwurf – wartet auf Freigabe, bevor Phase 6 beginnt.
+**Status:** Freigegeben (siehe Entscheidungen unten). Weiter in [Phase 6](phase-6-karma-ruf-endings.md).
+
+> **Freigabe-Entscheidungen**
+> 1. Speicherung in sfall-Arrays, echte GVARs nur dort, wo die Engine sie verlangt (Endslides; siehe Phase 6 für die Titel im Charakterbogen).
+> 2. **Zielinstallation ist das Restoration Project (RPU).** Build-Standard ist jetzt RPU (`RL_SCRIPT_BASE` 1559). Alle Vanilla-Anknüpfungen sind gegen die RPU-Header geprüft, und der Code kompiliert gegen sie.
+> 3. Der Wochentakt läuft nur auf lokalen Karten, mit Nachrechnung bei Ankunft.
+> 4. Erst Phase 6 abschließen, dann Prolog „Essies Schulden“ und Ausbau-Dialog programmieren.
 **Grundlage:** [Phase 1](phase-1-core-loop-und-wirtschaft.md) bis [Phase 4](phase-4-personal-talente-ereignisse.md) sind freigegeben.
 
 Diese Phase liefert nicht nur ein Konzept, sondern **echten, kompilierbaren Code**:
@@ -15,7 +21,7 @@ Diese Phase liefert nicht nur ein Konzept, sondern **echten, kompilierbaren Code
 | [`tools/build_scripts.sh`](../tools/build_scripts.sh) | Build mit `sslc` und Text-Konvertierung |
 | [`install/scripts.lst.add`](../install/scripts.lst.add) | Zeile für die `scripts.lst` der Zielinstallation |
 
-**Stand:** Alle Skripte kompilieren mit sslc 4.5.1 (sfall edition) gegen die Header des Fallout 2 Unofficial Patch, ohne Fehler und ohne Warnungen. **Im Spiel ausgeführt wurden sie noch nicht**, weil hier keine Spieldaten vorliegen. Der Selbsttest in Abschnitt 10 ist genau dafür gebaut.
+**Stand:** Alle Skripte kompilieren mit sslc 4.5.1 (sfall edition) ohne Fehler und ohne Warnungen, sowohl gegen die Header des Restoration Project (RPU, Standard) als auch gegen die des Unofficial Patch. **Im Spiel ausgeführt wurden sie noch nicht**, weil hier keine Spieldaten vorliegen. Der Selbsttest in Abschnitt 10 ist genau dafür gebaut.
 
 ---
 
@@ -112,7 +118,7 @@ Klassisch würde man 200 neue GVARs an `vault13.gam` anhängen. Das ist fehleran
 
 ## 3. Anknüpfungen an die Vanilla-Welt (gegen die Original-Skripte geprüft)
 
-Geprüft gegen die Skriptquellen des Fallout 2 Unofficial Patch. Die Namen gelten auch für das Restoration Project, bis auf die Hinweise in Abschnitt 9.
+Geprüft gegen die Skriptquellen des Restoration Project (RPU) und des Unofficial Patch. Alle Namen existieren in beiden. Ein Wert unterscheidet sich: `MISSING_FINISHED_CASH` ist im RPU 9, im Unofficial Patch 7. Der Code verwendet den Namen, nicht die Zahl, und passt deshalb automatisch.
 
 | Zweck (Phase) | Abfrage | Quelle | Wirkung im Addon |
 |---|---|---|---|
@@ -247,7 +253,8 @@ end
 ```
 
 **Weitere Details**
-- **Texte:** Sie liegen in `text_src/german/dialog/rlessie.msg` als UTF-8. Der Build wandelt sie nach Windows-1252 um, denn so erwartet die deutsche Fallout-2-Schrift die Umlaute.
+- **Texte:** Sie liegen in `text_src/german/dialog/rlessie.msg` als UTF-8. Der Build wandelt sie standardmäßig nach Windows-1252 um: Die Engine und sfall lesen Textdateien byteweise ohne Umwandlung, und die deutsche Fallout-2-Schrift erwartet Windows-1252.
+- **Achtung beim RPU:** Die deutschen Texte liegen im RPU-Repository als UTF-8 vor. Welche Kodierung deine installierte deutsche RPU-Übersetzung tatsächlich nutzt, lässt sich nur im Spiel sicher prüfen. Zeigt Essie die Umlaute falsch an, baust du mit `TEXT_ENCODING=UTF-8`.
 - **Skriptindex:** Die Datei wird über den Skriptindex (`NAME = SCRIPT_RLESSIE`) gefunden.
 - **Moral im Dialog:** Die Wahl des Anteils kommentiert Essie im Ton aus Phase 1 bis 4. Die Tyrannen-Option „Jet statt Lohn“ setzt dauerhaft das Flag `RL_MOD_LEINE`: Die Moral des Hauses bleibt höchstens bei 40, und es kostet 3 Karma pro Woche (Phase 4).
 
@@ -256,15 +263,15 @@ end
 ## 9. Maps, Installation und Kompatibilität
 
 - **Skriptindizes:** Einträge in `scripts.lst` werden ab 1 gezählt. `RL_SCRIPT_BASE` ist die Zeilenzahl der `scripts.lst` der Zielinstallation plus 1.
-  - Unofficial Patch: 1308 Zeilen, also **1309** (Standard im Build).
-  - Restoration Project: eigener Wert, beim Bauen mit `RL_SCRIPT_BASE=...` setzen.
+  - **Restoration Project (RPU): 1558 Zeilen, also 1559** (Standard im Build).
+  - Unofficial Patch: 1308 Zeilen, also 1309 (mit `RL_SCRIPT_BASE=1309` bauen).
   - Die Zeilen zum Anhängen stehen in `install/scripts.lst.add`.
 - **Globale Skripte** (`gl_*.int`) brauchen keinen Eintrag in `scripts.lst`.
 - **Maps (Umsetzung von Phase 2, Abschnitt 6):**
   - Pro Haus ein Tür-Skript auf der Vanilla-Map. Es bleibt verschlossen, solange `RL_F_BESITZ = 0`.
   - Eine eigene Innen-Map (`RLDEN01` …) mit Map-Skript. Das schaltet in `map_enter_p_proc` Platzhalter und Ausbau-Objekte nach `RL_F_MODULE` und `RL_F_KLASSE` um.
   - Der Stadtkarten-Eintrag wird per `mark_area_known` nach der Übernahme freigeschaltet.
-- **Voraussetzungen:** sfall 4.x (gespeicherte Arrays, `set_global_script_repeat`, temporäre Arrays, String-Verkettung). Als Grundlage empfohlen ist der Unofficial Patch, gegen dessen Header der Code gebaut wird. Für das Restoration Project sind die geprüften Vanilla-Variablen identisch. Ein eigener Build mit dessen `scripts.lst`-Länge genügt.
+- **Voraussetzungen:** sfall 4.x (gespeicherte Arrays, `set_global_script_repeat`, temporäre Arrays, String-Verkettung). Grundlage ist das Restoration Project (RPU), gegen dessen Header der Code gebaut wird. Der Unofficial Patch wird ebenfalls unterstützt, dafür genügt ein eigener Build mit `RL_SCRIPT_BASE=1309`.
 - **Spielstände:** Die Arrays entstehen beim ersten Zugriff. Das Addon kann in laufende Spiele installiert werden. Wird es deinstalliert, bleiben zwei ungenutzte Arrays im Spielstand, ohne Wirkung.
 
 ---
@@ -285,24 +292,28 @@ Unter Windows gibt es `sslc.exe` fertig im sfall-Modderpaket.
 ### 10.2 Header besorgen
 
 ```bash
-git clone --depth 1 https://github.com/BGforgeNet/Fallout2_Unofficial_Patch.git upu
+git clone --depth 1 https://github.com/BGforgeNet/Fallout2_Restoration_Project.git rpu
 git clone --depth 1 https://github.com/sfall-team/sfall.git sfall
-ln -s "$PWD/sfall/artifacts/scripting/headers" upu/scripts_src/sfall   # define.h erwartet ../sfall/sfall.h
+ln -s "$PWD/sfall/artifacts/scripting/headers" rpu/scripts_src/sfall   # define.h erwartet ../sfall/sfall.h
 ```
 
 ### 10.3 Bauen
 
 ```bash
-SSLC=/pfad/sslc/build/bin/sslc FO2_SCRIPTS_SRC=/pfad/upu/scripts_src tools/build_scripts.sh
+SSLC=/pfad/sslc/build/bin/sslc FO2_SCRIPTS_SRC=/pfad/rpu/scripts_src tools/build_scripts.sh
 # Ergebnis: build/scripts/gl_rotlicht.int, build/scripts/rlessie.int, build/text/german/dialog/rlessie.msg
 ```
 
-Zusätzliche Schalter:
+Zusätzliche Schalter (Umgebungsvariablen):
 - `RL_SELBSTTEST=1` baut den Selbsttest ein (10.4).
 - `RL_DEBUG=1` baut Debug-Optionen ein: Essie bietet dann „[Debug] Die Gosse übernehmen“ an, damit man ohne Prolog testen kann.
 - `RL_SCRIPT_BASE=...` setzt den Skriptindex für eine andere Grundinstallation (Abschnitt 9).
+- `RL_GVAR_BASE=...` setzt die erste neue GVAR (RPU 791, Unofficial Patch 696; siehe Phase 6).
+- `TEXT_ENCODING=...` setzt die Kodierung der Texte (Standard `WINDOWS-1252`, siehe Abschnitt 8).
 
-**Stand dieser Phase:** Alle drei Ausgaben bauen fehlerfrei, auch mit Selbsttest und Debug-Optionen.
+**Wichtig:** `sslc` wertet nur **einen** `-m`-Schalter und nur **einen** `-I`-Pfad aus. Deshalb gibt das Build-Skript keine `-m`-Schalter weiter. Es kompiliert eine Kopie von `scripts_src` und schreibt alle Einstellungen in deren `config/rl_build.h`. Beim Kompilieren von Hand gilt `scripts_src/config/rl_build.h` mit den RPU-Standardwerten.
+
+**Stand dieser Phase:** Alle Ausgaben bauen fehlerfrei. *Korrektur (Phase 6):* In der ersten Fassung dieses Build-Skripts wirkte bei kombinierten Schaltern nur der letzte. Das ist behoben und am Kompilat geprüft (siehe Phase 6, Abschnitt 5.5).
 
 ### 10.4 Selbsttest im Spiel
 
