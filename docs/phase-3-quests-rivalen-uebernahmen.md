@@ -1,7 +1,14 @@
 # Phase 3 – Quests, Rivalen & feindliche Übernahmen
 
 **Arbeitstitel:** *Rotlicht über dem Ödland* – Addon-Modifikation für Fallout 2
-**Status:** Entwurf – wartet auf Freigabe, bevor Phase 4 beginnt.
+**Status:** Freigegeben (siehe Entscheidungen unten). Weiter in [Phase 4](phase-4-personal-talente-ereignisse.md).
+
+> **Freigabe-Entscheidungen**
+> 1. Die drei Questlines bleiben, mit Ruth Calloway als Gegenspielerin, die in vielem recht hat.
+> 2. „Der neue Metzger“ bleibt das dunkelste Ende.
+> 3. Der Grave-Digger-Weg über das Grab in Golgotha bleibt.
+> 4. **Miss Kitty** verschwindet nach einer Übernahme durch Druck, Sabotage oder Verrat nicht aus dem Spiel. Sie kehrt in Phase 4 als Rivalin zurück (Empfehlung des Lead Designers, vom Auftraggeber übernommen).
+> 5. Mara verbindet die Den und die NCR.
 **Grundlage:** [Phase 1](phase-1-core-loop-und-wirtschaft.md) und [Phase 2](phase-2-standorte-und-ausbau.md) sind freigegeben. Der Ton ist düster und unbarmherzig, alle dunklen Module bleiben im Spiel.
 
 ---
