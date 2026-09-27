@@ -1,16 +1,12 @@
 /*
-   rlessie.ssl - Madame Esther "Essie" Kowalski, Managerin der Gosse (The Den)
+   rlessie.ssl - Madame Esther "Essie" Kowalski, die Gosse (The Den)
 
-   Phase 5, Beispiel fuer einen Manager-NPC:
-     - Wochenbericht (Kunden, Gewinn, Kasse)
-     - Auszahlung der Kasse an den Spieler
-     - Preisstufe und Personal-Anteil einstellen
-     - Moral des Personals erfragen
-     - Krise "Der Stoff" mit Skill-Check loesen (Phase 4)
-
-   Der Prolog "Essies Schulden" (Phase 1/3) kommt in einer spaeteren
-   Ausbaustufe dieses Skripts dazu. Bis dahin gibt es einen Platzhalter,
-   solange die Gosse nicht dem Spieler gehoert.
+   Umsetzung 1:
+     - Prolog "Essies Schulden": Einstieg, Stand der Schulden, Reaktion auf
+       den Weg, den der Spieler mit Kolbe gewaehlt hat (rl_prolog.h)
+     - danach Managerin der Gosse mit den gemeinsamen Knoten (rl_manager.h):
+       Bericht, Kasse, Preise, Anteil, Moral, Krisen, Ausbau
+     - wurde sie an Metzger ausgeliefert, verschwindet sie
 
    Texte: text_src/german/dialog/rlessie.msg
 */
@@ -21,39 +17,27 @@
 
 #define NAME                    SCRIPT_RLESSIE
 #include "command.h"
+#include "../headers/rl_prolog.h"
 
 procedure start;
 procedure talk_p_proc;
+procedure critter_p_proc;
 procedure look_at_p_proc;
 procedure description_p_proc;
 
-procedure Node001;      // Begruessung und Wochenbericht
-procedure Node010;      // Auszahlung
-procedure Node020;      // Preise
-procedure Node022;
-procedure Node023;
-procedure Node024;
-procedure Node030;      // Personal-Anteil
-procedure Node031;
-procedure Node032;
-procedure Node033;
-procedure Node040;      // Moral
-procedure Node050;      // Krise
-procedure Node051;
-procedure Node052;
-procedure Node053;
-procedure Node054;
-procedure Node055;
-procedure Node090;      // Platzhalter vor der Uebernahme
-procedure Node091;      // nur mit -mRL_DEBUG: Haus sofort uebernehmen
-procedure Node092;      // nur mit -mRL_DEBUG: Abspann zeigen (Phase 6)
+procedure Node300;      // erste Begegnung: die Schulden
+procedure Node301;      // wie viel?
+procedure Node302;      // der Spieler uebernimmt
+procedure Node310;      // Prolog laeuft
+procedure Node320;      // Reaktion auf den Weg (einmalig)
+procedure Node391;      // nur mit RL_DEBUG: Prolog ueberspringen
 procedure Node999;
 
-procedure rl_krise_loesen;
-
 variable haus;
+variable welt;
 variable h := RL_DEN;
-variable zeige_abspann := 0;
+
+#include "../headers/rl_manager.h"
 
 procedure start begin
 end
@@ -68,206 +52,77 @@ procedure description_p_proc begin
    display_mstr(201);
 end
 
+// Wurde Essie an Metzger ausgeliefert, ist sie weg
+procedure critter_p_proc begin
+   if (welt == 0) then welt := rl_lade_welt;
+   if (welt[RL_W_ESSIE] == RL_ESSIE_AUSGELIEFERT) then
+      destroy_object(self_obj);
+end
+
 procedure talk_p_proc begin
    haus := rl_lade_haeuser;
+   welt := rl_lade_welt;
    start_gdialog(NAME, self_obj, 4, -1, -1);
    gSay_Start;
-      if (haus[rl_idx(h, RL_F_BESITZ)] == 0) then
-         call Node090;
+      if (welt[RL_W_PROLOG] == RL_PROLOG_OFFEN) then
+         call Node300;
+      else if (welt[RL_W_PROLOG] == RL_PROLOG_LAEUFT) then
+         call Node310;
+      else if (welt[RL_W_ESSIE_REAKTION] == 0) then
+         call Node320;
       else
-         call Node001;
+         call RLM_Start;
    gSay_End;
    end_dialogue;
-   // Der Abspann darf erst nach dem Dialog starten
-   if (zeige_abspann) then begin
-      zeige_abspann := 0;
-      endgame_slideshow;
-   end
+   RLM_NACH_DIALOG
 end
 
-procedure Node001 begin
-   Reply(mstr(100) + " " + mstr(101) + haus[rl_idx(h, RL_F_KUNDEN)]
-         + mstr(102) + haus[rl_idx(h, RL_F_GEWINN)]
-         + mstr(103) + haus[rl_idx(h, RL_F_KASSE)] + mstr(104));
-
-   if (haus[rl_idx(h, RL_F_KASSE)] > 0) then
-      NOption(110, Node010, 004);
-   NOption(111, Node020, 004);
-   NOption(112, Node030, 004);
-   NOption(113, Node040, 004);
-   if (haus[rl_idx(h, RL_F_KRISE)] != RL_EV_KEINS) then
-      NOption(114, Node050, 004);
+procedure Node300 begin
+   Reply(mstr(300) + " " + mstr(301));
+   NOption(302, Node301, 004);
+   NOption(304, Node302, 004);
+   NOption(306, Node999, 004);
 #ifdef RL_DEBUG
-   NOption(194, Node092, 001);
+   NOption(192, Node391, 001);
 #endif
-   NOption(115, Node999, 004);
-   NLowOption(116, Node010);
+   NLowOption(306, Node999);
 end
 
-procedure Node010 begin
-   variable betrag := haus[rl_idx(h, RL_F_KASSE)];
-   if (betrag > 0) then begin
-      item_caps_adjust(dude_obj, betrag);
-      haus[rl_idx(h, RL_F_KASSE)] := 0;
-      Reply(mstr(120) + betrag + mstr(121));
-   end else begin
-      Reply(122);
-   end
-   NOption(123, Node001, 004);
+procedure Node301 begin
+   Reply(303);
+   NOption(304, Node302, 004);
+   NOption(306, Node999, 004);
+end
+
+procedure Node302 begin
+   call rl_prolog_starten(welt);
+   Reply(305);
+   NOption(307, Node999, 004);
+end
+
+procedure Node310 begin
+   Reply(mstr(310) + rl_aktuelle_schulden(welt) + mstr(311));
+   NOption(312, Node999, 004);
+#ifdef RL_DEBUG
+   NOption(192, Node391, 001);
+#endif
+   NLowOption(312, Node999);
+end
+
+// Essies Haltung haengt am Weg, den der Spieler mit Kolbe gegangen ist (Phase 3, 2.1)
+procedure Node320 begin
+   welt[RL_W_ESSIE_REAKTION] := 1;
+   Reply(330 + welt[RL_W_PROLOG_WEG]);
+   NOption(123, RLM_Start, 004);
    NOption(124, Node999, 004);
-   NLowOption(124, Node999);
 end
 
-procedure Node020 begin
-   Reply(mstr(130) + " " + mstr(135 + haus[rl_idx(h, RL_F_PREISSTUFE)]));
-   NOption(131, Node022, 004);
-   NOption(132, Node023, 004);
-   // Gehoben erst ab Ausstattung 40 und Moral 50 (Phase 1, Abschnitt 3.6)
-   if ((haus[rl_idx(h, RL_F_AUSSTATTUNG)] >= 40) and (haus[rl_idx(h, RL_F_MORAL)] >= 50)) then
-      NOption(133, Node024, 004);
-   NOption(134, Node001, 004);
-end
-
-procedure Node022 begin
-   haus[rl_idx(h, RL_F_PREISSTUFE)] := RL_PREIS_RAMSCH;
-   Reply(139);
-   NOption(123, Node001, 004);
-end
-
-procedure Node023 begin
-   haus[rl_idx(h, RL_F_PREISSTUFE)] := RL_PREIS_STANDARD;
-   Reply(139);
-   NOption(123, Node001, 004);
-end
-
-procedure Node024 begin
-   haus[rl_idx(h, RL_F_PREISSTUFE)] := RL_PREIS_GEHOBEN;
-   Reply(139);
-   NOption(123, Node001, 004);
-end
-
-procedure Node030 begin
-   Reply(mstr(140) + get_array([25, 35, 45], haus[rl_idx(h, RL_F_ANTEIL)]) + mstr(141));
-   BOption(142, Node031, 004);
-   NOption(143, Node032, 004);
-   GOption(144, Node033, 004);
-   NOption(148, Node001, 004);
-end
-
-procedure Node031 begin
-   haus[rl_idx(h, RL_F_ANTEIL)] := RL_ANTEIL_AUSBEUTERISCH;
-   Reply(145);
-   NOption(123, Node001, 004);
-end
-
-procedure Node032 begin
-   haus[rl_idx(h, RL_F_ANTEIL)] := RL_ANTEIL_BRANCHENUEBLICH;
-   Reply(146);
-   NOption(123, Node001, 004);
-end
-
-procedure Node033 begin
-   haus[rl_idx(h, RL_F_ANTEIL)] := RL_ANTEIL_FAIR;
-   Reply(147);
-   NOption(123, Node001, 004);
-end
-
-procedure Node040 begin
-   variable moral := haus[rl_idx(h, RL_F_MORAL)];
-   if (moral >= 70) then
-      Reply(150);
-   else if (moral >= 40) then
-      Reply(151);
-   else if (moral >= RL_FLUCHT_MORAL) then
-      Reply(152);
-   else
-      Reply(153);
-   NOption(123, Node001, 004);
-end
-
-procedure Node050 begin
-   if (haus[rl_idx(h, RL_F_KRISE)] == RL_EV_STOFF) then begin
-      Reply(160);
-      if (has_skill(dude_obj, SKILL_DOCTOR) >= 60) then
-         GOption(161, Node051, 004);
-      if (dude_caps >= 200) then
-         NOption(162, Node052, 004);
-      BOption(163, Node053, 004);
-      BOption(164, Node054, 004);
-   end else begin
-      Reply(mstr(170) + " " + mstr(180 + haus[rl_idx(h, RL_F_KRISE)]));
-      if (dude_caps >= 300) then
-         NOption(171, Node055, 004);
-   end
-   NOption(172, Node999, 004);
-end
-
-// Der Stoff: selbst behandeln (Doctor 60)
-procedure Node051 begin
-   call rl_krise_loesen;
-   haus[rl_idx(h, RL_F_MORAL)] := rl_min(100, haus[rl_idx(h, RL_F_MORAL)] + 5);
-   Reply(165);
-   NOption(123, Node001, 004);
-end
-
-// Der Stoff: Behandlung bezahlen
-procedure Node052 begin
-   item_caps_adjust(dude_obj, -200);
-   call rl_krise_loesen;
-   Reply(166);
-   NOption(123, Node001, 004);
-end
-
-// Der Stoff: an der Leine halten (Tyrannen-Variante, Phase 4)
-// Dauerhaft: Moral des Hauses hoechstens 40, Karma -3 pro Woche (rl_rechne_woche)
-procedure Node053 begin
-   call rl_krise_loesen;
-   haus[rl_idx(h, RL_F_MODULE)] := haus[rl_idx(h, RL_F_MODULE)] bwor RL_MOD_LEINE;
-   haus[rl_idx(h, RL_F_MORAL)] := rl_min(40, haus[rl_idx(h, RL_F_MORAL)]);
-   Reply(167);
-   NOption(123, Node001, 004);
-end
-
-// Der Stoff: rauswerfen
-procedure Node054 begin
-   call rl_krise_loesen;
-   haus[rl_idx(h, RL_F_PERSONAL)] := rl_max(0, haus[rl_idx(h, RL_F_PERSONAL)] - 1);
-   haus[rl_idx(h, RL_F_MORAL)] := rl_max(0, haus[rl_idx(h, RL_F_MORAL)] - 10);
-   Reply(168);
-   NOption(123, Node001, 004);
-end
-
-// Andere Krisen: mit Geld regeln (die ausfuehrlichen Loesungen kommen je Ereignis dazu)
-procedure Node055 begin
-   item_caps_adjust(dude_obj, -300);
-   call rl_krise_loesen;
-   Reply(173);
-   NOption(123, Node001, 004);
-end
-
-procedure Node090 begin
-   Reply(190);
-#ifdef RL_DEBUG
-   NOption(192, Node091, 001);
-#endif
-   NOption(191, Node999, 004);
-   NLowOption(191, Node999);
-end
-
-procedure Node091 begin
-   call rl_haus_uebernehmen(haus, rl_lade_welt, h);
+procedure Node391 begin
+   call rl_prolog_starten(welt);
+   call rl_prolog_abschliessen(haus, welt, RL_WEG_BEZAHLT);
    Reply(193);
-   NOption(123, Node001, 001);
-end
-
-procedure Node092 begin
-   zeige_abspann := 1;
+   NOption(123, RLM_Start, 001);
 end
 
 procedure Node999 begin
-end
-
-procedure rl_krise_loesen begin
-   haus[rl_idx(h, RL_F_KRISE)] := RL_EV_KEINS;
-   haus[rl_idx(h, RL_F_KRISENWOCHEN)] := 0;
 end

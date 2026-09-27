@@ -1,7 +1,14 @@
 # Phase 6 – Karma, Ruf & Endings
 
 **Arbeitstitel:** *Rotlicht über dem Ödland* – Addon-Modifikation für Fallout 2
-**Status:** Entwurf – wartet auf Freigabe. Mit dieser Phase ist das Konzept vollständig.
+**Status:** Freigegeben. Mit dieser Phase ist das Konzept vollständig. Die Umsetzung läuft, beginnend mit dem [Prolog und dem Ausbau-Dialog](umsetzung-1-prolog-und-ausbau.md).
+
+> **Freigabe-Entscheidungen** (alle Empfehlungen übernommen)
+> 1. Fünf echte GVARs, damit die Titel im Charakterbogen erscheinen.
+> 2. Fair zu führen ist karmaneutral.
+> 3. Die Endtexte bleiben wie geschrieben.
+> 4. Vorerst Vanilla-Endbilder, eigene Grafiken später.
+> 5. Als Nächstes werden der Prolog „Essies Schulden“ und der Ausbau-Dialog programmiert.
 **Grundlage:** [Phase 1](phase-1-core-loop-und-wirtschaft.md) bis [Phase 5](phase-5-technik.md) sind freigegeben. Zielinstallation ist das Restoration Project (RPU).
 
 Das Imperium hinterlässt Spuren auf drei Ebenen und am Ende einen Abschied:

@@ -29,6 +29,7 @@
 #define RL_SCRIPT_BASE              (1559)
 #endif
 #define SCRIPT_RLESSIE              (RL_SCRIPT_BASE + 0)
+#define SCRIPT_RLKOLBE              (RL_SCRIPT_BASE + 1)
 
 /* ------------------------------------------------------------------ */
 /* Echte GVARs (Phase 6). Nur dort, wo die Engine sie verlangt:        */
@@ -75,7 +76,7 @@
 #define RL_SLOTS                    (7)
 
 // Felder pro Haus (Index = Haus * RL_FELDER + Feld)
-#define RL_FELDER                   (32)
+#define RL_FELDER                   (48)
 #define RL_F_BESITZ                 (0)     // 0 = nicht uebernommen, 1 = eigenes Haus
 #define RL_F_KLASSE                 (1)     // Hausklasse 1..3
 #define RL_F_ZIMMER                 (2)
@@ -105,6 +106,10 @@
 #define RL_F_FUEHRUNG               (26)    // Fuehrung der Madame (Phase 4)
 #define RL_F_ZWANG                  (27)    // 1 = Zwangspersonal im Haus (Tyrannen-Route)
 #define RL_F_ZUSTAND_TEST           (31)    // nur Selbsttest
+#define RL_F_MODUL_STADTMOD         (32)    // Kunden-% aus gebauten Modulen (Goldwaage, Tunnel ...)
+#define RL_F_GEKAUFT                (33)    // Bitmaske der gekauften Module (rl_katalog.h)
+#define RL_F_BAU_ID                 (34)    // Modul-ID + 1 der laufenden Baustelle, 0 = keine
+#define RL_F_BAU_WOCHEN             (35)    // verbleibende Bauwochen
 
 // Modul-Bitmaske
 #define RL_MOD_KONTOR               (1)
@@ -133,6 +138,51 @@
 #define RL_W_AUSBEUTUNG_WOCHEN      (13)    // Wochen mit ausbeuterischem Anteil in mind. einem Haus
 #define RL_W_MARA                   (14)    // 1 = Mara ist Madame der Gosse
 #define RL_W_VESPER                 (15)    // 1 = Vesper singt im Strumpfband
+#define RL_W_SHI_GEFALLEN           (16)    // 1 = Gefallen fuer die Shi erledigt (Siegel der Shi)
+// Prolog "Essies Schulden" (Umsetzung 1)
+#define RL_W_PROLOG                 (17)    // RL_PROLOG_*
+#define RL_W_SCHULDEN               (18)    // Grundbetrag ohne Zinsen
+#define RL_W_PROLOG_START           (19)    // Woche, in der der Prolog begann
+#define RL_W_PROLOG_WEG             (20)    // RL_WEG_*
+#define RL_W_METZGER                (21)    // RL_METZGER_*
+#define RL_W_ESSIE                  (22)    // RL_ESSIE_*
+#define RL_W_KOLBE                  (23)    // Bitfeld RL_KOLBE_*: was schon versucht wurde
+#define RL_W_DIEBSTAHL_WOCHE        (24)    // Woche des Diebstahls (Metzger merkt es 2 Wochen spaeter)
+#define RL_W_KETTEN_ZWEIG           (25)    // 0 offen, 1 Flucht, 2 Tyrann
+#define RL_W_ESSIE_REAKTION         (26)    // 1 = Essies Reaktion auf die Uebernahme gezeigt
+
+#define RL_PROLOG_OFFEN             (0)
+#define RL_PROLOG_LAEUFT            (1)
+#define RL_PROLOG_FERTIG            (2)
+
+#define RL_WEG_BEZAHLT              (1)
+#define RL_WEG_PARTNER              (2)
+#define RL_WEG_VERPRUEGELT          (3)     // Schulden halbiert, dann bezahlt
+#define RL_WEG_GESTOHLEN            (4)
+#define RL_WEG_AUSGELIEFERT         (5)
+
+#define RL_METZGER_NEUTRAL          (0)
+#define RL_METZGER_PARTNER          (1)
+#define RL_METZGER_RESPEKT          (2)
+#define RL_METZGER_FEIND            (3)
+#define RL_METZGER_FREUND           (4)
+
+#define RL_ESSIE_DA                 (0)
+#define RL_ESSIE_AUSGELIEFERT       (1)
+#define RL_ESSIE_GEKUENDIGT         (2)
+
+#define RL_KOLBE_GEWONNEN           (1)     // Faustkampf gewonnen
+#define RL_KOLBE_VERLOREN           (2)     // Faustkampf verloren
+#define RL_KOLBE_SPEECH             (4)     // Ueberreden versucht
+#define RL_KOLBE_RABATT             (8)     // Barter-Rabatt erhalten
+#define RL_KOLBE_BARTER             (16)    // Handeln versucht
+#define RL_KOLBE_DIEBSTAHL          (32)    // Diebstahl versucht
+
+#define RL_KETTEN_ZWEIG_FLUCHT      (1)
+#define RL_KETTEN_ZWEIG_TYRANN      (2)
+
+#define RL_SCHULDEN_START           (1200)
+#define RL_ZINS_JE_WOCHE            (50)
 
 // Enden der Questlines (Werte in RL_W_KETTEN / RL_W_VIRGIN ab 10)
 #define RL_KETTEN_NEUER_METZGER     (10)
@@ -201,8 +251,13 @@
 #define rl_min(a, b)                (((a) < (b)) * (a) + ((a) >= (b)) * (b))
 #define rl_max(a, b)                (((a) > (b)) * (a) + ((a) <= (b)) * (b))
 
+#include "rl_katalog.h"
+
 procedure rl_clamp(variable v, variable lo, variable hi);
 procedure rl_fdiv(variable a, variable b);
+procedure rl_bit(variable n);
+procedure rl_woche_jetzt;
+procedure rl_bau_fertig(variable haus, variable h);
 procedure rl_lade_haeuser;
 procedure rl_lade_welt;
 procedure rl_stadt(variable stadt, variable was);
@@ -222,12 +277,65 @@ procedure rl_fdiv(variable a, variable b) begin
    return -((-a + b - 1) / b);
 end
 
+procedure rl_bit(variable n) begin
+   variable v := 1;
+   while (n > 0) do begin
+      v := v * 2;
+      n := n - 1;
+   end
+   return v;
+end
+
+procedure rl_woche_jetzt begin
+   return game_time_in_seconds / RL_SEKUNDEN_WOCHE;
+end
+
+/* Fertigstellung einer Baustelle: Effekte aus dem Katalog anwenden (Phase 2).
+   Vorlaeufig werden neue Zimmer sofort besetzt, bis die Anwerbung (Phase 4)
+   umgesetzt ist. */
+procedure rl_bau_fertig(variable haus, variable h) begin
+   variable id := haus[rl_idx(h, RL_F_BAU_ID)] - 1;
+   if (id < 0) then return;
+   haus[rl_idx(h, RL_F_KLASSE)]         := haus[rl_idx(h, RL_F_KLASSE)] + rl_modul(id, RL_MK_KLASSE);
+   haus[rl_idx(h, RL_F_ZIMMER)]         := haus[rl_idx(h, RL_F_ZIMMER)] + rl_modul(id, RL_MK_ZIMMER);
+   haus[rl_idx(h, RL_F_PERSONAL)]       := haus[rl_idx(h, RL_F_PERSONAL)] + rl_modul(id, RL_MK_ZIMMER);
+   haus[rl_idx(h, RL_F_AUSSTATTUNG)]    := haus[rl_idx(h, RL_F_AUSSTATTUNG)] + rl_modul(id, RL_MK_AUSSTATTUNG);
+   haus[rl_idx(h, RL_F_BAR)]            := haus[rl_idx(h, RL_F_BAR)] + rl_modul(id, RL_MK_BAR);
+   haus[rl_idx(h, RL_F_SICHERHEIT)]     := haus[rl_idx(h, RL_F_SICHERHEIT)] + rl_modul(id, RL_MK_SICHERHEIT);
+   haus[rl_idx(h, RL_F_MORALBONUS)]     := haus[rl_idx(h, RL_F_MORALBONUS)] + rl_modul(id, RL_MK_MORAL);
+   haus[rl_idx(h, RL_F_LOEHNE)]         := haus[rl_idx(h, RL_F_LOEHNE)] + rl_modul(id, RL_MK_LOEHNE);
+   haus[rl_idx(h, RL_F_MODULE)]         := haus[rl_idx(h, RL_F_MODULE)] bwor rl_modul(id, RL_MK_FLAGS);
+   haus[rl_idx(h, RL_F_NEBEN)]          := haus[rl_idx(h, RL_F_NEBEN)] + rl_modul(id, RL_MK_NEBEN);
+   haus[rl_idx(h, RL_F_MODUL_STADTMOD)] := haus[rl_idx(h, RL_F_MODUL_STADTMOD)] + rl_modul(id, RL_MK_STADTMOD);
+   haus[rl_idx(h, RL_F_TRIBUTMOD)]      := haus[rl_idx(h, RL_F_TRIBUTMOD)] + rl_modul(id, RL_MK_TRIBUT);
+   haus[rl_idx(h, RL_F_STUFEN)]         := haus[rl_idx(h, RL_F_STUFEN)] + rl_modul(id, RL_MK_STUFEN);
+   haus[rl_idx(h, RL_F_BAU_ID)]         := 0;
+   haus[rl_idx(h, RL_F_BAU_WOCHEN)]     := 0;
+end
+
+/* Laedt das Haus-Array oder legt es an. Stammt es aus einer aelteren Version
+   mit weniger Feldern pro Haus, werden die Werte in das neue Layout kopiert. */
 procedure rl_lade_haeuser begin
-   variable arr;
+   variable arr, alt, alt_felder, h, f;
    arr := load_array(RL_ARR_HAEUSER);
    if (arr == 0) then begin
       arr := create_array(RL_SLOTS * RL_FELDER, 0);
       save_array(RL_ARR_HAEUSER, arr);
+   end else if (len_array(arr) < RL_SLOTS * RL_FELDER) then begin
+      alt := arr;
+      alt_felder := len_array(alt) / RL_SLOTS;
+      arr := create_array(RL_SLOTS * RL_FELDER, 0);
+      h := 0;
+      while (h < RL_SLOTS) do begin
+         f := 0;
+         while (f < alt_felder) do begin
+            arr[h * RL_FELDER + f] := get_array(alt, h * alt_felder + f);
+            f := f + 1;
+         end
+         h := h + 1;
+      end
+      save_array(RL_ARR_HAEUSER, arr);
+      free_array(alt);
    end
    return arr;
 end
@@ -280,7 +388,7 @@ procedure rl_haus_uebernehmen(variable haus, variable welt, variable h) begin
    haus[rl_idx(h, RL_F_FUEHRUNG)]   := 40;
    if (welt[RL_W_AKTIV] == 0) then begin
       welt[RL_W_AKTIV] := 1;
-      welt[RL_W_WOCHE] := game_time_in_seconds / RL_SEKUNDEN_WOCHE;
+      welt[RL_W_WOCHE] := rl_woche_jetzt;
    end
 end
 
@@ -346,12 +454,16 @@ procedure rl_rechne_woche(variable haus, variable h, variable stadt) begin
    v := rl_stadt(stadt, RL_S_KUNDEN) * attraktiv;
    v := v * nachfrage / 100;
    v := v * sicher_faktor / 100;
-   v := v * (100 + haus[rl_idx(h, RL_F_STADTMOD)]) / 100;
+   v := v * (100 + haus[rl_idx(h, RL_F_STADTMOD)] + haus[rl_idx(h, RL_F_MODUL_STADTMOD)]) / 100;
    kunden := v / 100;
 
    // Kapazitaet: ein Zimmer braucht eine Person (Phase 4)
    kapazitaet := rl_min(haus[rl_idx(h, RL_F_ZIMMER)], haus[rl_idx(h, RL_F_PERSONAL)]) * RL_KUNDEN_JE_ZIMMER;
    kunden := rl_min(kunden, kapazitaet);
+
+   // Baustelle: halbe Kundschaft (Phase 2, Abschnitt 3)
+   if (haus[rl_idx(h, RL_F_BAU_ID)] and (haus[rl_idx(h, RL_F_BAU_WOCHEN)] > 0)) then
+      kunden := kunden * 50 / 100;
 
    // Offene Krise: -20 % Kunden je Woche, hoechstens -60 % (Phase 4)
    if (haus[rl_idx(h, RL_F_KRISE)] != RL_EV_KEINS) then begin

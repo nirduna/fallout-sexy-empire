@@ -11,7 +11,13 @@ Konzept und Skripte für eine Addon-Modifikation für **Fallout 2** (sfall 4.x).
 | 3 | Quests, Rivalen & feindliche Übernahmen | freigegeben: [docs/phase-3-quests-rivalen-uebernahmen.md](docs/phase-3-quests-rivalen-uebernahmen.md) |
 | 4 | Personal, Unique Workers & Zufallsereignisse | freigegeben: [docs/phase-4-personal-talente-ereignisse.md](docs/phase-4-personal-talente-ereignisse.md) |
 | 5 | Technische Umsetzung (GVARs, Timer, SSL-Skripte) | freigegeben: [docs/phase-5-technik.md](docs/phase-5-technik.md) |
-| 6 | Karma, Ruf & Endings (Epilog-Slides) | Entwurf, wartet auf Freigabe: [docs/phase-6-karma-ruf-endings.md](docs/phase-6-karma-ruf-endings.md) |
+| 6 | Karma, Ruf & Endings (Epilog-Slides) | freigegeben: [docs/phase-6-karma-ruf-endings.md](docs/phase-6-karma-ruf-endings.md) |
+
+## Umsetzung
+
+| Schritt | Inhalt | Status |
+|---|---|---|
+| 1 | Prolog „Essies Schulden“, Ausbau-Dialog, gemeinsame Manager-Knoten | umgesetzt, kompiliert, Test im Spiel offen: [docs/umsetzung-1-prolog-und-ausbau.md](docs/umsetzung-1-prolog-und-ausbau.md) |
 
 ## Werkzeuge
 
@@ -22,7 +28,9 @@ Konzept und Skripte für eine Addon-Modifikation für **Fallout 2** (sfall 4.x).
   # stadt: den | new_reno | redding | ncr | vault_city | san_fran
   ```
 
-- `tools/ausbau_sim.py`: Ausbaupfade der sechs Bordelle (Phase 2). Er rechnet Gewinn und Amortisation je Upgrade aus und erzeugt die Tabellen für die Doku.
+- `tools/ausbau_sim.py`: Ausbaupfade der sechs Bordelle (Phase 2). Er rechnet Gewinn und Amortisation je Upgrade aus und erzeugt die Tabellen für die Doku. Seine Modulliste ist die einzige Quelle für Kosten und Effekte im Spiel.
+- `tools/gen_katalog.py`: erzeugt daraus `scripts_src/headers/rl_katalog.h` und die Modultexte (läuft bei jedem Build mit).
+- `tools/check_msg.py`: prüft, ob jede im Code verwendete Textnummer in der passenden `.msg` steht (läuft bei jedem Build mit).
 
   ```
   python3 tools/ausbau_sim.py [stadt|alle] [fair|branchenueblich|ausbeuterisch]

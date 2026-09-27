@@ -27,6 +27,7 @@
 #define rl_big_jesus_dead           gvar_bit(GVAR_NEW_RENO_FLAG_2, bit_26)
 
 #define RL_TICK_FRAMES              (600)   // etwa alle 10 Sekunden pruefen
+#define RL_TASTE_SPAWN              (67)    // DIK_F9: Debug, Essie und Kolbe erscheinen lassen
 
 procedure start;
 procedure rl_tick;
@@ -39,6 +40,11 @@ procedure rl_stadtruf(variable h, variable woche);
 procedure rl_ende_und_titel;
 procedure rl_setze_gvar(variable gvar, variable wert);
 procedure rl_selbsttest;
+procedure rl_prolog_nachlauf;
+#ifdef RL_DEBUG
+procedure rl_taste;
+procedure rl_debug_spawn;
+#endif
 
 variable haus;
 variable welt;
@@ -48,6 +54,9 @@ procedure start begin
       set_global_script_repeat(RL_TICK_FRAMES);
       haus := rl_lade_haeuser;
       welt := rl_lade_welt;
+#ifdef RL_DEBUG
+      register_hook_proc(HOOK_KEYPRESS, rl_taste);
+#endif
 #ifdef RL_SELBSTTEST
       call rl_selbsttest;
 #endif
@@ -59,6 +68,7 @@ end
 procedure rl_tick begin
    variable jetzt, wochen, h, tyrann, ausbeutung;
 
+   call rl_prolog_nachlauf;
    if (welt[RL_W_AKTIV] == 0) then return;
 
    jetzt  := game_time_in_seconds / RL_SEKUNDEN_WOCHE;
@@ -83,6 +93,14 @@ procedure rl_tick begin
                ausbeutung := 1;
             call rl_stadtruf(h, jetzt - wochen + 1);
             haus[rl_idx(h, RL_F_KASSE)] := haus[rl_idx(h, RL_F_KASSE)] + rl_rechne_woche(haus, h, h);
+            // Baustelle: eine Woche weniger, danach wirkt das Modul (Phase 2)
+            if (haus[rl_idx(h, RL_F_BAU_ID)]) then begin
+               haus[rl_idx(h, RL_F_BAU_WOCHEN)] := haus[rl_idx(h, RL_F_BAU_WOCHEN)] - 1;
+               if (haus[rl_idx(h, RL_F_BAU_WOCHEN)] <= 0) then begin
+                  call rl_bau_fertig(haus, h);
+                  display_msg(rl_haus_name(h) + ": Der Ausbau ist fertig.");
+               end
+            end
             if (haus[rl_idx(h, RL_F_KRISE)] != RL_EV_KEINS) then begin
                haus[rl_idx(h, RL_F_KRISENWOCHEN)] := haus[rl_idx(h, RL_F_KRISENWOCHEN)] + 1;
                // Nach drei Wochen ohne Loesung eskaliert die Krise (Phase 4, Abschnitt 4.1)
@@ -344,6 +362,34 @@ end
 procedure rl_setze_gvar(variable gvar, variable wert) begin
    if (global_var(gvar) != wert) then set_global_var(gvar, wert);
 end
+
+/* Prolog: Ein gestohlener Schuldschein faellt Metzger nach zwei Wochen auf
+   (Phase 1, Tabelle "Akquise"; Phase 3, Abschnitt 2.1). */
+procedure rl_prolog_nachlauf begin
+   if ((welt[RL_W_PROLOG_WEG] == RL_WEG_GESTOHLEN) and (welt[RL_W_METZGER] != RL_METZGER_FEIND)
+       and (rl_woche_jetzt >= welt[RL_W_DIEBSTAHL_WOCHE] + 2)) then begin
+      welt[RL_W_METZGER] := RL_METZGER_FEIND;
+      display_msg("Die Gosse: Metzger hat nachgezaehlt. Der Schuldschein fehlt, und er weiss, wer ihn hat.");
+   end
+end
+
+#ifdef RL_DEBUG
+/* Debug: F9 laesst Essie und Kolbe neben dem Spieler erscheinen, damit sich
+   der Prolog ohne die Innen-Map RLDEN01 testen laesst. Vorlaeufige Figuren:
+   Durchschnittsbaeuerin und Schlaeger aus Vanilla. */
+procedure rl_taste begin
+   variable gedrueckt := get_sfall_arg;
+   variable taste := get_sfall_arg;
+   if (gedrueckt and (taste == RL_TASTE_SPAWN)) then call rl_debug_spawn;
+end
+
+procedure rl_debug_spawn begin
+   variable obj;
+   obj := create_object_sid(PID_AVERAGE_PEASANT_FEMALE, tile_num_in_direction(dude_tile, 0, 2), dude_elevation, SCRIPT_RLESSIE);
+   obj := create_object_sid(PID_TOUGH_THUG_MALE, tile_num_in_direction(dude_tile, 1, 3), dude_elevation, SCRIPT_RLKOLBE);
+   display_msg("[Debug] Essie und Kolbe sind da.");
+end
+#endif
 
 procedure rl_haus_name(variable h) begin
    return get_array(["Die Gosse", "Das Silberne Strumpfband", "Die Schlacke",

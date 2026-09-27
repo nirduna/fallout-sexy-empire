@@ -26,6 +26,15 @@ TEXT_ENCODING="${TEXT_ENCODING:-WINDOWS-1252}"
 OUT="${OUT:-$ROOT/build/scripts}"
 mkdir -p "$OUT"
 
+# Vorab: stimmen Katalog und Texte mit den Skripten ueberein?
+if command -v python3 > /dev/null; then
+  python3 "$ROOT/tools/gen_katalog.py" > /dev/null
+  if ! git -C "$ROOT" diff --quiet -- scripts_src/headers/rl_katalog.h text_src/german/dialog/_rl_module.inc 2>/dev/null; then
+    echo "HINWEIS: rl_katalog.h/_rl_module.inc wurden aus tools/ausbau_sim.py neu erzeugt."
+  fi
+  python3 "$ROOT/tools/check_msg.py" || { echo "FEHLER: Texte passen nicht zu den Skripten"; exit 1; }
+fi
+
 # sslc wertet nur EINEN -m-Schalter und nur EINEN -I-Pfad aus. Deshalb
 # kompilieren wir eine Kopie von scripts_src und schreiben die Einstellungen
 # in deren config/rl_build.h. Der einzige -I-Pfad sind die Header der Basis.
@@ -59,11 +68,14 @@ TEXT_OUT="${TEXT_OUT:-$ROOT/build/text}"
 while IFS= read -r msg; do
   rel="${msg#$ROOT/text_src/}"
   mkdir -p "$TEXT_OUT/$(dirname "$rel")"
-  if iconv -f UTF-8 -t "$TEXT_ENCODING" "$msg" > "$TEXT_OUT/$rel"; then
+  # Zeilen "# @include datei" durch den Inhalt der Datei ersetzen (gemeinsame Texte)
+  if awk -v dir="$(dirname "$msg")" '
+        /^# @include / { f = dir "/" $3; while ((getline l < f) > 0) print l; close(f); next }
+        { print }' "$msg" | iconv -f UTF-8 -t "$TEXT_ENCODING" > "$TEXT_OUT/$rel"; then
     echo "OK    $rel"
   else
     echo "FEHLER $rel (Zeichen ausserhalb von $TEXT_ENCODING?)"
     status=1
   fi
-done < <(find "$ROOT/text_src" -type f | sort)   # .msg, cuts/*.txt, *.add
+done < <(find "$ROOT/text_src" -type f ! -name '*.inc' | sort)   # .msg, cuts/*.txt, *.add
 exit $status

@@ -16,6 +16,7 @@
 {114}{}{Du hast gesagt, es gibt ein Problem.}
 {115}{}{Später.}
 {116}{}{Geld?}
+{117}{}{Reden wir über das Haus. Was ließe sich ausbauen?}
 
 # Auszahlung
 {120}{}{Hier. }
@@ -77,9 +78,6 @@
 {186}{}{In der Kasse fehlt Geld. Nicht viel. Noch nicht.}
 {187}{}{Zwei sind weg. Einfach weg.}
 
-# Vor der Uebernahme (Platzhalter fuer den Prolog "Essies Schulden")
-{190}{}{Wenn du nicht von Metzger kommst, dann setz dich. Wenn doch, dann sag ihm, er kriegt sein Geld nächste Woche.}
-{191}{}{Ich komme wieder.}
 {192}{}{[Debug] Die Gosse übernehmen.}
 {193}{}{[Debug] Die Gosse gehört jetzt dir. Hausklasse 1, drei Zimmer, drei Leute.}
 {194}{}{[Debug] Zeig mir den Abspann.}
@@ -87,3 +85,44 @@
 # Ansehen
 {200}{}{Eine Frau um die fünfzig mit hartem Blick und zu viel Rouge.}
 {201}{}{Madame Esther Kowalski. Früher im Cat's Paw, heute in der Gosse. Sie sieht dich an, als würde sie deinen Preis schätzen.}
+
+# Prolog "Essies Schulden"
+{300}{}{Wenn du nicht von Metzger kommst, dann setz dich.}
+{301}{}{Ich schulde der Gilde Geld. Mehr, als diese Bude je abwerfen wird. Jede Woche kommt Kolbe, Metzgers Eintreiber, und jede Woche wird es mehr.}
+{302}{}{Wie viel?}
+{303}{}{Zwölfhundert, als es anfing. Fünfzig kommen jede Woche dazu. Metzger nennt das Zinsen. Ich nenne es einen Strick.}
+{304}{}{Ich regle das mit Kolbe. Dafür gehört das Haus danach mir.}
+{305}{}{Das Haus gehört dir, wenn du es schaffst. Und ich bleibe und führe es. So war es schon im Cat's Paw: Die Namen an der Tür wechseln, die Madame bleibt. Kolbe steht hinten. Er wartet nicht gern.}
+{306}{}{Nicht mein Problem.}
+{307}{}{Ich gehe zu ihm.}
+{310}{}{Kolbe ist noch da. Die Schulden stehen bei }
+{311}{}{ $. Jeden Tag, an dem du wartest, zählt er mit.}
+{312}{}{Ich kümmere mich darum.}
+
+# Essies Reaktion auf den Weg (330 + Weg)
+{331}{}{Du hast bezahlt. Einfach so. Ich weiß nicht, ob das klug war, aber ich werde es nicht vergessen.}
+{332}{}{Metzger kriegt jetzt jede Woche seinen Teil, für immer. Du hast uns an ihn verpachtet. Hoffentlich weißt du, was das heißt.}
+{333}{}{Kolbe hat noch nie jemand angefasst. Die Den redet über nichts anderes. Metzger wird es dir heimzahlen, aber er wird dich auch respektieren.}
+{334}{}{Der Schuldschein ist weg? Dann bete, dass Metzger nie nachzählt. Er zählt immer nach.}
+
+# Ausbau
+{460}{}{Womit fangen wir an? Das Dach leckt, die Betten knarren, und die Tür hält keinen Tritt aus.}
+{461}{}{Das Haus selbst und die Einrichtung.}
+{462}{}{Den Betrieb: Sicherheit, Personal, Bücher.}
+{463}{}{Etwas, das es nur hier in der Den gibt.}
+{464}{}{Was davon?}
+{465}{}{Da gibt es im Moment nichts zu bauen, Schätzchen.}
+{466}{}{Kostet }
+{467}{}{ $. In der Kasse liegen }
+{468}{}{ $, du selbst hast }
+{469}{}{ $ dabei. Was nicht in der Kasse ist, legst du drauf.}
+{470}{}{Bau es.}
+{471}{}{Dafür reicht das Geld nicht. Zurück.}
+{472}{}{Es wird schon gebaut: }
+{473}{}{. Noch }
+{474}{}{ Woche(n). Eins nach dem anderen.}
+{475}{}{Gut. In }
+{476}{}{ Woche(n) steht es. Bis dahin wird gehämmert, und die Hälfte der Kundschaft bleibt weg.}
+{477}{}{Zurück.}
+
+# @include _rl_module.inc

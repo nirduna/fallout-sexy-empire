@@ -345,6 +345,8 @@ Zusätzliche Schalter (Umgebungsvariablen):
 
 ## 11. Nächste Schritte der Umsetzung
 
+*Stand:* Die Punkte 1 und 2 sind in [Umsetzung 1](umsetzung-1-prolog-und-ausbau.md) erledigt. Dort steht auch der aktuelle Fahrplan.
+
 1. Prolog „Essies Schulden“ in `rlessie.ssl` (Phase 1/3) mit den fünf Lösungswegen und `rl_haus_uebernehmen`.
 2. Ausbau-Dialog: Module kaufen, Bauzeit, `RL_F_MODULE`/`RL_F_STUFEN` setzen (Katalog aus Phase 2).
 3. Innen-Map `RLDEN01` mit Map-Skript für sichtbare Ausbauten.

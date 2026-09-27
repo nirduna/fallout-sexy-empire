@@ -1,0 +1,221 @@
+/*
+   rlkolbe.ssl - Kolbe, Metzgers Eintreiber (The Den)
+
+   Umsetzung 1, Prolog "Essies Schulden" (Phase 1, Tabelle "Akquise"):
+     1. Schulden bezahlen            Barter 50: ein Viertel weniger
+     2. Metzger ueberzeugen          Speech 60: 10 % Dauerabgabe statt Schulden
+     3. Kolbe verpruegeln            Unarmed 60 oder STR 7: Schulden halbiert, Hitze +10
+     4. Schuldschein stehlen         Steal 50 oder Sneak 60: Schulden weg, Metzger merkt es spaeter
+     5. Essie ausliefern             Karma -25, Tyrannen-Route, Kolbe fuehrt das Haus
+
+   Kolbe kommt als neue Figur statt eines Eingriffs in Metzgers Vanilla-Skript
+   (Phase 2: minimal-invasiv). Nach dem Prolog verschwindet er, ausser Essie
+   wurde ausgeliefert: Dann fuehrt er die Gosse fuer Metzger (rl_manager.h).
+
+   Texte: text_src/german/dialog/rlkolbe.msg
+*/
+
+#define SCRIPT_REALNAME "rlkolbe"
+#include "define.h"
+#include "../headers/rotlicht.h"
+
+#define NAME                    SCRIPT_RLKOLBE
+#include "command.h"
+#include "../headers/rl_prolog.h"
+
+#define RL_KOLBE_SCHADEN        (15)    // Schaden, wenn der Faustkampf verloren geht
+
+procedure start;
+procedure talk_p_proc;
+procedure map_enter_p_proc;
+procedure look_at_p_proc;
+procedure description_p_proc;
+
+procedure Node300;      // Prolog noch nicht begonnen
+procedure Node301;      // die Verhandlung
+procedure Node320;      // bezahlt
+procedure Node321;      // Barter
+procedure Node323;      // Speech
+procedure Node325;      // Faustkampf
+procedure Node327;      // Diebstahl
+procedure Node329;      // Essie ausliefern: Rueckfrage
+procedure Node330;      // Essie ausliefern: vollzogen
+procedure Node340;      // nach dem Prolog
+procedure Node999;
+
+procedure rl_bezahlen;
+
+variable haus;
+variable welt;
+variable h := RL_DEN;
+variable angriff := 0;
+variable ueberblende := 0;
+
+#include "../headers/rl_manager.h"
+
+procedure start begin
+end
+
+// Nach dem Prolog geht Kolbe, ausser er fuehrt das Haus fuer Metzger
+procedure map_enter_p_proc begin
+   welt := rl_lade_welt;
+   if ((welt[RL_W_PROLOG] == RL_PROLOG_FERTIG) and (welt[RL_W_ESSIE] != RL_ESSIE_AUSGELIEFERT)) then
+      destroy_object(self_obj);
+end
+
+procedure look_at_p_proc begin
+   script_overrides;
+   display_mstr(200);
+end
+
+procedure description_p_proc begin
+   script_overrides;
+   display_mstr(201);
+end
+
+procedure talk_p_proc begin
+   haus := rl_lade_haeuser;
+   welt := rl_lade_welt;
+   start_gdialog(NAME, self_obj, 4, -1, -1);
+   gSay_Start;
+      if (welt[RL_W_PROLOG] == RL_PROLOG_OFFEN) then
+         call Node300;
+      else if (welt[RL_W_PROLOG] == RL_PROLOG_LAEUFT) then
+         call Node301;
+      else if (welt[RL_W_ESSIE] == RL_ESSIE_AUSGELIEFERT) then
+         call RLM_Start;
+      else
+         call Node340;
+   gSay_End;
+   end_dialogue;
+   RLM_NACH_DIALOG
+
+   // Essie wird abgefuehrt: kurz abblenden, ihr Skript entfernt sie
+   if (ueberblende) then begin
+      ueberblende := 0;
+      gfade_out(600);
+      gfade_in(600);
+   end
+   if (angriff) then begin
+      angriff := 0;
+      attack_setup(self_obj, dude_obj);
+   end
+end
+
+procedure Node300 begin
+   Reply(300);
+   NOption(302, Node999, 004);
+   NLowOption(302, Node999);
+end
+
+procedure Node301 begin
+   variable schulden := rl_aktuelle_schulden(welt);
+   variable versuche := welt[RL_W_KOLBE];
+   variable steal := has_skill(dude_obj, SKILL_STEAL);
+   variable sneak := has_skill(dude_obj, SKILL_SNEAK);
+
+   Reply(mstr(301) + schulden + mstr(303));
+
+   if (dude_caps >= schulden) then
+      NOption(310, Node320, 004);
+   if (((versuche bwand RL_KOLBE_BARTER) == 0) and (has_skill(dude_obj, SKILL_BARTER) >= 50)) then
+      NOption(311, Node321, 004);
+   if ((versuche bwand RL_KOLBE_SPEECH) == 0) then
+      NOption(312, Node323, 004);
+   if ((versuche bwand (RL_KOLBE_GEWONNEN bwor RL_KOLBE_VERLOREN)) == 0) then
+      BOption(313, Node325, 004);
+   if ((((steal >= 50) or (sneak >= 60))) and ((versuche bwand RL_KOLBE_DIEBSTAHL) == 0)) then
+      NOption(314, Node327, 004);
+   BOption(315, Node329, 004);
+   NOption(316, Node999, 004);
+   NLowOption(316, Node999);
+end
+
+// 1. Bezahlen (nach gewonnenem Faustkampf zaehlt es als "verpruegelt")
+procedure Node320 begin
+   call rl_bezahlen;
+   Reply(320);
+   NOption(341, Node999, 004);
+end
+
+procedure rl_bezahlen begin
+   variable weg := RL_WEG_BEZAHLT;
+   item_caps_adjust(dude_obj, -rl_aktuelle_schulden(welt));
+   if (welt[RL_W_KOLBE] bwand RL_KOLBE_GEWONNEN) then weg := RL_WEG_VERPRUEGELT;
+   call rl_prolog_abschliessen(haus, welt, weg);
+end
+
+// Barter 50: ein Viertel weniger (einmal)
+procedure Node321 begin
+   welt[RL_W_KOLBE] := welt[RL_W_KOLBE] bwor RL_KOLBE_BARTER bwor RL_KOLBE_RABATT;
+   Reply(mstr(321) + rl_aktuelle_schulden(welt) + mstr(322));
+   if (dude_caps >= rl_aktuelle_schulden(welt)) then
+      NOption(310, Node320, 004);
+   NOption(317, Node301, 004);
+end
+
+// Speech 60: Metzger nimmt 10 % Dauerabgabe statt der Schulden (ein Versuch)
+procedure Node323 begin
+   welt[RL_W_KOLBE] := welt[RL_W_KOLBE] bwor RL_KOLBE_SPEECH;
+   if (has_skill(dude_obj, SKILL_SPEECH) >= 60) then begin
+      call rl_prolog_abschliessen(haus, welt, RL_WEG_PARTNER);
+      Reply(323);
+      NOption(341, Node999, 004);
+   end else begin
+      Reply(324);
+      NOption(317, Node301, 004);
+   end
+end
+
+// Faustkampf, nicht toedlich: Unarmed 60 oder STR 7 (ein Versuch)
+procedure Node325 begin
+   if ((has_skill(dude_obj, SKILL_UNARMED_COMBAT) >= 60) or (dude_strength >= 7)) then begin
+      welt[RL_W_KOLBE] := welt[RL_W_KOLBE] bwor RL_KOLBE_GEWONNEN;
+      welt[RL_W_SCHULDEN] := welt[RL_W_SCHULDEN] / 2;
+      Reply(325);
+   end else begin
+      welt[RL_W_KOLBE] := welt[RL_W_KOLBE] bwor RL_KOLBE_VERLOREN;
+      critter_dmg(dude_obj, RL_KOLBE_SCHADEN, DMG_normal_dam);
+      Reply(326);
+   end
+   NOption(317, Node301, 004);
+end
+
+// Steal 50 oder Sneak 60; Erfolg mit der Chance des besseren Werts
+procedure Node327 begin
+   variable wert := rl_max(has_skill(dude_obj, SKILL_STEAL), has_skill(dude_obj, SKILL_SNEAK));
+   welt[RL_W_KOLBE] := welt[RL_W_KOLBE] bwor RL_KOLBE_DIEBSTAHL;
+   if (random(1, 100) <= wert) then begin
+      call rl_prolog_abschliessen(haus, welt, RL_WEG_GESTOHLEN);
+      Reply(327);
+      NOption(341, Node999, 004);
+   end else begin
+      welt[RL_W_METZGER] := RL_METZGER_FEIND;       // erwischt: die Gilde ist Feind
+      angriff := 1;
+      Reply(328);
+      NOption(342, Node999, 004);
+   end
+end
+
+procedure Node329 begin
+   Reply(332);
+   BOption(330, Node330, 004);
+   NOption(331, Node301, 004);
+end
+
+// 5. Essie ausliefern: Tyrannen-Route
+procedure Node330 begin
+   call rl_prolog_abschliessen(haus, welt, RL_WEG_AUSGELIEFERT);
+   ueberblende := 1;
+   Reply(329);
+   NOption(341, Node999, 004);
+end
+
+procedure Node340 begin
+   Reply(340);
+   NOption(341, Node999, 004);
+   NLowOption(341, Node999);
+end
+
+procedure Node999 begin
+end
