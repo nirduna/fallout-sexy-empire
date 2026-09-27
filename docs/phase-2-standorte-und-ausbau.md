@@ -1,7 +1,14 @@
 # Phase 2 – Map-Integration, Standorte & Ausbaustufen
 
 **Arbeitstitel:** *Rotlicht über dem Ödland* – Addon-Modifikation für Fallout 2
-**Status:** Entwurf – wartet auf Freigabe, bevor Phase 3 beginnt.
+**Status:** Freigegeben (siehe Entscheidungen unten). Weiter in [Phase 3](phase-3-quests-rivalen-uebernahmen.md).
+
+> **Freigabe-Entscheidungen**
+> 1. **Namen:** Alle Häuser außer dem Strumpfband (späterer Familiensitz) tragen dreckigere Namen: *Die Gosse* (Den), *Die Schlacke* (Redding), *Die Kloake* (Vault City), *Die Tränke* (NCR), *Die Bilge* (San Francisco). Die Lagen bleiben.
+> 2. **Vault City:** Die Razzia-Folge (Personal wird zu Dienstboten) bleibt in voller Härte.
+> 3. **Dunkle Module:** Alle bleiben (Riegel außen, Jet-Theke, gezinkte Waage, Die Akte, Vortis' Angebot, Schmuggelkammer).
+> 4. **Hausklasse 3** gibt es nur in New Reno als Familiensitz.
+> 5. **Zwei anständige Wege** (fairer Anteil oder Quartiere) bleiben.
 **Grundlage:** die Freigabe aus [Phase 1](phase-1-core-loop-und-wirtschaft.md): Hybrid mit C-Kern, Familien-Paten, düsterer Ton, ordentlicher Nebenverdienst, alle sechs Städte, ausdrücklich Bordelle.
 
 ---
@@ -29,12 +36,12 @@
 
 | Stadt | Haus | Lage in der Vanilla-Welt | Integration | Max. Hausklasse | Rolle im Imperium |
 |---|---|---|---|---|---|
-| The Den | **Die Rostige Laterne** | East Side, zwischen Mom's Diner und der Sklavengilde | baufälliges Haus → eigene Map | 2 | Prolog, erstes Geld |
+| The Den | **Die Gosse** | East Side, zwischen Mom's Diner und der Sklavengilde | baufälliges Haus → eigene Map | 2 | Prolog, erstes Geld |
 | New Reno | **Das Silberne Strumpfband** | Virgin Street, schräg gegenüber dem Cat's Paw, in Sichtweite des Desperado | leerstehendes Vorkriegshotel → eigene Map | **3** | Flaggschiff & Familiensitz |
-| Redding | **Zur Letzten Schicht** | Mining Camp, hinter dem Last Gasp Saloon | umgebauter Erzschuppen → eigene Map | 2 | Goldader, Jet-Brennpunkt |
-| Vault City | **Haus Stille** | Courtyard, Viertel der Außenweltler, als Pension getarnt | Keller-Erweiterung + Tunnel ins alte Vault-8-System | 2 | Luxus bei höchstem Risiko |
-| NCR | **Haus Neun** | Bazaar vor den Stadtmauern, neben dem Rawhide Saloon | lizenziertes Haus → eigene Map | 2 | legal und stabil |
-| San Francisco | **Das Fährhaus** | Shi-town Docks, halb abgesoffenes Fährterminal | eigene Map mit Anlegesteg | 2 | Spätspiel-Hafen |
+| Redding | **Die Schlacke** | Mining Camp, hinter dem Last Gasp Saloon | umgebauter Erzschuppen → eigene Map | 2 | Goldader, Jet-Brennpunkt |
+| Vault City | **Die Kloake** | Courtyard, Viertel der Außenweltler, als Pension getarnt | Keller-Erweiterung + Tunnel ins alte Vault-8-System | 2 | Luxus bei höchstem Risiko |
+| NCR | **Die Tränke** | Bazaar vor den Stadtmauern, neben dem Rawhide Saloon | lizenziertes Haus → eigene Map | 2 | legal und stabil |
+| San Francisco | **Die Bilge** | Shi-town Docks, halb abgesoffenes Fährterminal | eigene Map mit Anlegesteg | 2 | Spätspiel-Hafen |
 
 ---
 
@@ -53,9 +60,9 @@ Die Ausbaupfade am Ende jedes Abschnitts stammen aus [`tools/ausbau_sim.py`](../
 - **A = Absicherung:** senkt Risiko und Ereignisse, amortisiert sich nicht direkt.
 - **M = Moral:** wirkt vor allem bei branchenüblichem Anteil (siehe Abschnitt 5).
 
-### 2.1 The Den – Die Rostige Laterne
+### 2.1 The Den – Die Gosse
 
-**Ort.** Eine Gasse auf der East Side. Links liegt Mom's Diner, rechts hört man die Pferche der Sklavengilde, und hinten sieht man den Friedhof. Früher war das Haus eine Absteige für Karawanenführer. Essie hat es mit Laken und Bretterwänden in Verschläge geteilt. Ruß an der Decke, Kerzenstummel, eine einzige Laterne über der Tür, verrostet und rot vom Dreck der Jahre.
+**Ort.** Eine Gasse auf der East Side. Links liegt Mom's Diner, rechts hört man die Pferche der Sklavengilde, und hinten sieht man den Friedhof. Früher war das Haus eine Absteige für Karawanenführer. Essie hat es mit Laken und Bretterwänden in Verschläge geteilt. Ruß an der Decke, Kerzenstummel, eine einzige Laterne über der Tür, verrostet und rot vom Dreck der Jahre. Früher hieß das Haus nach ihr, „Rostige Laterne“. Heute sagt in der Den jeder nur noch „die Gosse“.
 
 **Kundschaft.** Sklavenhändler nach dem Zahltag, Karawanenwachen, Tylers Leute. Hier wird bar bezahlt und nicht geredet.
 
@@ -95,7 +102,7 @@ Die Ausbaupfade am Ende jedes Abschnitts stammen aus [`tools/ausbau_sim.py`](../
 | Sicherheit II (A) | 1.000 $ | 207 $ | Standard | 58 | – |
 | **Endausbau** | **4.600 $** | **207 $** | | | |
 
-*Hinweis:* Die Den ist arm. Gehobene Preise lohnen sich hier nicht, und es gibt keinen VIP-Trakt. Die Laterne ist die Schule, nicht die Goldgrube. Die Sicherheitsmodule rechnen sich nicht in Geld, aber in der Den (Bedrohung 80) verhindern sie die Überfälle, die ein unbewachtes Haus sonst Woche für Woche treffen.
+*Hinweis:* Die Den ist arm. Gehobene Preise lohnen sich hier nicht, und es gibt keinen VIP-Trakt. Die Gosse ist die Schule, nicht die Goldgrube. Die Sicherheitsmodule rechnen sich nicht in Geld, aber in der Den (Bedrohung 80) verhindern sie die Überfälle, die ein unbewachtes Haus sonst Woche für Woche treffen.
 
 ---
 
@@ -148,9 +155,9 @@ Die Ausbaupfade am Ende jedes Abschnitts stammen aus [`tools/ausbau_sim.py`](../
 
 ---
 
-### 2.3 Redding – Zur Letzten Schicht
+### 2.3 Redding – Die Schlacke
 
-**Ort.** Mining Camp, am Weg zwischen der Kokoweef- und der Morningstar-Mine, hinter dem Last Gasp Saloon. Ein ehemaliger Erzschuppen mit Wänden aus Wellblech und Staub in jeder Ritze. Gearbeitet wird im Takt der Schichtsirene.
+**Ort.** Mining Camp, am Weg zwischen der Kokoweef- und der Morningstar-Mine, hinter dem Last Gasp Saloon. Ein ehemaliger Erzschuppen mit Wänden aus Wellblech und Staub in jeder Ritze. Gearbeitet wird im Takt der Schichtsirene. Schlacke nennt man in Redding, was übrig bleibt, wenn das Gold heraus ist. Die Kumpel nennen so das Haus, und die Menschen, die darin arbeiten.
 
 **Kundschaft.** Minenarbeiter nach der Schicht. Sie bezahlen mit Goldstaub und Nuggets, und viele haben den Rest ihres Lohns schon in Jet umgesetzt.
 
@@ -195,9 +202,9 @@ Die Ausbaupfade am Ende jedes Abschnitts stammen aus [`tools/ausbau_sim.py`](../
 
 ---
 
-### 2.4 Vault City – Haus Stille
+### 2.4 Vault City – Die Kloake
 
-**Ort.** Im Courtyard, dem Viertel der Außenweltler, unweit von Cassidy's Spittoon. Nach außen ist es eine Pension mit sauberen Laken und einer strengen Wirtin. Das eigentliche Haus liegt im Keller. Die Kunden kommen nachts aus Downtown, Bürger, die tagsüber im Rat über Moral reden. Niemand spricht hier, deshalb der Name.
+**Ort.** Im Courtyard, dem Viertel der Außenweltler, unweit von Cassidy's Spittoon. Nach außen ist es eine Pension mit sauberen Laken und einer strengen Wirtin. Das eigentliche Haus liegt im Keller. Die Kunden kommen nachts aus Downtown, Bürger, die tagsüber im Rat über Moral reden. Kein Bürger spricht den Namen des Hauses aus. Die Außenweltler, die dort arbeiten, nennen es „die Kloake“: Dorthin fließt, was Vault City nicht sehen will.
 
 **Kundschaft.** Bürger mit Tagespass in umgekehrter Richtung, Ärzte, Beamte aus dem Amenities Office. Sie zahlen viel, denn sie bezahlen für das Schweigen mit.
 
@@ -250,9 +257,9 @@ Die Ausbaupfade am Ende jedes Abschnitts stammen aus [`tools/ausbau_sim.py`](../
 
 ---
 
-### 2.5 NCR – Haus Neun
+### 2.5 NCR – Die Tränke
 
-**Ort.** Im Bazaar vor den Stadtmauern, zwischen dem Rawhide Saloon und den Pferchen, in denen die Sklavenhändler ihre Ware zeigen. Offiziell heißt es „Lizenziertes Etablissement Nr. 9 der Republik“. Die Nummer steht in Schablonenschrift über der Tür. Drinnen hängt eine Liste mit Namen und Untersuchungsdaten. Die Republik will Ordnung, keine Menschen.
+**Ort.** Im Bazaar vor den Stadtmauern, zwischen dem Rawhide Saloon und den Pferchen, in denen die Sklavenhändler ihre Ware zeigen. Offiziell heißt es „Lizenziertes Etablissement Nr. 9 der Republik“. Die Nummer steht in Schablonenschrift über der Tür. Drinnen hängt eine Liste mit Namen und Untersuchungsdaten. Die Republik will Ordnung, keine Menschen. Die Brahmintreiber nennen das Haus „die Tränke“, weil sie hier Halt machen wie ihr Vieh.
 
 **Kundschaft.** Karawanenleute, Brahmintreiber, Polizisten außer Dienst, Westins Vorarbeiter. Die Brahmin-Barone kommen in den VIP-Trakt.
 
@@ -298,9 +305,9 @@ Die Ausbaupfade am Ende jedes Abschnitts stammen aus [`tools/ausbau_sim.py`](../
 
 ---
 
-### 2.6 San Francisco – Das Fährhaus
+### 2.6 San Francisco – Die Bilge
 
-**Ort.** Shi-town Docks. Ein Fährterminal, halb im Wasser versunken. Der Nebel zieht durch die zerbrochenen Scheiben der Wartehalle. Von hier fährt keine Fähre mehr, aber die Leute kommen trotzdem, um zu vergessen, wohin sie nicht mehr können.
+**Ort.** Shi-town Docks. Ein Fährterminal, halb im Wasser versunken. Der Nebel zieht durch die zerbrochenen Scheiben der Wartehalle. Von hier fährt keine Fähre mehr, aber die Leute kommen trotzdem, um zu vergessen, wohin sie nicht mehr können. Den Namen haben die Tanker-Leute ihm gegeben: Die Bilge ist der tiefste Teil eines Schiffs, wo sich alles sammelt, was durchsickert.
 
 **Kundschaft.** Leute vom Tanker, Fischer, Händler der Shi, Deserteure, Hubologen, die zu zweifeln beginnen.
 

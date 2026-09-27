@@ -35,7 +35,7 @@ Ab hier arbeite ich als Lead Game Designer, Writer und Technical Director. Das A
 
 **Pitch:** Jedes Haus ist ein kleiner Kosmos mit eigener Madame oder eigenem Manager. Du bist der Patron, der durchs Ödland zieht, kassiert, Brände löscht und weiterreist. Verwaltet wird nur im Dialog, und das Geld liegt tatsächlich im Tresor.
 
-#### Akquise: „Die Rostige Laterne“ (The Den)
+#### Akquise: „Die Gosse“ (The Den)
 
 Madame Esther „Essie“ Kowalski hat früher im Cat's Paw gearbeitet. Heute ist sie zu alt für New Reno und zu stur für den Ruhestand. Ihr baufälliges Haus in der Den steckt bei Metzger mit **1.200 $** in der Kreide, und die Zinsen wachsen jede Woche.
 
@@ -245,7 +245,7 @@ Kosten = Personal-Anteil × Dienstleistungsumsatz
   - Solange die Sklavengilde aktiv ist: Kunden +20 % (Sklavenhändler mit vollen Taschen), 10 % Abgabe, und Metzger bietet billiges Zwangspersonal an (Tyrannen-Route).
   - Nach Zerschlagung der Gilde: Kunden −25 %, keine Abgabe, Hitze −20. Die Den wird ein wenig menschlicher, und dein Umsatz schrumpft.
 - **Vault City: Illegalität & Wohlstand**
-  - Prostitution ist verboten. Dein Bordell „Haus Stille“ tarnt sich als Pension für Außenweltler im Courtyard, und die Bürger kommen nachts. Ohne Bürgerschaft oder Bestechung kommt jede Woche eine Razzia-Probe (Details in Phase 2).
+  - Prostitution ist verboten. Dein Bordell, „die Kloake“, tarnt sich als Pension für Außenweltler im Courtyard, und die Bürger kommen nachts. Ohne Bürgerschaft oder Bestechung kommt jede Woche eine Razzia-Probe (Details in Phase 2).
   - Wird der Konflikt um den Gecko-Reaktor friedlich gelöst und ein Handelsvertrag geschlossen: Kunden +10 %.
 - **NCR: Recht & Moral**
   - Ein legales Gewerbe mit Lizenz und Steuer bei niedrigstem Risiko, aber mit „Sittlichkeitskampagnen“ als Nachfragebremse (Kreuzritter, Phase 3).
@@ -353,7 +353,7 @@ In Worten: Ausbeutung bringt in den ersten Wochen rund +40 %, ab Woche 8 fällt 
 ## 4. Empfehlung des Lead Designers: Hybrid „C-Kern, A-Seele, B-Brille“
 
 1. **Rückgrat aus C:** Einfluss und Hitze, Hauptquartier in New Reno, Familien-Paten. Das ist der stärkste Hebel für die Rivalen-Questlines in Phase 3.
-2. **Prolog aus A:** Die *Rostige Laterne* in der Den ist das frühe Tutorial (Level 3–5), rein dialogbasiert. Sie bringt Preis, Moral und Security bei, bevor New Reno das große Spiel eröffnet.
+2. **Prolog aus A:** *Die Gosse* in der Den ist das frühe Tutorial (Level 3–5), rein dialogbasiert. Sie bringt Preis, Moral und Security bei, bevor New Reno das große Spiel eröffnet.
 3. **Vor-Ort-Ereignisse aus A:** Große Krisen erfordern deine Anwesenheit, kleine regeln die Capos.
 4. **Hauptbuch aus B, aber schlank:** Statusbericht und wenige Schnellbefehle per Pseudo-Dialog, kein teures Custom-UI. Die echten Entscheidungen triffst du im Gespräch mit Menschen (Consigliere, Capos). Das hält es Fallout.
 5. **Geldfluss:** Läufer bringen die Gewinne ins Hauptquartier (Risiko abhängig von der Hitze). Wer beim Capo vor Ort abholt, bekommt 100 % ohne Läufer-Risiko. So wird Reisen belohnt, aber nicht erzwungen.

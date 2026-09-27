@@ -7,8 +7,8 @@ Konzept und Skripte für eine Addon-Modifikation für **Fallout 2** (sfall 4.x).
 | Phase | Inhalt | Status |
 |---|---|---|
 | 1 | Core Gameplay Loop & Wirtschaftssystem | freigegeben: [docs/phase-1-core-loop-und-wirtschaft.md](docs/phase-1-core-loop-und-wirtschaft.md) |
-| 2 | Map-Integration & Standorte, Ausbaustufen | Entwurf, wartet auf Freigabe: [docs/phase-2-standorte-und-ausbau.md](docs/phase-2-standorte-und-ausbau.md) |
-| 3 | Quests, Rivalen & feindliche Übernahmen | offen |
+| 2 | Map-Integration & Standorte, Ausbaustufen | freigegeben: [docs/phase-2-standorte-und-ausbau.md](docs/phase-2-standorte-und-ausbau.md) |
+| 3 | Quests, Rivalen & feindliche Übernahmen | Entwurf, wartet auf Freigabe: [docs/phase-3-quests-rivalen-uebernahmen.md](docs/phase-3-quests-rivalen-uebernahmen.md) |
 | 4 | Personal, Unique Workers & Zufallsereignisse | offen |
 | 5 | Technische Umsetzung (GVARs, Timer, SSL-Skripte) | offen |
 | 6 | Karma, Ruf & Endings (Epilog-Slides) | offen |
