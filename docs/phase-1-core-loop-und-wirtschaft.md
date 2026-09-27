@@ -1,19 +1,28 @@
 # Phase 1 – Core Gameplay Loop & Wirtschaftssystem
 
 **Arbeitstitel:** *Rotlicht über dem Ödland* – Addon-Modifikation für Fallout 2
-**Status:** Entwurf zur Auswahl – wartet auf Freigabe, bevor Phase 2 beginnt.
+**Status:** Freigegeben (siehe Entscheidungen unten). Weiter in [Phase 2](phase-2-standorte-und-ausbau.md).
+
+> **Freigabe-Entscheidungen**
+> 1. **Ansatz:** der empfohlene Hybrid (Abschnitt 4): C als Rückgrat, Den-Prolog und Vor-Ort-Krisen aus A, schlankes Hauptbuch aus B.
+> 2. **Familien-Paten** in New Reno bleiben wie beschrieben.
+> 3. **Tyrannen-Route:** auf Vanilla-Niveau, also angedeutet und mit schweren Konsequenzen.
+> 4. **Ton:** düster und stimmig, deutlich weniger Humor. Zynismus nur als Haltung einzelner Figuren, nie als Gag. Säule 3 ist entsprechend angepasst.
+> 5. **Wirtschaftsziel:** ordentlicher Nebenverdienst (3.000–5.000 $/Woche im voll ausgebauten Endgame).
+> 6. **Städte:** alle sechs bleiben.
+> 7. **Keine generischen Immobilien:** Jeder Standort ist ausdrücklich ein **Bordell**. Bar, Spieltische und Bühne sind Teile eines Bordells, keine eigenen Geschäftszweige.
 
 ---
 
 ## 0. Rolle & Design-Leitplanken
 
-Ab hier arbeite ich als Lead Game Designer, Writer und Technical Director. Das Addon bringt **keine neue Hauptstory**. Es bringt eine neue, tief verzahnte Gameplay-Schicht: ein Bordell- und Entertainment-Imperium, das in der bestehenden Welt lebt und sich mit ihr verändert.
+Ab hier arbeite ich als Lead Game Designer, Writer und Technical Director. Das Addon bringt **keine neue Hauptstory**. Es bringt eine neue, tief verzahnte Gameplay-Schicht: ein Imperium aus Bordellen, das in der bestehenden Welt lebt und sich mit ihr verändert.
 
 **Vier Säulen, an denen sich jede Entscheidung messen lassen muss:**
 
 1. **Eingewoben statt aufgeklebt.** Jede Mechanik hängt an einem Vanilla-Zustand: am Familienkrieg in New Reno, am Jet-Handel, an Metzgers Schicksal, am Gecko-Reaktor oder an der NCR-Politik. Die Welt verändert das Geschäft, und das Geschäft verändert die Welt.
 2. **Moral kostet, in beide Richtungen.** Ausbeutung zahlt sich nach Wochen aus, Fairness nach Monaten. Beides ist spielbar, und keines von beiden gibt es umsonst (Belege in Abschnitt 3.8).
-3. **Fallout-Ton statt Schmuddel.** Schwarzer Humor, Satire auf den Wildwest-Kapitalismus, Vanilla-Fade-to-Black. Die Mechanik dreht sich um Geld, Macht und Menschen, nicht um explizite Inhalte.
+3. **Düster und stimmig, nicht schmuddelig.** Der Ton ist nüchtern und hart, wie die Den und New Reno im Original. Zynismus gibt es nur als Haltung einzelner Figuren, nie als Gag. Intime Szenen bleiben beim Vanilla-Fade-to-Black. Die Mechanik dreht sich um Geld, Macht, Abhängigkeit und Menschen, nicht um explizite Inhalte.
 4. **Ehrlich zur Engine.** Alles muss mit Fallout 2 und sfall 4.x machbar sein und darf die Kompatibilität mit dem Restoration Project nicht brechen. Jeder Ansatz nennt deshalb seinen Umsetzungsaufwand.
 
 *Leitlinie für die Produktion:* Alle Beschäftigten sind erwachsen. Zwangsarbeit gibt es nur als klar bestrafte Tyrannen-Option (Karma, Slaver-Tag, Rangers als Gegner). Das entspricht der Art, wie Vanilla mit Sklaverei umgeht.
@@ -44,7 +53,7 @@ Madame Esther „Essie“ Kowalski hat früher im Cat's Paw gearbeitet. Heute is
 
 - **Manager-NPC pro Standort** (Dialog): Preisstufe, Personal-Anteil, Security-Budget, Upgrades (Phase 2), Personal (Phase 4).
 - **Physischer Tresor** auf der Map. Er fasst etwa 4 Wochen Gewinn. Was darüber hinausgeht, „verschwindet“.
-  > **Manager:** „Ratten, Boss. Große Ratten. Mit Taschen.“
+  > **Manager:** „Was nicht im Tresor liegt, gehört dem, der es zuerst findet. So ist die Den.“
 - **Ereignisse** werden beim Betreten der Map ausgelöst und müssen vor Ort gelöst werden.
 
 #### Loop
@@ -65,11 +74,11 @@ Reisen ──► Standort betreten ──► Bericht & Kassieren ──► Probl
 
 **Pitch:** Ein Tycoon im Taschenformat. Ein fleckiges Kassenbuch im Inventar *ist* dein Imperium. Du verwaltest alle Häuser von überall aus, sogar vom Beifahrersitz des Highwayman.
 
-> *Item-Beschreibung:* „Ein fleckiges Kassenbuch. Die Zahlen sind rot. Die Flecken hoffentlich nicht.“
+> *Item-Beschreibung:* „Ein abgegriffenes Kassenbuch mit Wasserflecken. Hinter jeder Zahl steht ein Name.“
 
 #### Akquise: „Wendell Pryces Konzessionen“
 
-In Beckys Bar in der Den sitzt Wendell P. Pryce, „Unternehmer & Visionär“ laut Visitenkarte, in Wahrheit pleite und auf der Flucht. Für 300 $ verkauft er dir das Hauptbuch und drei Konzessionsurkunden (mit Barter für 150 $). Mit Speech ≥ 55 verrät er dir, welche davon echt sind:
+In Beckys Bar in der Den sitzt Wendell P. Pryce, ein Bordellbetreiber, dem alles entglitten ist: pleite, auf der Flucht, mit zitternden Händen. Für 300 $ verkauft er dir das Hauptbuch und drei Konzessionsurkunden (mit Barter für 150 $). Mit Speech ≥ 55 verrät er dir, welche davon echt sind:
 
 | Urkunde | Wahrheit | Folge |
 |---|---|---|
@@ -77,7 +86,7 @@ In Beckys Bar in der Den sitzt Wendell P. Pryce, „Unternehmer & Visionär“ l
 | „Gesundheitsbad“, Vault City | gefälscht | Mit Science ≥ 60 vervollständigst du die Fälschung. Das öffnet dir später Vault City |
 | Grundstück, NCR | echt, gehört inzwischen aber Westin | Quest-Hook für Phase 3 |
 
-Später kaufst oder pachtest du weitere Immobilien bei den lokalen Eigentümern. Jeder Kauf wird im Hauptbuch eingetragen.
+Später kaufst oder pachtest du weitere Häuser bei den lokalen Eigentümern und baust sie zu Bordellen um. Jeder Kauf wird im Hauptbuch eingetragen.
 
 #### Management
 
@@ -192,7 +201,7 @@ Umsatz        = Kunden × Basispreis × Preisstufe                 (Dienstleistu
 Kosten = Personal-Anteil × Dienstleistungsumsatz
        + Fixlöhne (Manager, Rausschmeißer, Barkeeper, Buchhalter, Doc)
        + 3 $ Verbrauch je Kunde (Schnaps, Wäsche, Medizin)
-       + 25 $ Unterhalt je Ausbaustufe
+       + 25 $ Unterhalt je Ausbaustufe (Modulkatalog in Phase 2)
        + Abgaben: Tribut/Steuer in % vom Gesamtumsatz + Pflicht-Bestechung
        + Schwund in % vom Gesamtumsatz
 ```
@@ -211,10 +220,10 @@ Kosten = Personal-Anteil × Dienstleistungsumsatz
 
 | Stadt | Basis-Kunden/Woche | Basispreis | Kaufkraft | Abgaben | Grundrisiko | Typischer Einstieg |
 |---|---|---|---|---|---|---|
-| **The Den** | 30 | 15 $ | arm | 10 % Sklavengilde | 4 | früh |
+| **The Den** | 30 | 20 $ | arm | 10 % Sklavengilde | 4 | früh |
 | **New Reno** | 55 | 25 $ | mittel | 20–30 % Tribut an die Familie | 3 | Mitte |
 | **Redding** | 35 | 20 $ (zum Teil in Gold) | mittel | 75 $/Woche „Lizenz“ an den Bürgermeister | 3 | Mitte |
-| **Vault City** | 15 | 70 $ | reich | 150 $/Woche Pflicht-Bestechung | 5 | Mitte |
+| **Vault City** | 15 | 70 $ | reich | 200 $/Woche Schweigegeld je Hausklasse | 5 | Mitte |
 | **NCR** | 45 | 22 $ | mittel | 15 % Steuer + 500 $ Lizenz (einmalig) | 1 | spät-mittel |
 | **San Francisco** | 40 | 30 $ | mittel | 10 % an die Shi | 2 | spät |
 
@@ -234,16 +243,16 @@ Kosten = Personal-Anteil × Dienstleistungsumsatz
   - Solange das Cat's Paw unabhängig ist, kostet es dich 15 % Kunden (Phase 3: kaufen, fusionieren oder sabotieren).
 - **The Den: Metzger**
   - Solange die Sklavengilde aktiv ist: Kunden +20 % (Sklavenhändler mit vollen Taschen), 10 % Abgabe, und Metzger bietet billiges Zwangspersonal an (Tyrannen-Route).
-  - Nach Zerschlagung der Gilde: Kunden −25 %, keine Abgabe, Hitze −20. Die Den atmet auf, und dein Umsatz schrumpft.
+  - Nach Zerschlagung der Gilde: Kunden −25 %, keine Abgabe, Hitze −20. Die Den wird ein wenig menschlicher, und dein Umsatz schrumpft.
 - **Vault City: Illegalität & Wohlstand**
-  - Prostitution ist verboten. Dein Haus firmiert als „Institut für therapeutische Entspannung“. Ohne Bürgerschaft oder Bestechung kommt jede Woche eine Razzia-Probe.
+  - Prostitution ist verboten. Dein Bordell „Haus Stille“ tarnt sich als Pension für Außenweltler im Courtyard, und die Bürger kommen nachts. Ohne Bürgerschaft oder Bestechung kommt jede Woche eine Razzia-Probe (Details in Phase 2).
   - Wird der Konflikt um den Gecko-Reaktor friedlich gelöst und ein Handelsvertrag geschlossen: Kunden +10 %.
 - **NCR: Recht & Moral**
   - Ein legales Gewerbe mit Lizenz und Steuer bei niedrigstem Risiko, aber mit „Sittlichkeitskampagnen“ als Nachfragebremse (Kreuzritter, Phase 3).
   - Die Brahmin-Barone rund um Westin bilden die VIP-Kundschaft.
 - **San Francisco: Hafen & Glaube**
   - Die Shi dulden das Haus gegen Tribut.
-  - Die Hubologen „auditieren“ die Kundschaft (geistige Erleuchtung gegen Barzahlung) und kosten dich 10 % Kunden, bis die Quest in Phase 3 gelöst ist.
+  - Die Hubologen werben um dieselben Verlorenen, die auch zu dir kommen, und kosten dich 10 % Kunden, bis die Quest in Phase 3 gelöst ist.
 - **Global: Fall der Enklave**
   - Nach der Zerstörung der Ölplattform folgt ein Westküsten-Boom: Kunden +10 % überall, weil die NCR expandiert.
   - Versprengte Enklave-Soldaten werden zu einem eigenen Ereignis (Phase 4). Dieser Zustand speist den Epilog (Phase 6).
@@ -260,6 +269,8 @@ Kosten = Personal-Anteil × Dienstleistungsumsatz
 | Exklusiv | ×2,5 | 20 / 40 / 60 % | +2 | Ausstattung ≥ 70, VIP-Raum, Moral ≥ 65 |
 
 Wichtig: Die Premium-Stufen setzen zufriedenes Personal voraus. **Fairness ist der Schlüssel zum großen Geld.**
+
+*Nachtrag aus Phase 2:* Jede Anteilsstufe hat eine Moral-Obergrenze (ausbeuterisch 50, branchenüblich 70, fair 100). Quartiere und ähnliche Module heben die Moral nur bis zu dieser Grenze.
 
 **Personal-Anteil (der Moral-Hebel)**
 
