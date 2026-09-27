@@ -296,6 +296,12 @@ NEU: ANWERBUNG (docs/umsetzung-3-anwerbung.md, Abschnitt 5)
  12. Werben wählen, im Pip-Boy 2 Wochen ruhen: eine neue Person.
  13. Zwingen wählen: jede Woche eine Person, aber die Moral sinkt deutlich.
 
+NEU: KETTEN, AKT 1 (docs/umsetzung-4-ketten-akt1.md, Abschnitt 6)
+ 14. Kolbe ansprechen: Metzgers Angebot (zwei aus den Pferchen, 350 $).
+     Wer den Prolog schon hinter sich hat, findet Kolbe beim nächsten
+     Betreten der Gosse wieder vor.
+ 15. Annehmen oder ablehnen, dann Essie ansprechen: ihre Reaktion.
+
 WENN ETWAS NICHT GEHT
 - Keine Treppe in der Ruine, F11 tut nichts: Steht  rotlicht  wirklich als
   LETZTE Zeile in mods_order.txt? (Braucht sfall 4.4 oder neuer; das

@@ -104,6 +104,8 @@ def header():
         "// Innenkarte der Gosse",
         f"#define RL_KARTE_GOSSE              \"{RLDEN01['datei']}\"",
         f"#define RL_GOSSE_EINGANG_HEX        ({RLDEN01['eingang_hex']})",
+        f"#define RL_GOSSE_ESSIE_HEX          ({RLDEN01['figuren'][0]['hex']})",
+        f"#define RL_GOSSE_KOLBE_HEX          ({RLDEN01['figuren'][1]['hex']})",
         "",
         "#endif",
         "",

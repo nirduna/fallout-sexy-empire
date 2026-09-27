@@ -106,6 +106,11 @@
 {333}{}{Nobody's ever laid a hand on Kolbe. The Den talks about nothing else. Metzger will pay you back for it, but he'll respect you too.}
 {334}{}{The debt note is gone? Then pray Metzger never counts again. He always counts again.}
 
+# Essie's reaction to Metzger's offer (chains, act 1)
+{350}{}{Metzger's men came in the night and turned the bolts on the cellar door. I heard every screw. There are two of them down there now. I'll run your house. I won't go down those stairs, and I won't count them.}
+{351}{}{Kolbe told half the Den you said no to Metzger. Good. I've waited twenty years for somebody to say it to his face. Now watch your back. And mine.}
+{352}{}{Go on.}
+
 # Construction
 {460}{}{Where do we start? The roof leaks, the beds creak, and the door won't hold up to a kick.}
 {461}{}{The house itself and the furnishings.}
@@ -141,5 +146,10 @@
 {491}{}{There's always someone in the Den who knows who owes what. I'll find him, because it's your house. Don't ask me to like it. And don't expect them to smile.}
 {492}{}{Done. Nobody new is coming in for now.}
 {493}{}{Every room is taken. The recruiter is just costing us money.}
+{494}{}{And there are }
+{495}{}{ in the cellar. I don't count them. I can't.}
+{496}{}{Send word to Metzger. There's room in the cellar. ($}
+{497}{}{ a head)}
+{498}{}{Kolbe brings one the same night. Nobody in the house says a word.}
 
 # @include _rl_module.inc

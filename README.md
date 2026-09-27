@@ -22,6 +22,7 @@ Konzept und Skripte für eine Addon-Modifikation für **Fallout 2** (sfall 4.x).
 | 1 | Prolog „Essies Schulden“, Ausbau-Dialog, gemeinsame Manager-Knoten | umgesetzt, kompiliert, Test im Spiel offen: [docs/umsetzung-1-prolog-und-ausbau.md](docs/umsetzung-1-prolog-und-ausbau.md) |
 | 2 | Die Gosse: Kellertreppe in der Den, Innenkarte `RLDEN01` mit Essie und Kolbe, Karten-Werkzeuge | umgesetzt, **im Spiel getestet**: [docs/umsetzung-2-die-gosse.md](docs/umsetzung-2-die-gosse.md) |
 | 3 | Anwerbung: Anwerber mit Werben oder Zwingen, Zulauf, Abgänge, Personal-Menü | umgesetzt, kompiliert, Test im Spiel offen: [docs/umsetzung-3-anwerbung.md](docs/umsetzung-3-anwerbung.md) |
+| 4 | „Ketten“, Akt 1: Metzgers Angebot, Riegel außen, Zwangspersonal | umgesetzt, kompiliert, Test im Spiel offen: [docs/umsetzung-4-ketten-akt1.md](docs/umsetzung-4-ketten-akt1.md) |
 
 ## Werkzeuge
 

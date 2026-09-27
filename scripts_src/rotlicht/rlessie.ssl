@@ -30,6 +30,7 @@ procedure Node301;      // wie viel?
 procedure Node302;      // der Spieler uebernimmt
 procedure Node310;      // Prolog laeuft
 procedure Node320;      // Reaktion auf den Weg (einmalig)
+procedure Node340;      // Reaktion auf Metzgers Angebot, Ketten Akt 1 (einmalig)
 procedure Node391;      // nur mit RL_DEBUG: Prolog ueberspringen
 procedure Node999;
 
@@ -70,6 +71,8 @@ procedure talk_p_proc begin
          call Node310;
       else if (welt[RL_W_ESSIE_REAKTION] == 0) then
          call Node320;
+      else if (welt[RL_W_KETTEN_REAKTION] == 1) then
+         call Node340;
       else
          call RLM_Start;
    gSay_End;
@@ -122,6 +125,17 @@ procedure Node391 begin
    call rl_prolog_abschliessen(haus, welt, RL_WEG_BEZAHLT);
    Reply(193);
    NOption(123, RLM_Start, 001);
+end
+
+// Ketten, Akt 1: Essie hat mitbekommen, was der Spieler Metzger geantwortet hat
+procedure Node340 begin
+   welt[RL_W_KETTEN_REAKTION] := 2;
+   if (welt[RL_W_KETTEN_ZWEIG] == RL_KETTEN_ZWEIG_TYRANN) then
+      Reply(350);
+   else
+      Reply(351);
+   NOption(352, RLM_Start, 004);
+   NLowOption(352, RLM_Start);
 end
 
 procedure Node999 begin

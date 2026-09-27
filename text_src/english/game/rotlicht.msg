@@ -26,6 +26,7 @@
 
 # Prologue aftermath
 {120}{}{Metzger counted again. The debt note is missing, and he knows who took it.}
+{121}{}{One of the ones in the cellar got out. Nobody saw anything.}
 
 # Debug
 {190}{}{[Debug] Essie and Kolbe are here.}

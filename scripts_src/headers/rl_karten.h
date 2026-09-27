@@ -14,5 +14,7 @@
 // Innenkarte der Gosse
 #define RL_KARTE_GOSSE              "rlden01.map"
 #define RL_GOSSE_EINGANG_HEX        (17066)
+#define RL_GOSSE_ESSIE_HEX          (17866)
+#define RL_GOSSE_KOLBE_HEX          (17270)
 
 #endif

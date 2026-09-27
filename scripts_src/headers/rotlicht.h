@@ -106,7 +106,7 @@
 #define RL_F_KRISE                  (24)    // 0 = keine, sonst RL_EV_*
 #define RL_F_KRISENWOCHEN           (25)
 #define RL_F_FUEHRUNG               (26)    // Fuehrung der Madame (Phase 4)
-#define RL_F_ZWANG                  (27)    // 1 = Zwangspersonal im Haus (Tyrannen-Route)
+#define RL_F_ZWANG                  (27)    // Zwangspersonal hinter dem Riegel aussen (Anzahl, Tyrannen-Route)
 #define RL_F_ANWERBER               (28)    // RL_ANWERBER_*: Methode des Anwerbers (Phase 4, 2.2)
 #define RL_F_ANWERB_PUNKTE          (29)    // Fortschritt bis zur naechsten Person
 #define RL_F_GEZWUNGEN              (30)    // davon mit Gewalt, Schulden oder Jet angeworben
@@ -124,7 +124,7 @@
 #define RL_ANWERB_PUNKTE            (4)
 #define RL_ANWERBER_LOHN            (40)    // $/Woche
 #define RL_ANWERB_KOPFGELD          (50)    // $ je angeworbener Person, aus der Kasse
-#define RL_ZWINGEN_MORAL_CAP        (50)    // solange Gezwungene im Haus sind
+#define RL_ZWINGEN_MORAL_CAP        (50)    // solange Gezwungene oder Zwangspersonal im Haus sind
 #define RL_ZWINGEN_KARMA            (3)     // Karma -3/Woche, solange gezwungen wird (Phase 6)
 #define RL_ZWINGEN_HITZE            (5)     // Hitze +5/Woche statt -5
 
@@ -168,6 +168,8 @@
 #define RL_W_KETTEN_ZWEIG           (25)    // 0 offen, 1 Flucht, 2 Tyrann
 #define RL_W_ESSIE_REAKTION         (26)    // 1 = Essies Reaktion auf die Uebernahme gezeigt
 #define RL_W_GOSSE_TREPPE           (27)    // Hex + 1, an dem die Kellertreppe gesetzt wurde
+#define RL_W_KETTEN_REAKTION        (28)    // 1 = Essies Reaktion auf Akt 1 steht aus, 2 = gezeigt
+#define RL_W_METZGER_NEIN           (29)    // 1 = Metzgers Angebot abgelehnt ("er merkt es sich")
 
 #define RL_PROLOG_OFFEN             (0)
 #define RL_PROLOG_LAEUFT            (1)
@@ -198,6 +200,26 @@
 
 #define RL_KETTEN_ZWEIG_FLUCHT      (1)
 #define RL_KETTEN_ZWEIG_TYRANN      (2)
+
+// Questline "Ketten" (Phase 3, Abschnitt 3.2): Aktstand in RL_W_KETTEN
+#define RL_KETTEN_ANGEBOT           (1)     // Akt 1: Metzgers Angebot steht aus
+#define RL_KETTEN_KELLER            (2)     // Akt 2: "Die im Keller" (folgt)
+
+// Akt 1 und Riegel aussen (Phase 2, Abschnitt 2.1; Phase 4, Abschnitt 2.3)
+#define RL_ANGEBOT_PERSONEN         (2)     // Metzger bringt zwei aus den Pferchen
+#define RL_ANGEBOT_WARE             (150)   // $ fuer beide: halber Preis
+#define RL_RIEGEL_AUSSEN_KOSTEN     (200)   // $ fuer den Umbau des Kellers
+#define RL_RIEGEL_AUSSEN_ZIMMER     (2)     // der Pferch im Keller
+#define RL_METZGER_KOPFPREIS        (150)   // $ je Person spaeter (Seelenverkaeufer: 20 % billiger)
+#define RL_ZWANG_QUALI_MIN          (30)
+#define RL_ZWANG_QUALI_MAX          (45)
+
+// Metzger tot (wie metzger_dead aus den.h, ohne den ganzen Header)
+#define rl_metzger_tot              gvar_bit(GVAR_DEN_FLAG_1, bit_1)
+
+// Wie jemand geht (rl_personal_verlust)
+#define RL_VERLUST_ABGANG           (0)     // kuendigt: nur, wer gehen kann
+#define RL_VERLUST_FLUCHT           (1)     // flieht: Zwangspersonal zuerst
 
 #define RL_SCHULDEN_START           (1200)
 #define RL_ZINS_JE_WOCHE            (50)
@@ -283,7 +305,10 @@ procedure rl_stadt(variable stadt, variable was);
 procedure rl_haus_uebernehmen(variable haus, variable welt, variable h);
 procedure rl_rechne_woche(variable haus, variable h, variable stadt);
 procedure rl_anwerber_setzen(variable haus, variable h, variable methode);
-procedure rl_personal_verlust(variable haus, variable h);
+procedure rl_personal_verlust(variable haus, variable h, variable art);
+procedure rl_zwang_dazu(variable haus, variable h, variable n);
+procedure rl_riegel_aussen(variable haus, variable h);
+procedure rl_ketten_akt1(variable welt, variable zweig);
 
 procedure rl_clamp(variable v, variable lo, variable hi) begin
    if (v < lo) then return lo;
@@ -456,8 +481,13 @@ procedure rl_rechne_woche(variable haus, variable h, variable stadt) begin
       moral_cap  := rl_min(moral_cap, 40);
       karma_tick := karma_tick - 3;
    end
+   // Zwangspersonal hinter dem Riegel aussen arbeitet ohne Anteil (Phase 2/4)
+   if ((haus[rl_idx(h, RL_F_ZWANG)] > 0) and (haus[rl_idx(h, RL_F_PERSONAL)] > 0)) then
+      anteil := anteil * rl_max(0, haus[rl_idx(h, RL_F_PERSONAL)] - haus[rl_idx(h, RL_F_ZWANG)])
+                / haus[rl_idx(h, RL_F_PERSONAL)];
    // Zwingen (Phase 4, 2.2): Gezwungene deckeln die Moral, der Anwerber kostet Karma
-   if (haus[rl_idx(h, RL_F_GEZWUNGEN)] > 0) then
+   // Wer oben arbeitet, hoert den Keller: auch Zwangspersonal deckelt die Moral (Umsetzung 4)
+   if ((haus[rl_idx(h, RL_F_GEZWUNGEN)] > 0) or (haus[rl_idx(h, RL_F_ZWANG)] > 0)) then
       moral_cap := rl_min(moral_cap, RL_ZWINGEN_MORAL_CAP);
    if (haus[rl_idx(h, RL_F_ANWERBER)] == RL_ANWERBER_ZWINGEN) then
       karma_tick := karma_tick - RL_ZWINGEN_KARMA;
@@ -569,16 +599,72 @@ procedure rl_anwerber_setzen(variable haus, variable h, variable methode) begin
    haus[rl_idx(h, RL_F_ANWERB_PUNKTE)] := 0;
 end
 
-/* Eine Person verlaesst das Haus. Gezwungene fliehen zuerst, sie haben am
-   wenigsten zu verlieren. Gibt 1 zurueck, wenn es eine Gezwungene war. */
-procedure rl_personal_verlust(variable haus, variable h) begin
-   if (haus[rl_idx(h, RL_F_PERSONAL)] <= 0) then return 0;
-   haus[rl_idx(h, RL_F_PERSONAL)] := haus[rl_idx(h, RL_F_PERSONAL)] - 1;
-   if (haus[rl_idx(h, RL_F_GEZWUNGEN)] > 0) then begin
-      haus[rl_idx(h, RL_F_GEZWUNGEN)] := haus[rl_idx(h, RL_F_GEZWUNGEN)] - 1;
+/* Eine Person verlaesst das Haus. Rueckgabe: -1 niemand, 0 eine Freiwillige,
+   1 eine Gezwungene (Umsetzung 3), 2 jemand aus dem Pferch (Riegel aussen).
+   RL_VERLUST_ABGANG: Wer kuendigt, kann gehen. Gezwungene zuerst, sie haben
+      am wenigsten zu verlieren. Hinter dem Riegel aussen kuendigt niemand.
+   RL_VERLUST_FLUCHT: Flucht. Aus dem Pferch zuerst, dann die Gezwungenen. */
+procedure rl_personal_verlust(variable haus, variable h, variable art) begin
+   variable zwang := haus[rl_idx(h, RL_F_ZWANG)];
+   variable gezw  := haus[rl_idx(h, RL_F_GEZWUNGEN)];
+   variable frei  := haus[rl_idx(h, RL_F_PERSONAL)] - zwang - gezw;
+   if ((art == RL_VERLUST_FLUCHT) and (zwang > 0)) then begin
+      haus[rl_idx(h, RL_F_ZWANG)] := zwang - 1;
+      haus[rl_idx(h, RL_F_PERSONAL)] := haus[rl_idx(h, RL_F_PERSONAL)] - 1;
+      return 2;
+   end
+   if (gezw > 0) then begin
+      haus[rl_idx(h, RL_F_GEZWUNGEN)] := gezw - 1;
+      haus[rl_idx(h, RL_F_PERSONAL)] := haus[rl_idx(h, RL_F_PERSONAL)] - 1;
       return 1;
    end
-   return 0;
+   if (frei > 0) then begin
+      haus[rl_idx(h, RL_F_PERSONAL)] := haus[rl_idx(h, RL_F_PERSONAL)] - 1;
+      return 0;
+   end
+   return -1;
+end
+
+/* Zwangspersonal kommt dazu (Riegel aussen). Es zaehlt fuer die Qualitaet,
+   nicht fuer die Moral: Die Moral ist die der Leute, die gehen koennten. */
+procedure rl_zwang_dazu(variable haus, variable h, variable n) begin
+   variable alle := haus[rl_idx(h, RL_F_PERSONAL)];
+   while (n > 0) do begin
+      haus[rl_idx(h, RL_F_QUALI)] := (haus[rl_idx(h, RL_F_QUALI)] * alle
+                                     + random(RL_ZWANG_QUALI_MIN, RL_ZWANG_QUALI_MAX)) / (alle + 1);
+      alle := alle + 1;
+      haus[rl_idx(h, RL_F_ZWANG)] := haus[rl_idx(h, RL_F_ZWANG)] + 1;
+      n := n - 1;
+   end
+   haus[rl_idx(h, RL_F_PERSONAL)] := alle;
+end
+
+/* Riegel aussen (Phase 2, Abschnitt 2.1): Der Keller wird zum Pferch mit zwei
+   Plaetzen. Schliesst "Riegel innen" aus: Metzgers Leute drehen die Riegel um.
+   Ein fertiger Riegel innen wird rueckgebaut, ein begonnener abgebrochen. */
+procedure rl_riegel_aussen(variable haus, variable h) begin
+   variable id := RL_M_DEN_RIEGEL_INNEN;
+   if (haus[rl_idx(h, RL_F_BAU_ID)] == id + 1) then begin
+      haus[rl_idx(h, RL_F_BAU_ID)] := 0;
+      haus[rl_idx(h, RL_F_BAU_WOCHEN)] := 0;
+   end else if (haus[rl_idx(h, RL_F_GEKAUFT)] bwand rl_bit(id)) then begin
+      haus[rl_idx(h, RL_F_SICHERHEIT)] := haus[rl_idx(h, RL_F_SICHERHEIT)] - rl_modul(id, RL_MK_SICHERHEIT);
+      haus[rl_idx(h, RL_F_MORALBONUS)] := haus[rl_idx(h, RL_F_MORALBONUS)] - rl_modul(id, RL_MK_MORAL);
+      haus[rl_idx(h, RL_F_STUFEN)]     := haus[rl_idx(h, RL_F_STUFEN)] - rl_modul(id, RL_MK_STUFEN);
+   end
+   if (haus[rl_idx(h, RL_F_GEKAUFT)] bwand rl_bit(id)) then
+      haus[rl_idx(h, RL_F_GEKAUFT)] := haus[rl_idx(h, RL_F_GEKAUFT)] - rl_bit(id);
+   haus[rl_idx(h, RL_F_MODULE)]  := haus[rl_idx(h, RL_F_MODULE)] bwor RL_MOD_RIEGEL_AUSSEN;
+   haus[rl_idx(h, RL_F_ZIMMER)]  := haus[rl_idx(h, RL_F_ZIMMER)] + RL_RIEGEL_AUSSEN_ZIMMER;
+   haus[rl_idx(h, RL_F_STUFEN)]  := haus[rl_idx(h, RL_F_STUFEN)] + 1;
+end
+
+/* Ketten, Akt 1 entschieden (Phase 3, Abschnitt 3.2): weiter mit Akt 2 im
+   gewaehlten Zweig. Essie reagiert beim naechsten Gespraech. */
+procedure rl_ketten_akt1(variable welt, variable zweig) begin
+   welt[RL_W_KETTEN]          := RL_KETTEN_KELLER;
+   welt[RL_W_KETTEN_ZWEIG]    := zweig;
+   welt[RL_W_KETTEN_REAKTION] := 1;
 end
 
 #endif

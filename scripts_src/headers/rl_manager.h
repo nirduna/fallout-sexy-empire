@@ -5,7 +5,7 @@
    Texten in der eigenen .msg-Datei:
      100-199  Bericht, Kasse, Preise, Anteil, Moral, Krisen
      460-477  Ausbau-Menue
-     480-493  Personal und Anwerber (Umsetzung 3)
+     480-499  Personal und Anwerber (Umsetzung 3), Pferch und Metzger (Umsetzung 4)
      400-422  Modulnamen, 500-522 Moduleffekte (aus _rl_module.inc)
 
    Das einbindende Skript stellt bereit:
@@ -52,6 +52,9 @@ procedure RLM_Werben;
 procedure RLM_Zwingen;
 procedure RLM_AnwerberWeg;
 procedure RLM_DebugZimmer;
+procedure RLM_MetzgerWare;
+procedure rlm_bezahlen(variable kosten);
+procedure rlm_metzger_preis;
 procedure RLM_Ausbau;
 procedure RLM_Gruppe0;
 procedure RLM_Gruppe1;
@@ -225,7 +228,7 @@ end
 
 procedure RLM_StoffRauswurf begin
    call rlm_krise_loesen;
-   call rl_personal_verlust(haus, h);
+   call rl_personal_verlust(haus, h, RL_VERLUST_ABGANG);
    haus[rl_idx(h, RL_F_MORAL)] := rl_max(0, haus[rl_idx(h, RL_F_MORAL)] - 10);
    Reply(168);
    NOption(123, RLM_Start, 004);
@@ -252,7 +255,15 @@ procedure RLM_Personal begin
            + mstr(482) + " " + mstr(483 + methode);
    if (methode and (haus[rl_idx(h, RL_F_PERSONAL)] >= haus[rl_idx(h, RL_F_ZIMMER)])) then
       text := text + " " + mstr(493);
+   if (haus[rl_idx(h, RL_F_ZWANG)] > 0) then
+      text := text + " " + mstr(494) + haus[rl_idx(h, RL_F_ZWANG)] + mstr(495);
    Reply(text);
+   // Metzger liefert nach, solange die Gilde steht (Phase 4, Abschnitt 2.3)
+   if ((haus[rl_idx(h, RL_F_MODULE)] bwand RL_MOD_RIEGEL_AUSSEN) and (not rl_metzger_tot)
+       and (welt[RL_W_METZGER] != RL_METZGER_FEIND)
+       and (haus[rl_idx(h, RL_F_PERSONAL)] < haus[rl_idx(h, RL_F_ZIMMER)])
+       and rlm_bezahlbar(rlm_metzger_preis)) then
+      BOption(mstr(496) + rlm_metzger_preis + mstr(497), RLM_MetzgerWare, 004);
    if (methode != RL_ANWERBER_WERBEN) then
       GOption(486, RLM_Werben, 004);
    if (methode != RL_ANWERBER_ZWINGEN) then
@@ -277,6 +288,13 @@ end
 procedure RLM_AnwerberWeg begin
    call rl_anwerber_setzen(haus, h, RL_ANWERBER_KEINER);
    Reply(492);
+   NOption(123, RLM_Start, 004);
+end
+
+procedure RLM_MetzgerWare begin
+   call rlm_bezahlen(rlm_metzger_preis);
+   call rl_zwang_dazu(haus, h, 1);
+   Reply(498);
    NOption(123, RLM_Start, 004);
 end
 
@@ -386,11 +404,7 @@ end
 
 // Bezahlt wird zuerst aus der Kasse des Hauses, der Rest aus der Tasche des Spielers
 procedure RLM_Kaufen begin
-   variable kosten := rl_modul(rlm_gewaehlt, RL_MK_KOSTEN);
-   variable aus_kasse := rl_min(rl_max(0, haus[rl_idx(h, RL_F_KASSE)]), kosten);
-   haus[rl_idx(h, RL_F_KASSE)] := haus[rl_idx(h, RL_F_KASSE)] - aus_kasse;
-   if (kosten > aus_kasse) then
-      item_caps_adjust(dude_obj, -(kosten - aus_kasse));
+   call rlm_bezahlen(rl_modul(rlm_gewaehlt, RL_MK_KOSTEN));
    haus[rl_idx(h, RL_F_GEKAUFT)]    := haus[rl_idx(h, RL_F_GEKAUFT)] bwor rl_bit(rlm_gewaehlt);
    haus[rl_idx(h, RL_F_BAU_ID)]     := rlm_gewaehlt + 1;
    haus[rl_idx(h, RL_F_BAU_WOCHEN)] := rl_modul(rlm_gewaehlt, RL_MK_WOCHEN);
@@ -416,6 +430,8 @@ end
 procedure rlm_modul_frei(variable id) begin
    variable voraus := rl_modul(id, RL_MK_VORAUS);
    if (rlm_gekauft(id)) then return 0;
+   // Riegel innen und Riegel aussen schliessen sich aus (Phase 2)
+   if ((id == RL_M_DEN_RIEGEL_INNEN) and (haus[rl_idx(h, RL_F_MODULE)] bwand RL_MOD_RIEGEL_AUSSEN)) then return 0;
    if ((rl_modul(id, RL_MK_STAEDTE) bwand rl_bit(h)) == 0) then return 0;
    if ((voraus >= 0) and not rlm_gekauft(voraus)) then return 0;
    if ((rl_modul(id, RL_MK_BEDINGUNG) == 1) and (welt[RL_W_SHI_GEFALLEN] == 0)) then return 0;
@@ -433,6 +449,20 @@ end
 
 procedure rlm_bezahlbar(variable kosten) begin
    return (rl_max(0, haus[rl_idx(h, RL_F_KASSE)]) + dude_caps >= kosten);
+end
+
+// Zuerst aus der Kasse des Hauses, der Rest aus der Tasche des Spielers
+procedure rlm_bezahlen(variable kosten) begin
+   variable aus_kasse := rl_min(rl_max(0, haus[rl_idx(h, RL_F_KASSE)]), kosten);
+   haus[rl_idx(h, RL_F_KASSE)] := haus[rl_idx(h, RL_F_KASSE)] - aus_kasse;
+   if (kosten > aus_kasse) then
+      item_caps_adjust(dude_obj, -(kosten - aus_kasse));
+end
+
+// Metzgers Preis je Person; dem "Seelenverkaeufer" 20 % billiger (Phase 6)
+procedure rlm_metzger_preis begin
+   if (global_var(GVAR_RL_TITEL_SEELE)) then return RL_METZGER_KOPFPREIS * 80 / 100;
+   return RL_METZGER_KOPFPREIS;
 end
 
 #endif

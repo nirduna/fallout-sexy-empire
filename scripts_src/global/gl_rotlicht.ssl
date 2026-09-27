@@ -254,8 +254,10 @@ procedure rl_ereignis_wurf(variable h) begin
    if (random(1, 100) <= haus[rl_idx(h, RL_F_FUEHRUNG)]) then begin
       if (ereignis == RL_EV_STOFF) then
          haus[rl_idx(h, RL_F_MORAL)] := rl_max(0, haus[rl_idx(h, RL_F_MORAL)] - 2);
-      else if (ereignis == RL_EV_FLUCHT) then
-         call rl_personal_verlust(haus, h);
+      else if (ereignis == RL_EV_FLUCHT) then begin
+         if (rl_personal_verlust(haus, h, RL_VERLUST_FLUCHT) == 2) then
+            display_msg(rl_haus_name(h) + ": " + rl_text(121));
+      end
       else if (ereignis == RL_EV_FREIER) then
          haus[rl_idx(h, RL_F_RUF)] := rl_max(0, haus[rl_idx(h, RL_F_RUF)] - 2);
       else
@@ -269,19 +271,22 @@ procedure rl_ereignis_wurf(variable h) begin
 end
 
 /* Personalwechsel am Ende der Woche (Umsetzung 3, Phase 4 Abschnitt 1 und 2.2):
-   1. Unter Moral 25 geht jede Woche eine Person (Gezwungene fliehen zuerst).
+   1. Unter Moral 25 geht jede Woche eine Person (Gezwungene zuerst). Aus dem
+      Pferch hinter dem Riegel aussen kuendigt niemand (Umsetzung 4).
    2. Ist ein Zimmer frei, sammelt das Haus Anwerbe-Punkte: Werben 2 pro Woche
       (mit dem Titel "Anstaendiges Haus" 4, Phase 6), Zwingen 4, dazu Zulauf
       ab Moral 75 +1 (nicht beim Zwingen). Je 4 Punkte kommt eine Person.
       Neue bringen ihre Qualitaet und Moral in den Hausdurchschnitt ein:
-      geworben 40-60 und Moral 50, gezwungen 30-50 und Moral 15. */
+      geworben 40-60 und Moral 50, gezwungen 30-50 und Moral 15. Die Moral
+      ist die der Leute, die gehen koennten: Zwangspersonal zaehlt nicht mit. */
 procedure rl_personalwechsel(variable h) begin
-   variable methode, punkte, n, neu_q, neu_m;
+   variable methode, punkte, n, frei, neu_q, neu_m, weg;
 
-   if ((haus[rl_idx(h, RL_F_MORAL)] < RL_FLUCHT_MORAL) and (haus[rl_idx(h, RL_F_PERSONAL)] > 0)) then begin
-      if (rl_personal_verlust(haus, h)) then
+   if (haus[rl_idx(h, RL_F_MORAL)] < RL_FLUCHT_MORAL) then begin
+      weg := rl_personal_verlust(haus, h, RL_VERLUST_ABGANG);
+      if (weg == 1) then
          display_msg(rl_haus_name(h) + ": " + rl_text(119));
-      else
+      else if (weg == 0) then
          display_msg(rl_haus_name(h) + ": " + rl_text(118));
    end
 
@@ -317,8 +322,9 @@ procedure rl_personalwechsel(variable h) begin
    end
    if (methode != RL_ANWERBER_KEINER) then
       haus[rl_idx(h, RL_F_KASSE)] := haus[rl_idx(h, RL_F_KASSE)] - RL_ANWERB_KOPFGELD;
+   frei := rl_max(0, n - haus[rl_idx(h, RL_F_ZWANG)]);
    haus[rl_idx(h, RL_F_QUALI)] := (haus[rl_idx(h, RL_F_QUALI)] * n + neu_q) / (n + 1);
-   haus[rl_idx(h, RL_F_MORAL)] := (haus[rl_idx(h, RL_F_MORAL)] * n + neu_m) / (n + 1);
+   haus[rl_idx(h, RL_F_MORAL)] := (haus[rl_idx(h, RL_F_MORAL)] * frei + neu_m) / (frei + 1);
    haus[rl_idx(h, RL_F_PERSONAL)] := n + 1;
 end
 

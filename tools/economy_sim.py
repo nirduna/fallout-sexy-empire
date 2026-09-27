@@ -62,13 +62,18 @@ def simulate(city, weeks=12, staff_q=60, furnishing=50, rep=55, moral=50,
              security=70, heat=0, accountant=True, doc=False, bar_level=1,
              upgrade_levels=4, fixed_wages=310, city_mod=100,
              rooms=None, side_per_client=0, moral_bonus=0,
-             forced_staff=False, forcing=False):
+             forced_staff=False, forcing=False, staff=None, forced_labor=0):
     """forced_staff: Gezwungene im Haus (Moral hoechstens 50, Phase 4 Abschnitt 2.2);
-    forcing: der Anwerber zwingt gerade (Karma -3/Woche, Hitze +5/Woche statt -5)."""
+    forcing: der Anwerber zwingt gerade (Karma -3/Woche, Hitze +5/Woche statt -5);
+    staff/forced_labor: Arbeitende insgesamt und davon Zwangspersonal hinter dem
+    Riegel aussen, das ohne Anteil arbeitet (Umsetzung 4, Karma -5/Woche)."""
     c = CITIES[city]
     p_mult, demand_by_wealth, rep_tick = PRICE_TIERS[price_tier]
     d_mult = demand_by_wealth[c["wealth"]]
     share_pct, moral_tick, karma_tick = SHARE_TIERS[share_tier]
+    if forced_labor and staff:
+        share_pct = share_pct * max(0, staff - forced_labor) // staff
+        karma_tick -= 5
     rows, karma, total = [], 0, 0
     for week in range(1, weeks + 1):
         # Moral skaliert die effektive Personalqualitaet (Faktor 0.4 .. 1.2)
@@ -102,7 +107,7 @@ def simulate(city, weeks=12, staff_q=60, furnishing=50, rep=55, moral=50,
         total += profit
         rows.append((week, moral, staff_q, clients, revenue, costs, profit, total))
         # Zustandsfortschreibung
-        cap = min(MORAL_CAP[share_tier], 50) if forced_staff else MORAL_CAP[share_tier]
+        cap = min(MORAL_CAP[share_tier], 50) if (forced_staff or forced_labor) else MORAL_CAP[share_tier]
         moral = clamp(moral + moral_tick + (1 if doc else 0) + moral_bonus,
                       0, max(moral, cap))
         rep = clamp(rep + (score - rep) // 8 + rep_tick

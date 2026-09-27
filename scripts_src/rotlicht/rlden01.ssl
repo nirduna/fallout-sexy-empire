@@ -4,6 +4,9 @@
    Umsetzung 2:
      - Kellerlicht wie in den Vanilla-Kellern der Den
      - beim ersten Besuch ein Satz zur Stimmung
+   Umsetzung 4:
+     - Steht Metzgers Angebot (Ketten, Akt 1) noch aus und hat Kolbe die Gosse
+       schon verlassen (Spielstand aus einer frueheren Fassung), kommt er zurueck.
    Spaeter (Phase 2): Ausbauten nach RL_F_MODULE und RL_F_KLASSE sichtbar
    schalten.
 
@@ -23,14 +26,30 @@
 procedure start;
 procedure map_enter_p_proc;
 procedure map_update_p_proc;
+procedure rl_kolbe_da;
 
 procedure start begin
 end
 
 procedure map_enter_p_proc begin
+   variable welt, obj;
    if (map_first_run) then
       display_mstr(100);
    Basement_Lighting;
+
+   welt := rl_lade_welt;
+   if ((welt[RL_W_PROLOG] == RL_PROLOG_FERTIG) and (welt[RL_W_KETTEN] == RL_KETTEN_ANGEBOT)
+       and (not rl_kolbe_da)) then begin
+      obj := create_object_sid(PID_TOUGH_THUG_MALE, RL_GOSSE_KOLBE_HEX, 0, SCRIPT_RLKOLBE);
+   end
+end
+
+procedure rl_kolbe_da begin
+   variable o;
+   foreach o in list_as_array(LIST_CRITTERS) begin
+      if (get_script(o) == SCRIPT_RLKOLBE) then return 1;
+   end
+   return 0;
 end
 
 procedure map_update_p_proc begin

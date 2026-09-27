@@ -35,6 +35,23 @@
 {341}{}{Good.}
 {342}{}{...}
 
+# Chains, act 1: Metzger's offer
+{350}{}{Metzger sends his regards. And an offer. Two from the pens. Young, healthy, they don't talk back. Half price, because he likes how you do business: $150 for both. His men turn the bolts on your cellar door around for another $200. They don't take a share, and they don't leave.}
+{351}{}{The bolts you put on the inside come out first. Metzger's men know how.}
+{352}{}{Deal. Bring them.}
+{353}{}{And if I say no?}
+{354}{}{No. Not in my house.}
+{355}{}{Deal.}
+{356}{}{No!}
+{357}{}{Then you say no. Metzger remembers who says no. That's all.}
+{358}{}{Pleasure doing business. They'll be in the cellar tonight. Don't go down there if you don't like the smell.}
+{359}{}{Your call. Metzger remembers who says no. I'll be seeing you.}
+{360}{}{Metzger's dead. The Guild is finished. I've got nothing to sell you, and nobody to sell it for.}
+{361}{}{Metzger's got nothing for thieves. You'll find out what he's got instead.}
+{362}{}{I'll tell him. He won't like it. Neither do I.}
+{363}{}{I don't have that kind of money.}
+{364}{}{Then get it. The offer stands. For now.}
+
 # As manager of the Gutter (only if Essie was handed over)
 {100}{}{Metzger sends his regards. The house is running. So are the people, as long as they don't run off.}
 {101}{}{Last week we had }
@@ -136,5 +153,10 @@
 {491}{}{Now we're talking. I know a few guys from the pens. Give it a week.}
 {492}{}{He's gone.}
 {493}{}{Every room's full. You're paying him to drink.}
+{494}{}{Plus }
+{495}{}{ in the cellar. They don't count.}
+{496}{}{Send word to Metzger. There's room in the cellar. ($}
+{497}{}{ a head)}
+{498}{}{One more for the cellar. Metzger says thanks.}
 
 # @include _rl_module.inc

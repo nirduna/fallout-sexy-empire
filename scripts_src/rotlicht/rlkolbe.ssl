@@ -12,6 +12,11 @@
    (Phase 2: minimal-invasiv). Nach dem Prolog verschwindet er, ausser Essie
    wurde ausgeliefert: Dann fuehrt er die Gosse fuer Metzger (rl_manager.h).
 
+   Umsetzung 4, "Ketten" Akt 1 (Phase 3, Abschnitt 3.2): Kolbe bleibt nach dem
+   Prolog, bis der Spieler Metzgers Angebot beantwortet hat. Annehmen fuehrt
+   in den Tyrannen-Zweig (Riegel aussen, zwei aus den Pferchen), Ablehnen in
+   den Fluchtzweig. Stirbt Kolbe vorher, ist die Gilde Feind.
+
    Texte: text_src/english/dialog/rlkolbe.msg
 */
 
@@ -28,6 +33,7 @@
 procedure start;
 procedure talk_p_proc;
 procedure map_enter_p_proc;
+procedure destroy_p_proc;
 procedure look_at_p_proc;
 procedure description_p_proc;
 
@@ -41,6 +47,12 @@ procedure Node327;      // Diebstahl
 procedure Node329;      // Essie ausliefern: Rueckfrage
 procedure Node330;      // Essie ausliefern: vollzogen
 procedure Node340;      // nach dem Prolog
+procedure Node350;      // Ketten, Akt 1: Metzgers Angebot
+procedure Node351;      // "Und wenn ich nein sage?"
+procedure Node352;      // angenommen
+procedure Node353;      // abgelehnt
+procedure Node354;      // zu wenig Geld
+procedure rl_angebot_optionen;
 procedure Node999;
 
 procedure rl_bezahlen;
@@ -56,11 +68,22 @@ variable ueberblende := 0;
 procedure start begin
 end
 
-// Nach dem Prolog geht Kolbe, ausser er fuehrt das Haus fuer Metzger
+// Nach dem Prolog geht Kolbe, sobald Metzgers Angebot beantwortet ist,
+// ausser er fuehrt das Haus fuer Metzger
 procedure map_enter_p_proc begin
    welt := rl_lade_welt;
-   if ((welt[RL_W_PROLOG] == RL_PROLOG_FERTIG) and (welt[RL_W_ESSIE] != RL_ESSIE_AUSGELIEFERT)) then
+   if ((welt[RL_W_PROLOG] == RL_PROLOG_FERTIG) and (welt[RL_W_ESSIE] != RL_ESSIE_AUSGELIEFERT)
+       and (welt[RL_W_KETTEN] != RL_KETTEN_ANGEBOT)) then
       destroy_object(self_obj);
+end
+
+// Stirbt Metzgers Eintreiber, bevor das Angebot beantwortet ist: Die Gilde ist Feind
+procedure destroy_p_proc begin
+   welt := rl_lade_welt;
+   if (welt[RL_W_KETTEN] == RL_KETTEN_ANGEBOT) then begin
+      welt[RL_W_METZGER] := RL_METZGER_FEIND;
+      call rl_ketten_akt1(welt, RL_KETTEN_ZWEIG_FLUCHT);
+   end
 end
 
 procedure look_at_p_proc begin
@@ -82,6 +105,8 @@ procedure talk_p_proc begin
          call Node300;
       else if (welt[RL_W_PROLOG] == RL_PROLOG_LAEUFT) then
          call Node301;
+      else if (welt[RL_W_KETTEN] == RL_KETTEN_ANGEBOT) then
+         call Node350;
       else if (welt[RL_W_ESSIE] == RL_ESSIE_AUSGELIEFERT) then
          call RLM_Start;
       else
@@ -213,6 +238,84 @@ end
 
 procedure Node340 begin
    Reply(340);
+   NOption(341, Node999, 004);
+   NLowOption(341, Node999);
+end
+
+/* ------------------------------------------------------------------ */
+/* Ketten, Akt 1: Das Angebot (Phase 3, Abschnitt 3.2)                 */
+/* ------------------------------------------------------------------ */
+procedure Node350 begin
+   // Anpassung an Vanilla: Ohne Metzger gibt es kein Angebot, die Linie geht im Fluchtzweig weiter
+   if (rl_metzger_tot) then begin
+      call rl_ketten_akt1(welt, RL_KETTEN_ZWEIG_FLUCHT);
+      Reply(360);
+      NOption(341, Node999, 004);
+      NLowOption(341, Node999);
+      return;
+   end
+   // Wer Metzger bestohlen hat, bekommt nichts angeboten
+   if (welt[RL_W_METZGER] == RL_METZGER_FEIND) then begin
+      call rl_ketten_akt1(welt, RL_KETTEN_ZWEIG_FLUCHT);
+      Reply(361);
+      NOption(342, Node999, 004);
+      NLowOption(342, Node999);
+      return;
+   end
+   if (haus[rl_idx(RL_DEN, RL_F_GEKAUFT)] bwand rl_bit(RL_M_DEN_RIEGEL_INNEN)) then
+      Reply(mstr(350) + " " + mstr(351));
+   else
+      Reply(350);
+   call rl_angebot_optionen;
+end
+
+procedure Node351 begin
+   Reply(357);
+   call rl_angebot_optionen;
+end
+
+procedure rl_angebot_optionen begin
+   if (rlm_bezahlbar(RL_ANGEBOT_WARE + RL_RIEGEL_AUSSEN_KOSTEN)) then begin
+      BOption(352, Node352, 004);
+      NLowOption(355, Node352);
+   end else begin
+      NOption(363, Node354, 004);
+   end
+   NOption(353, Node351, 004);
+   GOption(354, Node353, 004);
+   NLowOption(356, Node353);
+end
+
+// Annehmen: Tyrannen-Zweig. Der Keller wird zum Pferch, zwei kommen aus den Pferchen.
+procedure Node352 begin
+   call rlm_bezahlen(RL_ANGEBOT_WARE + RL_RIEGEL_AUSSEN_KOSTEN);
+   call rl_riegel_aussen(haus, RL_DEN);
+   call rl_zwang_dazu(haus, RL_DEN, RL_ANGEBOT_PERSONEN);
+   call rl_ketten_akt1(welt, RL_KETTEN_ZWEIG_TYRANN);
+   welt[RL_W_METZGER] := RL_METZGER_FREUND;
+   // Essie fuehrt das Haus weiter, aber nicht mehr mit ganzem Herzen
+   if (welt[RL_W_ESSIE] == RL_ESSIE_DA) then
+      haus[rl_idx(RL_DEN, RL_F_FUEHRUNG)] := rl_max(0, haus[rl_idx(RL_DEN, RL_F_FUEHRUNG)] - 10);
+   Reply(358);
+   NOption(341, Node999, 004);
+   NLowOption(341, Node999);
+end
+
+// Ablehnen: Fluchtzweig. Metzger merkt es sich.
+procedure Node353 begin
+   call rl_ketten_akt1(welt, RL_KETTEN_ZWEIG_FLUCHT);
+   welt[RL_W_METZGER_NEIN] := 1;
+   if (welt[RL_W_ESSIE] == RL_ESSIE_AUSGELIEFERT) then
+      Reply(362);
+   else
+      Reply(359);
+   NOption(341, Node999, 004);
+   NLowOption(341, Node999);
+end
+
+// Das Angebot steht, bis der Spieler zahlen kann oder ablehnt
+procedure Node354 begin
+   Reply(364);
    NOption(341, Node999, 004);
    NLowOption(341, Node999);
 end
