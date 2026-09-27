@@ -127,7 +127,7 @@ Jede Madame und jeder Manager nutzt dieselben Knoten aus `rl_manager.h`: Bericht
 
 ## 7. Nächste Schritte
 
-1. **Innen-Map `RLDEN01`** und das Tür-Skript auf der Den-Map (Mapper-Arbeit), dazu Protos und Grafiken für Essie und Kolbe.
+1. **Innen-Map `RLDEN01`** und der Eingang auf der Den-Map: erledigt in [Umsetzung 2](umsetzung-2-die-gosse.md). Offen sind noch Protos und Grafiken für Essie und Kolbe.
 2. **Anwerbung** aus Phase 4 (Werben/Zwingen). Damit entfällt die vorläufige Sofortbesetzung neuer Zimmer.
 3. **Questline „Ketten“**, Akt 1: Metzgers Angebot, aufbauend auf `RL_W_METZGER` und `RL_W_KETTEN_ZWEIG`.
 4. **Dunkle Module** (Riegel außen, gezinkte Waage, Akte …) mit ihren Sonderregeln.

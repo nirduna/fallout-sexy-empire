@@ -15,6 +15,10 @@
 #   OUT              Zielordner fuer die .int-Dateien (Standard build/scripts)
 #   TEXT_OUT         Zielordner fuer die .msg-Dateien (Standard build/text)
 #   TEXT_ENCODING    Kodierung der Texte im Spiel (Standard WINDOWS-1252, siehe Phase 5)
+#   FO2_MAPS         Kartenordner des RPU (data/maps) mit den Vorlagen fuer die Innenkarten
+#                    (Standard: $FO2_SCRIPTS_SRC/../data/maps, also ein Klon des RPU-Repositorys)
+#   RL_MAP_INDEX     Nummer der Gosse in maps.txt (Standard 173 = RPU, siehe install/maps.txt.add)
+#   MAP_OUT          Zielordner fuer die .map-Dateien (Standard build/maps)
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -31,6 +35,10 @@ if command -v python3 > /dev/null; then
   python3 "$ROOT/tools/gen_katalog.py" > /dev/null
   if ! git -C "$ROOT" diff --quiet -- scripts_src/headers/rl_katalog.h text_src/german/dialog/_rl_module.inc 2>/dev/null; then
     echo "HINWEIS: rl_katalog.h/_rl_module.inc wurden aus tools/ausbau_sim.py neu erzeugt."
+  fi
+  python3 "$ROOT/tools/bau_karten.py" header > /dev/null
+  if ! git -C "$ROOT" diff --quiet -- scripts_src/headers/rl_karten.h 2>/dev/null; then
+    echo "HINWEIS: rl_karten.h wurde aus tools/bau_karten.py neu erzeugt."
   fi
   python3 "$ROOT/tools/check_msg.py" || { echo "FEHLER: Texte passen nicht zu den Skripten"; exit 1; }
 fi
@@ -78,4 +86,19 @@ while IFS= read -r msg; do
     status=1
   fi
 done < <(find "$ROOT/text_src" -type f ! -name '*.inc' | sort)   # .msg, cuts/*.txt, *.add
+
+# Karten: Innenkarten aus den Vorlagen des RPU (die Vorlagen liegen nicht im Repository)
+FO2_MAPS="${FO2_MAPS:-$FO2_SCRIPTS_SRC/../data/maps}"
+MAP_OUT="${MAP_OUT:-$ROOT/build/maps}"
+if [ -d "$FO2_MAPS" ] && command -v python3 > /dev/null; then
+  PROTOS=()
+  if [ -d "$FO2_MAPS/../proto" ]; then PROTOS=(--protos "$FO2_MAPS/../proto"); fi
+  if ! python3 "$ROOT/tools/bau_karten.py" bauen --karten "$FO2_MAPS" --out "$MAP_OUT" \
+         --skript-basis "$BASE" --karten-index "${RL_MAP_INDEX:-173}" ${PROTOS[@]+"${PROTOS[@]}"}; then
+    echo "FEHLER Karten"
+    status=1
+  fi
+else
+  echo "HINWEIS: Karten nicht gebaut (FO2_MAPS=$FO2_MAPS fehlt oder kein python3)."
+fi
 exit $status

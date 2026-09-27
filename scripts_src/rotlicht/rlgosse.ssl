@@ -1,0 +1,47 @@
+/*
+   rlgosse.ssl - Kellertreppe zur Gosse (Den Business 2)
+
+   Umsetzung 2:
+     - gl_rotlicht setzt die Treppe beim Betreten von Den Business 2 in die
+       Ruine oestlich der Sklavengilde (Position in rl_karten.h). Die
+       Vanilla-Karte bleibt unveraendert.
+     - Benutzen fuehrt in die Innenkarte RLDEN01 (Startpunkt im Kartenkopf).
+     - Zurueck geht es ueber die Treppe in RLDEN01. Deren Ziel steht in den
+       Kartendaten, dafuer braucht es kein Skript.
+
+   Texte: text_src/german/dialog/rlgosse.msg
+*/
+
+#define SCRIPT_REALNAME "rlgosse"
+#include "define.h"
+#include "../headers/rotlicht.h"
+
+#define NAME                    SCRIPT_RLGOSSE
+#include "command.h"
+
+procedure start;
+procedure look_at_p_proc;
+procedure description_p_proc;
+procedure use_p_proc;
+
+procedure start begin
+end
+
+procedure look_at_p_proc begin
+   script_overrides;
+   display_mstr(100);
+end
+
+procedure description_p_proc begin
+   script_overrides;
+   display_mstr(101);
+end
+
+procedure use_p_proc begin
+   script_overrides;
+   if (source_obj != dude_obj) then return;
+   if (combat_is_initialized) then
+      display_mstr(102);
+   else
+      load_map(RL_KARTE_GOSSE, 0);
+end

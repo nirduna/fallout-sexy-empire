@@ -10,6 +10,7 @@
         der Rest wird zur Krise, die der Spieler vor Ort loesen muss.
      5. Stadtruf, Titel und Endslides nachfuehren (Phase 6).
      6. Selbsttest gegen tools/economy_sim.py (mit -mRL_SELBSTTEST).
+     7. Die Kellertreppe zur Gosse auf Den Business 2 setzen (Umsetzung 2).
 
    sfall laedt alle gl*.int beim Spielstart. Die Wochenlogik laeuft nur
    auf lokalen Karten; Reisezeit auf der Weltkarte wird beim naechsten
@@ -28,9 +29,13 @@
 
 #define RL_TICK_FRAMES              (600)   // etwa alle 10 Sekunden pruefen
 #define RL_TASTE_SPAWN              (67)    // DIK_F9: Debug, Essie und Kolbe erscheinen lassen
+#define RL_TASTE_GOSSE              (68)    // DIK_F10: Debug, direkt in die Gosse (RLDEN01)
+#define RL_TASTE_TREPPE             (87)    // DIK_F11: Debug, auf Den Business 2 neben die Kellertreppe
 
 procedure start;
+procedure map_enter_p_proc;
 procedure rl_tick;
+procedure rl_gosse_eingang;
 procedure rl_welt_modifikatoren;
 procedure rl_laeufer;
 procedure rl_ereignis_wurf(variable h);
@@ -65,9 +70,33 @@ procedure start begin
    end
 end
 
+// sfall ruft map_enter_p_proc globaler Skripte bei jedem Kartenwechsel auf
+procedure map_enter_p_proc begin
+   if (cur_map_index == MAP_DEN_BUSINESS) then call rl_gosse_eingang;
+end
+
+/* Die Gosse: Die Vanilla-Karte Den Business 2 bleibt unveraendert. Die
+   Kellertreppe wird gesetzt, sobald sie fehlt (auch nach dem Laden eines
+   Spielstands, in dem sie noch nicht existierte; dafuer ruft auch der Tick
+   diese Prozedur). Liegt sie nach einem Update an einem anderen Hex
+   (RL_GOSSE_TREPPE_HEX geaendert), wird die alte entfernt. */
+procedure rl_gosse_eingang begin
+   variable alt, obj;
+   if (welt == 0) then welt := rl_lade_welt;
+   alt := welt[RL_W_GOSSE_TREPPE] - 1;
+   if ((alt >= 0) and (alt != RL_GOSSE_TREPPE_HEX)) then begin
+      obj := tile_contains_pid_obj(alt, RL_GOSSE_TREPPE_EBENE, RL_GOSSE_TREPPE_PID);
+      if (obj) then destroy_object(obj);
+   end
+   if (tile_contains_pid_obj(RL_GOSSE_TREPPE_HEX, RL_GOSSE_TREPPE_EBENE, RL_GOSSE_TREPPE_PID) == 0) then
+      obj := create_object_sid(RL_GOSSE_TREPPE_PID, RL_GOSSE_TREPPE_HEX, RL_GOSSE_TREPPE_EBENE, SCRIPT_RLGOSSE);
+   welt[RL_W_GOSSE_TREPPE] := RL_GOSSE_TREPPE_HEX + 1;
+end
+
 procedure rl_tick begin
    variable jetzt, wochen, h, tyrann, ausbeutung;
 
+   if (cur_map_index == MAP_DEN_BUSINESS) then call rl_gosse_eingang;
    call rl_prolog_nachlauf;
    if (welt[RL_W_AKTIV] == 0) then return;
 
@@ -374,13 +403,22 @@ procedure rl_prolog_nachlauf begin
 end
 
 #ifdef RL_DEBUG
-/* Debug: F9 laesst Essie und Kolbe neben dem Spieler erscheinen, damit sich
-   der Prolog ohne die Innen-Map RLDEN01 testen laesst. Vorlaeufige Figuren:
-   Durchschnittsbaeuerin und Schlaeger aus Vanilla. */
+/* Debug-Tasten:
+     F9   Essie und Kolbe erscheinen neben dem Spieler, damit sich der Prolog
+          auch ohne die Innenkarte RLDEN01 testen laesst. Figuren wie in
+          RLDEN01: Durchschnittsbaeuerin und Schlaeger aus Vanilla.
+     F10  direkt in die Gosse (Pruefliste der Karten)
+     F11  auf Den Business 2 neben die Kellertreppe (Pruefliste der Karten) */
 procedure rl_taste begin
    variable gedrueckt := get_sfall_arg;
    variable taste := get_sfall_arg;
-   if (gedrueckt and (taste == RL_TASTE_SPAWN)) then call rl_debug_spawn;
+   if (not gedrueckt) then return;
+   if (taste == RL_TASTE_SPAWN) then
+      call rl_debug_spawn;
+   else if (taste == RL_TASTE_GOSSE) then
+      load_map(RL_KARTE_GOSSE, 0);
+   else if ((taste == RL_TASTE_TREPPE) and (cur_map_index == MAP_DEN_BUSINESS)) then
+      move_to(dude_obj, RL_GOSSE_ANKUNFT_HEX, RL_GOSSE_TREPPE_EBENE);
 end
 
 procedure rl_debug_spawn begin

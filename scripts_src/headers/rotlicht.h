@@ -30,6 +30,8 @@
 #endif
 #define SCRIPT_RLESSIE              (RL_SCRIPT_BASE + 0)
 #define SCRIPT_RLKOLBE              (RL_SCRIPT_BASE + 1)
+#define SCRIPT_RLGOSSE              (RL_SCRIPT_BASE + 2)   // Kellertreppe zur Gosse (Den Business 2)
+#define SCRIPT_RLDEN01              (RL_SCRIPT_BASE + 3)   // Kartenskript der Gosse
 
 /* ------------------------------------------------------------------ */
 /* Echte GVARs (Phase 6). Nur dort, wo die Engine sie verlangt:        */
@@ -150,6 +152,7 @@
 #define RL_W_DIEBSTAHL_WOCHE        (24)    // Woche des Diebstahls (Metzger merkt es 2 Wochen spaeter)
 #define RL_W_KETTEN_ZWEIG           (25)    // 0 offen, 1 Flucht, 2 Tyrann
 #define RL_W_ESSIE_REAKTION         (26)    // 1 = Essies Reaktion auf die Uebernahme gezeigt
+#define RL_W_GOSSE_TREPPE           (27)    // Hex + 1, an dem die Kellertreppe gesetzt wurde
 
 #define RL_PROLOG_OFFEN             (0)
 #define RL_PROLOG_LAEUFT            (1)
@@ -252,6 +255,7 @@
 #define rl_max(a, b)                (((a) > (b)) * (a) + ((a) <= (b)) * (b))
 
 #include "rl_katalog.h"
+#include "rl_karten.h"
 
 procedure rl_clamp(variable v, variable lo, variable hi);
 procedure rl_fdiv(variable a, variable b);

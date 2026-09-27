@@ -1,2 +1,4 @@
 rlessie.int     ; Madame Esther Kowalski, die Gosse (Rotlicht)          # local_vars=0
 rlkolbe.int     ; Kolbe, Metzgers Eintreiber (Rotlicht)                 # local_vars=0
+rlgosse.int     ; Kellertreppe zur Gosse, Den Business 2 (Rotlicht)     # local_vars=0
+rlden01.int     ; Kartenskript der Gosse RLDEN01 (Rotlicht)             # local_vars=0

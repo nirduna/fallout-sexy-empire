@@ -1,0 +1,6 @@
+; Rotlicht ueber dem Oedland: Die Gosse gehoert zur Den.
+; In city.txt im Abschnitt [Area 01] (area_name=Den) nach entrance_2 einfuegen.
+; Ohne Koordinaten (-1,-1) erscheint der Eingang nicht auf der Stadtkarte;
+; er sorgt nur dafuer, dass die Engine die Karte der Den zuordnet
+; (Pip-Boy, Spielstand, cur_town).
+entrance_3=Off,-1,-1,Rotlicht Gosse,-1,-1,0
