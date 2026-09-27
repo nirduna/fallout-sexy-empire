@@ -140,6 +140,9 @@ python3 tools/paket.py --rpu /pfad/rpu-klon --release v2.4.34   # oder v2.3.34
   - `map.msg`: der Kartenname unter der richtigen Nummer
 - **Karte:** Es baut `rlden01.map` aus Beckys Keller **desselben Releases**. RPU 2.4 hat dort 20 Objekte mehr als 2.3, darunter neue Protos, die es in 2.3 nicht gibt.
 - **Neues Spiel:** Das Addon fügt fünf GVARs hinzu. Alte Spielstände laden damit nicht richtig.
+- **Sprache:** Die Engine sucht Texte im Ordner der eingestellten Sprache (`fallout2.cfg`, `language=`). Der erste Test lief auf Englisch und zeigte deshalb „Error“. Das Paket legt die (deutschen) Texte jetzt für `german` und `english` ab (`--sprachen`).
+  - Nur die deutsche RPU-Übersetzung bringt Schriften mit Umlauten mit.
+  - Im englischen Ordner stehen die Texte deshalb in Umschrift (ae, oe, ue, ss).
 
 **Im Spiel:**
 1. Den Ordner `mods/rotlicht` nach `<Fallout 2>/mods/` kopieren.
