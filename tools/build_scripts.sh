@@ -14,7 +14,8 @@
 #   RL_DEBUG=1       baut Debug-Optionen ein (z. B. Haus sofort uebernehmen)
 #   OUT              Zielordner fuer die .int-Dateien (Standard build/scripts)
 #   TEXT_OUT         Zielordner fuer die .msg-Dateien (Standard build/text)
-#   TEXT_ENCODING    Kodierung der Texte im Spiel (Standard WINDOWS-1252, siehe Phase 5)
+#   TEXT_ENCODING    Kodierung der Texte im Spiel (Standard WINDOWS-1252; die Spieltexte
+#                    sind englisch und reines ASCII, tools/check_msg.py prueft das)
 #   FO2_MAPS         Kartenordner des RPU (data/maps) mit den Vorlagen fuer die Innenkarten
 #                    (Standard: $FO2_SCRIPTS_SRC/../data/maps, also ein Klon des RPU-Repositorys)
 #   RL_MAP_INDEX     Nummer der Gosse in maps.txt (Standard 173 = RPU, siehe install/maps.txt.add)
@@ -34,7 +35,7 @@ OUT="$(cd "$OUT" && pwd)"   # absolut: sslc laeuft im Ordner der Quelle
 # Vorab: stimmen Katalog und Texte mit den Skripten ueberein?
 if command -v python3 > /dev/null; then
   python3 "$ROOT/tools/gen_katalog.py" > /dev/null
-  if ! git -C "$ROOT" diff --quiet -- scripts_src/headers/rl_katalog.h text_src/german/dialog/_rl_module.inc 2>/dev/null; then
+  if ! git -C "$ROOT" diff --quiet -- scripts_src/headers/rl_katalog.h text_src/english/dialog/_rl_module.inc 2>/dev/null; then
     echo "HINWEIS: rl_katalog.h/_rl_module.inc wurden aus tools/ausbau_sim.py neu erzeugt."
   fi
   python3 "$ROOT/tools/bau_karten.py" header > /dev/null

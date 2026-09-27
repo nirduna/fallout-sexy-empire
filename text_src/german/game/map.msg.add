@@ -1,6 +1,0 @@
-# Rotlicht ueber dem Oedland: Kartenname fuer Pip-Boy und Spielstand.
-# An data/text/german/game/map.msg anhaengen. Nummer = 200 + 3 * Kartennummer + Ebene
-# (Kartennummer aus install/maps.txt.add, Restoration Project: 173).
-{719}{}{Die Gosse}
-{720}{}{}
-{721}{}{}

@@ -8,7 +8,7 @@
        Bericht, Kasse, Preise, Anteil, Moral, Krisen, Ausbau
      - wurde sie an Metzger ausgeliefert, verschwindet sie
 
-   Texte: text_src/german/dialog/rlessie.msg
+   Texte: text_src/english/dialog/rlessie.msg
 */
 
 #define SCRIPT_REALNAME "rlessie"

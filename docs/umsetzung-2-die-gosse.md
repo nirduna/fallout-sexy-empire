@@ -23,8 +23,8 @@
 | [`scripts_src/rotlicht/rlden01.ssl`](../scripts_src/rotlicht/rlden01.ssl) | **neu:** Kartenskript der Gosse (Kellerlicht, Satz beim ersten Besuch) |
 | [`scripts_src/global/gl_rotlicht.ssl`](../scripts_src/global/gl_rotlicht.ssl) | setzt die Treppe auf Den Business 2; Debug-Tasten F11 (in die Gosse) und F8 (neben die Treppe) |
 | [`scripts_src/headers/rotlicht.h`](../scripts_src/headers/rotlicht.h) | Skripte `SCRIPT_RLGOSSE` (Basis + 2) und `SCRIPT_RLDEN01` (Basis + 3), Welt-Feld `RL_W_GOSSE_TREPPE` |
-| [`text_src/german/dialog/rlgosse.msg`](../text_src/german/dialog/rlgosse.msg), [`rlden01.msg`](../text_src/german/dialog/rlden01.msg) | **neu:** Texte der Treppe und der Karte |
-| [`install/maps.txt.add`](../install/maps.txt.add), [`install/city.txt.add`](../install/city.txt.add), [`text_src/german/game/map.msg.add`](../text_src/german/game/map.msg.add) | **neu:** Karteneintrag, Zuordnung zur Den, Kartenname |
+| [`text_src/english/dialog/rlgosse.msg`](../text_src/english/dialog/rlgosse.msg), [`rlden01.msg`](../text_src/english/dialog/rlden01.msg) | **neu:** Texte der Treppe und der Karte |
+| [`install/maps.txt.add`](../install/maps.txt.add), [`install/city.txt.add`](../install/city.txt.add), [`text_src/english/game/map.msg.add`](../text_src/english/game/map.msg.add) | **neu:** Karteneintrag, Zuordnung zur Den, Kartenname |
 | [`install/scripts.lst.add`](../install/scripts.lst.add) | zwei Zeilen mehr (`rlgosse`, `rlden01`) |
 | [`tools/build_scripts.sh`](../tools/build_scripts.sh) | baut jetzt auch die Karte (`build/maps/rlden01.map`) und hält die Einstellungen in `build/scripts/rl_build.txt` fest |
 | [`tools/paket.py`](../tools/paket.py) | **neu:** fertiges Testpaket als sfall-Mod-Ordner für ein bestimmtes RPU-Release (Abschnitt 4.1) |
@@ -44,7 +44,7 @@
   - Die Karten des RPU bleiben unberührt. Das Addon verträgt sich damit mit jeder RPU-Fassung.
 - **Benutzen:**
   - Der Spieler geht zur Treppe, und `rlgosse.ssl` lädt `rlden01.map`.
-  - Mitten im Kampf geht das nicht („Nicht mitten im Kampf.“).
+  - Mitten im Kampf geht das nicht („Not in the middle of a fight.“).
 - **Verlegen:** Ändert sich `GOSSE["treppe_hex"]` in einer späteren Fassung, entfernt das Skript die alte Treppe beim nächsten Besuch. Dafür merkt es sich den Hex in `RL_W_GOSSE_TREPPE`.
 
 ### 2.2 Die Innenkarte RLDEN01
@@ -124,7 +124,7 @@ python3 tools/paket.py --rpu /pfad/rpu-klon --release v2.4.34   # oder v2.3.34
 # -> build/paket/rotlicht_test_rpu-v2.4.34.zip
 ```
 
-- **Release:** Das Werkzeug nimmt die Systemdateien aus genau diesem RPU-Release (`git show <release>:…`). Die deutschen Texte wandelt es dabei in Windows-1252 um, wie das RPU sie ausliefert.
+- **Release:** Das Werkzeug nimmt die Systemdateien aus genau diesem RPU-Release (`git show <release>:…`).
 - **Zählungen:** Es prüft, ob sie zum Build passen:
 
   | Datei | Erwartet |
@@ -140,9 +140,7 @@ python3 tools/paket.py --rpu /pfad/rpu-klon --release v2.4.34   # oder v2.3.34
   - `map.msg`: der Kartenname unter der richtigen Nummer
 - **Karte:** Es baut `rlden01.map` aus Beckys Keller **desselben Releases**. RPU 2.4 hat dort 20 Objekte mehr als 2.3, darunter neue Protos, die es in 2.3 nicht gibt.
 - **Neues Spiel:** Das Addon fügt fünf GVARs hinzu. Alte Spielstände laden damit nicht richtig.
-- **Sprache:** Die Engine sucht Texte im Ordner der eingestellten Sprache (`fallout2.cfg`, `language=`). Der erste Test lief auf Englisch und zeigte deshalb „Error“. Das Paket legt die (deutschen) Texte jetzt für `german` und `english` ab (`--sprachen`).
-  - Nur die deutsche RPU-Übersetzung bringt Schriften mit Umlauten mit.
-  - Im englischen Ordner stehen die Texte deshalb in Umschrift (ae, oe, ue, ss).
+- **Sprache:** Die Engine sucht Texte im Ordner der eingestellten Sprache (`fallout2.cfg`, `language=`). Der erste Test lief auf Englisch und zeigte deshalb „Error“, weil die Texte damals nur deutsch vorlagen. Seitdem sind alle Spieltexte englisch ([Spieltexte auf Englisch](spieltexte-englisch.md)), und das Paket legt sie unter `text/english` ab (weitere Sprachordner mit `--sprachen`).
 
 **Im Spiel:**
 1. Den Ordner `mods/rotlicht` nach `<Fallout 2>/mods/` kopieren.
@@ -190,20 +188,20 @@ Die Bilder sind schematisch:
 | 1 | Zur Ruine östlich der Sklavengilde gehen (mit Debug: **F8** auf Den Business 2) | Eine Kellertreppe steht in der Ruine, an Hex 18458 | Hexnummer des Ortes notieren (Mapper oder ungefähr per Bild) |
 | 2 | Wie sieht die Treppe aus? | Sie ragt nicht in eine Wand, steht nicht halb im Schutt und ist ganz zu sehen | Beschreiben, was stört. Ich verlege sie |
 | 3 | Unter das Dach der Ruine gehen | Das Dach blendet sich aus, die Treppe bleibt sichtbar | – |
-| 4 | Maus über die Treppe | „Eine Treppe führt unter die Ruine.“ | Skript fehlt: Zeilen in `scripts.lst` prüfen |
-| 5 | Treppe untersuchen | Text mit der Laterne über dem Abgang | – |
+| 4 | Maus über die Treppe | „Stairs lead down beneath the ruin.“ | Skript fehlt: Zeilen in `scripts.lst` prüfen |
+| 5 | Treppe untersuchen | Text mit der Laterne über dem Abgang („A lantern hangs over the stairwell …“) | – |
 | 6 | Treppe benutzen | Der Spieler geht hin und landet in der Gosse | Meldung notieren. Meist fehlt der Eintrag in `maps.txt` |
 
 **RLDEN01 (Die Gosse)**
 
 | # | Prüfen | Erwartung | Wenn nicht |
 |---|---|---|---|
-| 7 | Ankunft (mit Debug direkt von überall: **F11**) | Unten an der Treppe, gedämpftes Kellerlicht, beim ersten Mal der Satz „Die Gosse. Die Luft ist dick …“ | – |
+| 7 | Ankunft (mit Debug direkt von überall: **F11**) | Unten an der Treppe, gedämpftes Kellerlicht, beim ersten Mal der Satz „The Gutter. The air is thick …“ | – |
 | 8 | Wo die Destille stand (Hex 17062) | Nichts Schwebendes, kein Schatten ohne Objekt | Beschreiben. Dann entferne ich weitere Reste |
 | 9 | Essie und Kolbe | Essie am Tisch, Blick zur Treppe. Kolbe an der Tür zum hinteren Raum. Beide ansprechbar, der Prolog läuft wie in Umsetzung 1 | Stehen sie in einer Wand? Hexnummern notieren |
 | 10 | Holztür zum hinteren Raum | Lässt sich öffnen, dahinter Couches und Bett | – |
 | 11 | Treppe nach oben benutzen | Zurück auf Den Business 2, direkt neben der Kellertreppe | – |
-| 12 | Speichern und Laden in der Gosse | Der Spielstand heißt „Die Gosse“, Pip-Boy und Automap funktionieren | Eintrag in `map.msg` oder `city.txt` prüfen |
+| 12 | Speichern und Laden in der Gosse | Der Spielstand heißt „The Gutter“, Pip-Boy und Automap funktionieren | Eintrag in `map.msg` oder `city.txt` prüfen |
 | 13 | Den Business 2 zweimal verlassen und wieder betreten | Es gibt nur **eine** Treppe | – |
 | 14 | Prolog abschließen (nicht „ausliefern“), die Gosse verlassen und wieder betreten | Kolbe ist weg, Essie führt das Haus | – |
 
@@ -234,7 +232,7 @@ Nicht im Mapper speichern: Der nächste Build würde die Änderungen überschrei
 - **Objekt-IDs:** In Vanilla-Karten sind sie nicht eindeutig, auch nicht bei Objekten mit Skript. Die Engine verbindet Objekt und Skript über die SID.
 - **Treppenziel** (Stairs, Ladder): `Hex | Ebene << 29 | Blickrichtung << 26`.
 - **Globale Skripte** bekommen `map_enter_p_proc` bei jedem Kartenwechsel, in sfall und in fallout2-ce.
-- **Umlaute:** Das RPU liefert deutsche Texte in Windows-1252 aus. Git speichert sie als UTF-8 und wandelt sie beim Auschecken um (`.gitattributes`: `working-tree-encoding=cp1252`). Der Standard des Builds (`TEXT_ENCODING=WINDOWS-1252`) passt also. Die offene Frage aus Phase 5 und Umsetzung 1 ist damit geklärt, sofern der Test nichts anderes zeigt.
+- **Kodierung:** Die Spieltexte sind englisch und reines ASCII, `check_msg.py` prüft das. Zur Information: Das RPU liefert deutsche Texte in Windows-1252 aus. Git speichert sie als UTF-8 und wandelt sie beim Auschecken um (`.gitattributes`: `working-tree-encoding=cp1252`).
 - **RPU-Versionen:** Die Skripte sind gegen die Header von RPU 2.3.34, 2.4.34 und den aktuellen Stand kompiliert byte-gleich. Unterschiede gibt es nur in den Systemdateien (eine Zeile in `scripts.lst`) und in den Karten (Beckys Keller). Beides nimmt `tools/paket.py` aus dem passenden Release.
 - **Debug-Tasten:** F9, F11 und F8. F10 ist im Spiel „Beenden“, F1 bis F7 und F12 sind ebenfalls belegt.
 

@@ -1,0 +1,6 @@
+# Map name for the Pip-Boy and save games.
+# Append to data/text/english/game/map.msg. Number = 200 + 3 * map number + elevation
+# (map number from install/maps.txt.add, Restoration Project: 173).
+{719}{}{The Gutter}
+{720}{}{}
+{721}{}{}

@@ -293,7 +293,7 @@ procedure RLM_Gruppe begin
 end
 
 procedure rlm_option_modul(variable id, variable knoten) begin
-   variable text := mstr(RL_MSG_MODUL_NAME + id) + " (" + rl_modul(id, RL_MK_KOSTEN) + " $)";
+   variable text := mstr(RL_MSG_MODUL_NAME + id) + " ($" + rl_modul(id, RL_MK_KOSTEN) + ")";
    if (knoten == 1) then NOption(text, RLM_Wahl1, 004);
    else if (knoten == 2) then NOption(text, RLM_Wahl2, 004);
    else if (knoten == 3) then NOption(text, RLM_Wahl3, 004);

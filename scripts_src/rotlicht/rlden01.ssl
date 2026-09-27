@@ -9,7 +9,7 @@
 
    Die Karte selbst baut tools/bau_karten.py aus Beckys Keller (denbus1).
 
-   Texte: text_src/german/dialog/rlden01.msg
+   Texte: text_src/english/dialog/rlden01.msg
 */
 
 #define SCRIPT_REALNAME "rlden01"

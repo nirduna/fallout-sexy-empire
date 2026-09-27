@@ -15,6 +15,8 @@ Konzept und Skripte für eine Addon-Modifikation für **Fallout 2** (sfall 4.x).
 
 ## Umsetzung
 
+**Spielsprache:** Das Addon läuft komplett auf Englisch, die Doku bleibt deutsch. Die Zuordnung der Namen steht in [docs/spieltexte-englisch.md](docs/spieltexte-englisch.md).
+
 | Schritt | Inhalt | Status |
 |---|---|---|
 | 1 | Prolog „Essies Schulden“, Ausbau-Dialog, gemeinsame Manager-Knoten | umgesetzt, kompiliert, Test im Spiel offen: [docs/umsetzung-1-prolog-und-ausbau.md](docs/umsetzung-1-prolog-und-ausbau.md) |
@@ -31,7 +33,7 @@ Konzept und Skripte für eine Addon-Modifikation für **Fallout 2** (sfall 4.x).
 
 - `tools/ausbau_sim.py`: Ausbaupfade der sechs Bordelle (Phase 2). Er rechnet Gewinn und Amortisation je Upgrade aus und erzeugt die Tabellen für die Doku. Seine Modulliste ist die einzige Quelle für Kosten und Effekte im Spiel.
 - `tools/gen_katalog.py`: erzeugt daraus `scripts_src/headers/rl_katalog.h` und die Modultexte (läuft bei jedem Build mit).
-- `tools/check_msg.py`: prüft, ob jede im Code verwendete Textnummer in der passenden `.msg` steht (läuft bei jedem Build mit).
+- `tools/check_msg.py`: prüft, ob jede im Code verwendete Textnummer in der passenden `.msg` steht und ob alle Spieltexte reines ASCII sind (läuft bei jedem Build mit).
 - `tools/fomap.py`: liest und schreibt Fallout-2-Karten (.MAP). `pruefen` liest Karten ein und schreibt sie byte-gleich zurück, `info` zeigt den Kopf.
 - `tools/fomap_bild.py`: schematische Draufsicht einer Karte als PNG, mit Hexnummern zum Planen von Positionen.
 - `tools/bau_karten.py`: alle Kartenpositionen an einer Stelle. Baut die Innenkarten aus Vorlagen des RPU und erzeugt `rl_karten.h` (läuft bei jedem Build mit).
@@ -44,7 +46,7 @@ Konzept und Skripte für eine Addon-Modifikation für **Fallout 2** (sfall 4.x).
 
 ## Skripte bauen
 
-Die Skripte liegen in `scripts_src/` (SSL, sfall-Dialekt), die Texte in `text_src/` (UTF-8: Dialoge, Endslide-Untertitel, Titel). Zeilen, die in Dateien der Basisinstallation eingefügt werden (`scripts.lst`, `vault13.gam`, `endgame.txt`, `karmavar.txt`, `maps.txt`, `city.txt`), liegen in `install/`. Gebaut wird mit dem sfall-Compiler `sslc` gegen die Header des Fallout 2 Restoration Project (RPU) und die sfall-Header. Die genaue Anleitung steht in [Phase 5, Abschnitt 10](docs/phase-5-technik.md#10-bauen-und-testen).
+Die Skripte liegen in `scripts_src/` (SSL, sfall-Dialekt), die Spieltexte in `text_src/english/` (englisch, reines ASCII: Dialoge, Meldungen, Endslide-Untertitel, Titel; siehe [Spieltexte auf Englisch](docs/spieltexte-englisch.md)). Zeilen, die in Dateien der Basisinstallation eingefügt werden (`scripts.lst`, `vault13.gam`, `endgame.txt`, `karmavar.txt`, `maps.txt`, `city.txt`), liegen in `install/`. Gebaut wird mit dem sfall-Compiler `sslc` gegen die Header des Fallout 2 Restoration Project (RPU) und die sfall-Header. Die genaue Anleitung steht in [Phase 5, Abschnitt 10](docs/phase-5-technik.md#10-bauen-und-testen).
 
 ```
 SSLC=/pfad/zu/sslc FO2_SCRIPTS_SRC=/pfad/zu/rpu/scripts_src tools/build_scripts.sh

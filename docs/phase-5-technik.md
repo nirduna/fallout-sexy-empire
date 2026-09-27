@@ -17,7 +17,7 @@ Diese Phase liefert nicht nur ein Konzept, sondern **echten, kompilierbaren Code
 | [`scripts_src/headers/rotlicht.h`](../scripts_src/headers/rotlicht.h) | Speicherlayout, Tabellen, Wochenrechnung eines Hauses |
 | [`scripts_src/global/gl_rotlicht.ssl`](../scripts_src/global/gl_rotlicht.ssl) | globales Skript: Wochentakt, Vanilla-Anknüpfungen, Läufer, Ereignisse, Selbsttest |
 | [`scripts_src/rotlicht/rlessie.ssl`](../scripts_src/rotlicht/rlessie.ssl) | Manager-Dialog: Essie in der Gosse, mit Auszahlung |
-| [`text_src/german/dialog/rlessie.msg`](../text_src/german/dialog/rlessie.msg) | Essies Dialogtexte |
+| [`text_src/english/dialog/rlessie.msg`](../text_src/english/dialog/rlessie.msg) | Essies Dialogtexte (seit dem ersten Test englisch, siehe [Spieltexte auf Englisch](spieltexte-englisch.md)) |
 | [`tools/build_scripts.sh`](../tools/build_scripts.sh) | Build mit `sslc` und Text-Konvertierung |
 | [`install/scripts.lst.add`](../install/scripts.lst.add) | Zeile für die `scripts.lst` der Zielinstallation |
 
@@ -253,8 +253,7 @@ end
 ```
 
 **Weitere Details**
-- **Texte:** Sie liegen in `text_src/german/dialog/rlessie.msg` als UTF-8. Der Build wandelt sie standardmäßig nach Windows-1252 um: Die Engine und sfall lesen Textdateien byteweise ohne Umwandlung, und die deutsche Fallout-2-Schrift erwartet Windows-1252.
-- **Achtung beim RPU:** Die deutschen Texte liegen im RPU-Repository als UTF-8 vor. Welche Kodierung deine installierte deutsche RPU-Übersetzung tatsächlich nutzt, lässt sich nur im Spiel sicher prüfen. Zeigt Essie die Umlaute falsch an, baust du mit `TEXT_ENCODING=UTF-8`.
+- **Texte:** Sie liegen in `text_src/english/dialog/rlessie.msg`. **Nachtrag:** Nach dem ersten Test im Spiel sind alle Spieltexte englisch und reines ASCII ([Spieltexte auf Englisch](spieltexte-englisch.md)). Die Frage nach der Kodierung deutscher Texte ist damit vorerst erledigt. Zur Information: Das RPU liefert Deutsch in Windows-1252 aus (`.gitattributes` im RPU-Repository).
 - **Skriptindex:** Die Datei wird über den Skriptindex (`NAME = SCRIPT_RLESSIE`) gefunden.
 - **Moral im Dialog:** Die Wahl des Anteils kommentiert Essie im Ton aus Phase 1 bis 4. Die Tyrannen-Option „Jet statt Lohn“ setzt dauerhaft das Flag `RL_MOD_LEINE`: Die Moral des Hauses bleibt höchstens bei 40, und es kostet 3 Karma pro Woche (Phase 4).
 
@@ -352,7 +351,7 @@ Zusätzliche Schalter (Umgebungsvariablen):
 3. Innen-Map `RLDEN01` mit Map-Skript für sichtbare Ausbauten.
 4. Consigliere im Strumpfband mit Auszahlung der HQ-Kasse und den Familientreffen.
 5. Die übrigen fünf Manager und die Lösungsknoten aller Ereignisse aus Phase 4.
-6. Texte des globalen Skripts in eine eigene `.msg` verschieben (sie stehen jetzt ohne Umlaute im Code).
+6. Texte des globalen Skripts in eine eigene `.msg` verschieben: erledigt, sie stehen in `text_src/english/game/rotlicht.msg`.
 
 ---
 

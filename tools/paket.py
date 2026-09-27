@@ -15,12 +15,10 @@ Releases (die Vorlagen unterscheiden sich zwischen 2.3 und 2.4).
 
 Aufruf (vorher tools/build_scripts.sh mit denselben Basen):
   python3 tools/paket.py --rpu /pfad/rpu-klon --release v2.4.34 [--build build]
-                         [--out build/paket] [--sprachen german,english]
+                         [--out build/paket] [--sprachen english]
 
-Die Texte des Addons gibt es nur auf Deutsch. Sie landen in jedem Sprachordner
-aus --sprachen. Nur die deutsche RPU-Uebersetzung bringt Schriften mit
-Umlauten mit, darum stehen die Texte fuer andere Sprachen in Umschrift
-(ae, oe, ue, ss).
+Die Spieltexte des Addons sind englisch (reines ASCII). Sie landen in jedem
+Sprachordner aus --sprachen, standardmaessig nur in text/english.
 """
 import argparse
 import re
@@ -154,24 +152,11 @@ def karmavar_txt(basis, gvar_basis):
     return anhaengen(basis, [""] + neu)
 
 
-UMSCHRIFT = str.maketrans({"ä": "ae", "ö": "oe", "ü": "ue", "Ä": "Ae", "Ö": "Oe", "Ü": "Ue", "ß": "ss",
-                           "„": '"', "“": '"', "”": '"', "‚": "'", "‘": "'", "’": "'",
-                           "–": "-", "—": "-", "…": "..."})
-
-
-def fuer_sprache(daten, sprache):
-    """Deutsche Texte (Windows-1252) fuer einen Sprachordner. Ohne die Schriften
-    der deutschen Uebersetzung fehlen Umlaute, darum dort Umschrift."""
-    if sprache == "german":
-        return daten
-    return daten.decode("cp1252").translate(UMSCHRIFT).encode("ascii", errors="replace")
-
-
-def msg_anhaengen(basis, add_pfad, sprache, umnummern=None):
+def msg_anhaengen(basis, add_pfad, umnummern=None):
     """Zeilen {n}{}{text} anhaengen; vorhandene Nummern sind ein Fehler."""
     vorhanden = {int(m) for m in re.findall(rb"\{(\d+)\}\{", basis)}
     neu = []
-    for l in fuer_sprache(add_pfad.read_bytes(), sprache).decode("cp1252").splitlines():
+    for l in add_pfad.read_bytes().decode("cp1252").splitlines():
         m = re.match(r"\{(\d+)\}(.*)", l)
         if not m:
             continue
@@ -198,7 +183,7 @@ def packen(a):
     rel = Release(a.rpu, a.release)
     sprachen = [x.strip() for x in a.sprachen.split(",") if x.strip()]
     build = Path(a.build)
-    txt = build / "text" / "german"          # Quelle: der Build (Windows-1252)
+    txt = build / "text" / "english"          # Quelle: der Build
 
     ziel = Path(a.out) / f"rpu-{a.release}"
     if ziel.exists():
@@ -215,10 +200,11 @@ def packen(a):
     dateien["data/karmavar.txt"] = karmavar_txt(rel.datei("data/data/karmavar.txt"), gb)
     for sprache in sprachen:
         dateien[f"text/{sprache}/game/map.msg"] = msg_anhaengen(
-            rel.datei(f"data/text/{sprache}/game/map.msg"), txt / "game" / "map.msg.add", sprache,
+            rel.datei(f"data/text/{sprache}/game/map.msg"), txt / "game" / "map.msg.add",
             lambda n: n - 719 + 200 + 3 * ki)
         dateien[f"text/{sprache}/game/editor.msg"] = msg_anhaengen(
-            rel.datei(f"data/text/{sprache}/game/editor.msg"), txt / "game" / "editor.msg.add", sprache)
+            rel.datei(f"data/text/{sprache}/game/editor.msg"), txt / "game" / "editor.msg.add")
+        dateien[f"text/{sprache}/game/rotlicht.msg"] = (txt / "game" / "rotlicht.msg").read_bytes()
 
     # Innenkarte aus der Vorlage desselben Releases
     with tempfile.TemporaryDirectory() as tmp:
@@ -236,10 +222,10 @@ def packen(a):
         dateien[f"scripts/{p.name}"] = p.read_bytes()
     for sprache in sprachen:
         for p in sorted((txt / "dialog").glob("*.msg")):
-            dateien[f"text/{sprache}/dialog/{p.name}"] = fuer_sprache(p.read_bytes(), sprache)
+            dateien[f"text/{sprache}/dialog/{p.name}"] = p.read_bytes()
         for p in sorted((txt / "cuts").glob("*.txt")):
             for ordner in ("cuts", "cuts_female"):   # Untertitel auch fuer Spielerinnen
-                dateien[f"text/{sprache}/{ordner}/{p.name}"] = fuer_sprache(p.read_bytes(), sprache)
+                dateien[f"text/{sprache}/{ordner}/{p.name}"] = p.read_bytes()
 
     for pfad, daten in dateien.items():
         (mod / pfad).parent.mkdir(parents=True, exist_ok=True)
@@ -259,7 +245,7 @@ def packen(a):
 def anleitungstext(release, sb, gb, ki, debug):
     tasten = """
 DEBUG-TASTEN
-  F11  von überall direkt in die Gosse
+  F11  von überall direkt in die Gosse (The Gutter)
   F8   auf Den Business 2 neben die Kellertreppe (nur dort)
   F9   Essie und Kolbe erscheinen neben dir (Notlösung ohne Karte)
   F12  Bildschirmfoto (Spiel), landet im Fallout-2-Ordner als SCR*.BMP
@@ -267,7 +253,7 @@ DEBUG-TASTEN
     return f"""Rotlicht über dem Ödland – Testpaket
 =====================================
 
-Für: Fallout 2 Restoration Project {release}, deutsche Texte
+Für: Fallout 2 Restoration Project {release}, Spiel auf Englisch
 Build: Skriptbasis {sb}, GVAR-Basis {gb}, Kartennummer der Gosse {ki}{", mit Debug-Tasten" if debug else ""}
 
 WICHTIG
@@ -276,16 +262,6 @@ WICHTIG
 - Neues Spiel nötig: Das Addon fügt fünf globale Variablen hinzu. Alte
   Spielstände laden damit nicht richtig. Sichere vorher den Ordner
   data\\SAVEGAME. Spielstände aus dem Test laden später nur mit dem Addon.
-
-SPRACHE
-- Die Texte des Addons gibt es bisher nur auf Deutsch. Sie liegen im Paket
-  für ein deutsches und für ein englisches Spiel bereit.
-- Englisches Spiel: Die Schriften dort haben keine Umlaute, darum stehen die
-  Texte in Umschrift (ae, oe, ue, ss).
-- Deutsches Spiel (mit Umlauten): Die deutsche RPU-Übersetzung muss
-  installiert sein (mods\rpu_german.dat, sonst den RPU-Installer noch einmal
-  mit "German" ausführen). Dann in fallout2.cfg im Abschnitt [system]
-  setzen:  language=german
 
 INSTALLIEREN
 1. Den Ordner  mods\\rotlicht  aus diesem Paket nach  <Fallout 2>\\mods\\  kopieren.
@@ -302,8 +278,8 @@ WAS PRÜFEN (ausführlich: docs/umsetzung-2-die-gosse.md, Abschnitt 5)
 Den Business 2 (Ruine zwischen Sklavengilde und Mom's Diner):
   1. Steht die Kellertreppe sauber in der Ruine (nicht in einer Wand, nicht
      halb im Schutt)?
-  2. Maus darüber: "Eine Treppe führt unter die Ruine."
-  3. Benutzen: Du landest in der Gosse.
+  2. Maus darüber: "Stairs lead down beneath the ruin."
+  3. Benutzen: Du landest in der Gosse (The Gutter).
 Die Gosse:
   4. Gedämpftes Licht, beim ersten Mal ein Satz zur Stimmung.
   5. Wo Beckys Destille stand: nichts Schwebendes, kein Schatten ohne Objekt.
@@ -311,8 +287,8 @@ Die Gosse:
      der Prolog läuft.
   7. Holztür zum hinteren Raum lässt sich öffnen.
   8. Treppe nach oben: zurück in die Den, direkt neben die Kellertreppe.
-  9. Speichern und Laden in der Gosse, der Spielstand heißt "Die Gosse".
- 10. Umlaute (ä, ö, ü, ß) in den Texten richtig?
+  9. Speichern und Laden in der Gosse, der Spielstand heißt "The Gutter".
+ 10. Alle Texte da? Nirgends "Error"?
 
 WENN ETWAS NICHT GEHT
 - Keine Treppe in der Ruine, F11 tut nichts: Steht  rotlicht  wirklich als
@@ -320,7 +296,8 @@ WENN ETWAS NICHT GEHT
   aktuelle RPU bringt es mit.)
 - Absturz oder Unsinn beim Laden: War es ein alter Spielstand? Dann ein
   neues Spiel beginnen.
-- Statt Text steht "Error": Datei unter mods\rotlicht\text\german fehlt.
+- Statt Text steht "Error": Datei unter mods\rotlicht\text\english fehlt,
+  oder das Spiel läuft in einer anderen Sprache (fallout2.cfg, language=).
 
 RÜCKMELDUNG
 Was stimmt nicht und wo. Am besten mit Bildschirmfoto (F12).
@@ -333,8 +310,8 @@ def main():
     ap.add_argument("--release", required=True, help="Release-Tag, z. B. v2.4.34")
     ap.add_argument("--build", default=str(ROOT / "build"))
     ap.add_argument("--out", default=str(ROOT / "build" / "paket"))
-    ap.add_argument("--sprachen", default="german,english",
-                    help="Sprachordner, in die die (deutschen) Texte kommen")
+    ap.add_argument("--sprachen", default="english",
+                    help="Sprachordner, in die die (englischen) Texte kommen")
     a = ap.parse_args()
     try:
         packen(a)

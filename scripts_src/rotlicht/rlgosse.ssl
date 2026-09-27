@@ -9,7 +9,7 @@
      - Zurueck geht es ueber die Treppe in RLDEN01. Deren Ziel steht in den
        Kartendaten, dafuer braucht es kein Skript.
 
-   Texte: text_src/german/dialog/rlgosse.msg
+   Texte: text_src/english/dialog/rlgosse.msg
 */
 
 #define SCRIPT_REALNAME "rlgosse"

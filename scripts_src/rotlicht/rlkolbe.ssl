@@ -12,7 +12,7 @@
    (Phase 2: minimal-invasiv). Nach dem Prolog verschwindet er, ausser Essie
    wurde ausgeliefert: Dann fuehrt er die Gosse fuer Metzger (rl_manager.h).
 
-   Texte: text_src/german/dialog/rlkolbe.msg
+   Texte: text_src/english/dialog/rlkolbe.msg
 */
 
 #define SCRIPT_REALNAME "rlkolbe"

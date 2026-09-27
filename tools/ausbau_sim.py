@@ -202,6 +202,20 @@ NAMES = {
     "vc_wartungstunnel": "Wartungstunnel", "ncr_karawanenhof": "Karawanenhof",
     "sf_anlegesteg": "Anlegesteg", "sf_shi_siegel": "Siegel der Shi",
 }
+# Namen im Spiel (englisch, reines ASCII fuer die englischen Schriften)
+NAMES_EN = {
+    "hausklasse_2": "House Class II", "hausklasse_3": "House Class III (Family Seat)",
+    "einrichtung_1": "Furnishings I", "einrichtung_2": "Furnishings II",
+    "einrichtung_3": "Furnishings III", "bar_1": "Bar I", "bar_2": "Bar II",
+    "sicherheit_1": "Security I", "sicherheit_2": "Security II",
+    "sicherheit_3": "Security III", "quartiere_1": "Staff Quarters I",
+    "quartiere_2": "Staff Quarters II", "krankenstube": "Sickroom",
+    "kontor": "Counting Room", "vip_trakt": "VIP Wing",
+    "den_riegel_innen": "Inside Bolts", "nr_spieltische": "Gaming Tables",
+    "red_goldwaage": "Honest Gold Scale", "red_entzugsstube": "Detox Room",
+    "vc_wartungstunnel": "Maintenance Tunnel", "ncr_karawanenhof": "Caravan Yard",
+    "sf_anlegesteg": "Jetty", "sf_shi_siegel": "Seal of the Shi",
+}
 TIER_NAMES = {"standard": "Standard", "gehoben": "Gehoben", "exklusiv": "Exklusiv"}
 
 

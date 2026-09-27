@@ -28,6 +28,7 @@
 #define rl_big_jesus_dead           gvar_bit(GVAR_NEW_RENO_FLAG_2, bit_26)
 
 #define RL_TICK_FRAMES              (600)   // etwa alle 10 Sekunden pruefen
+#define RL_TEXTDATEI                "rotlicht.msg"   // text/<sprache>/game/, per sfall geladen
 #define RL_TASTE_SPAWN              (67)    // DIK_F9: Debug, Essie und Kolbe erscheinen lassen
 #define RL_TASTE_GOSSE              (87)    // DIK_F11: Debug, direkt in die Gosse (RLDEN01)
 #define RL_TASTE_TREPPE             (66)    // DIK_F8: Debug, auf Den Business 2 neben die Kellertreppe
@@ -47,6 +48,7 @@ procedure rl_ende_und_titel;
 procedure rl_setze_gvar(variable gvar, variable wert);
 procedure rl_selbsttest;
 procedure rl_prolog_nachlauf;
+procedure rl_text(variable n);
 #ifdef RL_DEBUG
 procedure rl_taste;
 procedure rl_debug_spawn;
@@ -54,10 +56,12 @@ procedure rl_debug_spawn;
 
 variable haus;
 variable welt;
+variable rl_texte := -1;    // Datei-ID von rotlicht.msg
 
 procedure start begin
    if (game_loaded) then begin
       set_global_script_repeat(RL_TICK_FRAMES);
+      rl_texte := add_extra_msg_file(RL_TEXTDATEI);   // sfall vergisst die ID beim Laden
       haus := rl_lade_haeuser;
       welt := rl_lade_welt;
 #ifdef RL_DEBUG
@@ -128,7 +132,7 @@ procedure rl_tick begin
                haus[rl_idx(h, RL_F_BAU_WOCHEN)] := haus[rl_idx(h, RL_F_BAU_WOCHEN)] - 1;
                if (haus[rl_idx(h, RL_F_BAU_WOCHEN)] <= 0) then begin
                   call rl_bau_fertig(haus, h);
-                  display_msg(rl_haus_name(h) + ": Der Ausbau ist fertig.");
+                  display_msg(rl_haus_name(h) + ": " + rl_text(110));
                end
             end
             if (haus[rl_idx(h, RL_F_KRISE)] != RL_EV_KEINS) then begin
@@ -137,7 +141,7 @@ procedure rl_tick begin
                if (haus[rl_idx(h, RL_F_KRISENWOCHEN)] == 3) then begin
                   haus[rl_idx(h, RL_F_MORAL)] := rl_max(0, haus[rl_idx(h, RL_F_MORAL)] - 10);
                   haus[rl_idx(h, RL_F_RUF)] := rl_max(0, haus[rl_idx(h, RL_F_RUF)] - 10);
-                  display_msg(rl_haus_name(h) + ": Die Krise ist ausser Kontrolle geraten.");
+                  display_msg(rl_haus_name(h) + ": " + rl_text(111));
                end
             end else begin
                call rl_ereignis_wurf(h);
@@ -218,8 +222,7 @@ procedure rl_laeufer begin
             faktor := get_array([100, 50, 25, 125], welt[RL_W_MARCUS]);
          chance := rl_min(25, haus[rl_idx(h, RL_F_HITZE)] / 4) * faktor / 100;
          if (random(1, 100) <= chance) then begin
-            display_msg(rl_haus_name(h) + ": Die Laeufer sind ueberfallen worden. "
-                        + haus[rl_idx(h, RL_F_KASSE)] + " $ sind weg.");
+            display_msg(rl_haus_name(h) + ": " + rl_text(112) + haus[rl_idx(h, RL_F_KASSE)] + rl_text(113));
          end else begin
             welt[RL_W_HQ_KASSE] := welt[RL_W_HQ_KASSE] + haus[rl_idx(h, RL_F_KASSE)];
          end
@@ -254,11 +257,11 @@ procedure rl_ereignis_wurf(variable h) begin
          haus[rl_idx(h, RL_F_RUF)] := rl_max(0, haus[rl_idx(h, RL_F_RUF)] - 2);
       else
          haus[rl_idx(h, RL_F_KASSE)] := haus[rl_idx(h, RL_F_KASSE)] - 100;
-      display_msg(rl_haus_name(h) + ": Die Madame hat einen Vorfall selbst geregelt.");
+      display_msg(rl_haus_name(h) + ": " + rl_text(114));
    end else begin
       haus[rl_idx(h, RL_F_KRISE)] := ereignis;
       haus[rl_idx(h, RL_F_KRISENWOCHEN)] := 0;
-      display_msg(rl_haus_name(h) + ": KRISE. Du wirst vor Ort gebraucht.");
+      display_msg(rl_haus_name(h) + ": " + rl_text(115));
    end
 end
 
@@ -399,7 +402,7 @@ procedure rl_prolog_nachlauf begin
    if ((welt[RL_W_PROLOG_WEG] == RL_WEG_GESTOHLEN) and (welt[RL_W_METZGER] != RL_METZGER_FEIND)
        and (rl_woche_jetzt >= welt[RL_W_DIEBSTAHL_WOCHE] + 2)) then begin
       welt[RL_W_METZGER] := RL_METZGER_FEIND;
-      display_msg("Die Gosse: Metzger hat nachgezaehlt. Der Schuldschein fehlt, und er weiss, wer ihn hat.");
+      display_msg(rl_haus_name(RL_DEN) + ": " + rl_text(120));
    end
 end
 
@@ -426,13 +429,18 @@ procedure rl_debug_spawn begin
    variable obj;
    obj := create_object_sid(PID_AVERAGE_PEASANT_FEMALE, tile_num_in_direction(dude_tile, 0, 2), dude_elevation, SCRIPT_RLESSIE);
    obj := create_object_sid(PID_TOUGH_THUG_MALE, tile_num_in_direction(dude_tile, 1, 3), dude_elevation, SCRIPT_RLKOLBE);
-   display_msg("[Debug] Essie und Kolbe sind da.");
+   display_msg(rl_text(190));
 end
 #endif
 
 procedure rl_haus_name(variable h) begin
-   return get_array(["Die Gosse", "Das Silberne Strumpfband", "Die Schlacke",
-                     "Die Kloake", "Die Traenke", "Die Bilge", "Testhaus"], h);
+   return rl_text(100 + h);
+end
+
+// Spieltexte stehen in text/<sprache>/game/rotlicht.msg, nicht im Code
+procedure rl_text(variable n) begin
+   if (rl_texte <= 0) then rl_texte := add_extra_msg_file(RL_TEXTDATEI);
+   return message_str_game(rl_texte, n);
 end
 
 /* Selbsttest: rechnet das Beispielhaus aus Phase 1 (New Reno, mittlerer
@@ -472,5 +480,5 @@ procedure rl_selbsttest begin
       end
       stufe := stufe + 1;
    end
-   display_msg("Rotlicht-Selbsttest fertig, Ausgabe in debug.log.");
+   display_msg(rl_text(191));
 end

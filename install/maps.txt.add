@@ -1,7 +1,7 @@
 ; Rotlicht ueber dem Oedland: Innenkarte der Gosse.
 ; Ans Ende der maps.txt anhaengen. Die Nummer muss die naechste freie sein
 ; (Restoration Project: 173, weil der letzte Eintrag [Map 172] ist).
-; Wer eine andere Nummer braucht, aendert auch text_src/german/game/map.msg.add
+; Wer eine andere Nummer braucht, aendert auch text_src/english/game/map.msg.add
 ; (dort 200 + 3 * Nummer + Ebene) und baut mit RL_MAP_INDEX=<Nummer>.
 
 [Map 173]

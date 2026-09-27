@@ -5,7 +5,7 @@ Eine Quelle der Wahrheit: Kosten und Effekte stehen in tools/ausbau_sim.py
 (UPGRADES). Dieses Skript schreibt daraus
 
   scripts_src/headers/rl_katalog.h          (Werte fuer den Ausbau-Dialog)
-  text_src/german/dialog/_rl_module.inc     (Namen 400-422, Effekte 500-522)
+  text_src/english/dialog/_rl_module.inc    (Namen 400-422, Effekte 500-522, englisch)
 
 Aufruf:  python3 tools/gen_katalog.py
 """
@@ -62,36 +62,38 @@ def erlaubte_staedte(key):
 
 
 def effekt_text(u, wochen):
+    """Wirkung im Spiel (englisch)."""
     teile = []
     if u.get("klasse"):
-        teile.append("Hausklasse +1")
+        teile.append("house class +1")
     if u.get("rooms"):
-        teile.append(f"+{u['rooms']} Zimmer")
+        teile.append(f"+{u['rooms']} room{'s' if u['rooms'] != 1 else ''}")
     if u.get("furnishing"):
-        teile.append(f"Ausstattung +{u['furnishing']}")
+        teile.append(f"furnishings +{u['furnishing']}")
     if u.get("bar_level"):
-        teile.append(f"Bar-Stufe +1 (+{sim_bar()} $ je Kunde)")
+        teile.append(f"bar level +1 (+${sim_bar()} per customer)")
     if u.get("security"):
-        teile.append(f"Sicherheit +{u['security']}")
+        teile.append(f"security +{u['security']}")
     if u.get("moral_bonus"):
-        teile.append(f"Moral +{u['moral_bonus']} pro Woche")
+        teile.append(f"morale +{u['moral_bonus']} per week")
     if u.get("doc"):
-        teile.append("ein Doc im Haus")
+        teile.append("a doctor in the house")
     if u.get("accountant"):
-        teile.append("Buchhalter, Schwund 4 %")
+        teile.append("a bookkeeper, shrinkage 4%")
     if u.get("vip"):
-        teile.append("eigene VIP-Kundschaft")
+        teile.append("VIP clientele of its own")
     if u.get("side"):
-        teile.append(f"+{u['side']} $ Nebenumsatz je Kunde")
+        teile.append(f"+${u['side']} side income per customer")
     if u.get("city_mod"):
-        teile.append(f"Kunden +{u['city_mod']} %")
+        teile.append(f"customers +{u['city_mod']}%")
     if u.get("tribute"):
-        teile.append(f"Tribut {u['tribute']} Prozentpunkte")
+        teile.append(f"tribute {u['tribute']} percentage points")
     if u.get("wages"):
-        teile.append(f"Lohn +{u['wages']} $/Woche")
-    teile.append(f"Unterhalt +{u.get('levels', 0) * 25} $/Woche")
-    teile.append(f"Bauzeit {wochen} Woche{'n' if wochen != 1 else ''}")
-    return ", ".join(teile)
+        teile.append(f"wages +${u['wages']}/week")
+    teile.append(f"upkeep +${u.get('levels', 0) * 25}/week")
+    teile.append(f"build time {wochen} week{'s' if wochen != 1 else ''}")
+    text = ", ".join(teile)
+    return text[0].upper() + text[1:]
 
 
 def sim_bar():
@@ -101,7 +103,7 @@ def sim_bar():
 
 def main():
     keys = list(sim.UPGRADES)
-    assert set(keys) == set(META), "META und UPGRADES stimmen nicht ueberein"
+    assert set(keys) == set(META) == set(sim.NAMES_EN), "META, NAMES_EN und UPGRADES stimmen nicht ueberein"
     idx = {k: i for i, k in enumerate(keys)}
 
     felder = {
@@ -165,13 +167,15 @@ def main():
 
     m = ["# _rl_module.inc - ERZEUGT von tools/gen_katalog.py, nicht von Hand aendern.",
          "# Wird vom Build in jede Manager-.msg eingefuegt (Zeile '# @include _rl_module.inc').",
-         "# Modulnamen (400 + ID)"]
+         "# Module names (400 + ID)"]
     for k in keys:
-        m.append(f"{{{400 + idx[k]}}}{{}}{{{sim.NAMES[k]}}}")
-    m.append("# Effekte (500 + ID)")
+        m.append(f"{{{400 + idx[k]}}}{{}}{{{sim.NAMES_EN[k]}}}")
+    m.append("# Effects (500 + ID)")
     for k in keys:
         m.append(f"{{{500 + idx[k]}}}{{}}{{{effekt_text(sim.UPGRADES[k], META[k].get('wochen', 1))}.}}")
-    (ROOT / "text_src/german/dialog/_rl_module.inc").write_text("\n".join(m) + "\n", encoding="utf-8")
+    inhalt = "\n".join(m) + "\n"
+    assert inhalt.isascii(), "Spieltexte muessen ASCII sein (englische Schriften)"
+    (ROOT / "text_src/english/dialog/_rl_module.inc").write_text(inhalt, encoding="utf-8")
     print(f"{len(keys)} Module geschrieben.")
 
 

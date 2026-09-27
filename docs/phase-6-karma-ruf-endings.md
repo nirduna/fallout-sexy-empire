@@ -96,7 +96,7 @@ Die Engine zeigt einen Titel an, solange seine GVAR ungleich 0 ist (geprüft im 
 | **Anständiges Haus** | mindestens 3 Häuser, alle mit Moral ≥ 60, und **nie** Zwangspersonal oder Leine | Werben doppelt so schnell. Marcus, die Rangers und Calloway: +10. Kittys Abwerbung halbiert. Eine gerettete Mara kommt ohne Check |
 | **Die Fünfte Familie** | Familiensitz (Hausklasse 3) und Einfluss in New Reno ≥ 80 | Zählt bei den Familien wie Made Man. Tribut in New Reno −5 Prozentpunkte. Checks bei den Familientreffen +10 |
 
-**Texte** (`text_src/german/game/editor.msg.add`)
+**Texte** (Entwurf auf Deutsch; im Spiel englisch in `text_src/english/game/editor.msg.add`: *Soul Seller*, *Decent House*, *The Fifth Family*, siehe [Spieltexte auf Englisch](spieltexte-englisch.md))
 
 | Titel | Beschreibung im Charakterbogen |
 |---|---|
@@ -238,7 +238,7 @@ Fünf GVARs, am Ende von `vault13.gam` angehängt (`install/vault13.gam.add`):
 ### 5.3 Titel
 
 - **`karmavar.txt`** (`install/karmavar.txt.add`): `793, 148, 1027, 1127` usw. Die Bilder sind vorläufig die von Sklavenhändler (148), Sexperte (130) und Mafioso (138).
-- **`editor.msg`:** Die Nummern 1027–1029 (Namen) und 1127–1129 (Beschreibungen) sind im RPU frei. Die Texte stehen in `text_src/german/game/editor.msg.add`.
+- **`editor.msg`:** Die Nummern 1027–1029 (Namen) und 1127–1129 (Beschreibungen) sind im RPU frei. Die Texte stehen in `text_src/english/game/editor.msg.add`.
 
 ### 5.4 Code
 

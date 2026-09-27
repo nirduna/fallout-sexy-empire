@@ -17,9 +17,9 @@
 | [`scripts_src/headers/rl_katalog.h`](../scripts_src/headers/rl_katalog.h) | **neu, erzeugt:** die 23 Module aus Phase 2 |
 | [`scripts_src/headers/rotlicht.h`](../scripts_src/headers/rotlicht.h) | 48 statt 32 Felder pro Haus (Baustelle, gekaufte Module), Welt-Felder für den Prolog, Übernahme alter Spielstände |
 | [`scripts_src/global/gl_rotlicht.ssl`](../scripts_src/global/gl_rotlicht.ssl) | Bauwochen und Fertigstellung, Metzger bemerkt den Diebstahl, Debug-Taste F9 |
-| [`text_src/german/dialog/rlkolbe.msg`](../text_src/german/dialog/rlkolbe.msg) | **neu:** Kolbes Texte, auch als Verwalter |
-| [`text_src/german/dialog/rlessie.msg`](../text_src/german/dialog/rlessie.msg) | Prolog, Reaktionen und Ausbau in Essies Stimme |
-| [`text_src/german/dialog/_rl_module.inc`](../text_src/german/dialog/_rl_module.inc) | **erzeugt:** Modulnamen und Effekte, wird in jede Manager-Textdatei eingefügt |
+| [`text_src/english/dialog/rlkolbe.msg`](../text_src/english/dialog/rlkolbe.msg) | **neu:** Kolbes Texte, auch als Verwalter |
+| [`text_src/english/dialog/rlessie.msg`](../text_src/english/dialog/rlessie.msg) | Prolog, Reaktionen und Ausbau in Essies Stimme |
+| [`text_src/english/dialog/_rl_module.inc`](../text_src/english/dialog/_rl_module.inc) | **erzeugt:** Modulnamen und Effekte, wird in jede Manager-Textdatei eingefügt |
 | [`tools/gen_katalog.py`](../tools/gen_katalog.py) | **neu:** erzeugt Katalog und Modultexte aus `tools/ausbau_sim.py` |
 | [`tools/check_msg.py`](../tools/check_msg.py) | **neu:** prüft, ob jede im Code verwendete Textnummer existiert |
 
@@ -132,4 +132,4 @@ Jede Madame und jeder Manager nutzt dieselben Knoten aus `rl_manager.h`: Bericht
 3. **Questline „Ketten“**, Akt 1: Metzgers Angebot, aufbauend auf `RL_W_METZGER` und `RL_W_KETTEN_ZWEIG`.
 4. **Dunkle Module** (Riegel außen, gezinkte Waage, Akte …) mit ihren Sonderregeln.
 5. **Consigliere** im Strumpfband und die übrigen Manager, alle über `rl_manager.h`.
-6. **Umlaute prüfen:** Zeigt Essie sie falsch an, mit `TEXT_ENCODING=UTF-8` bauen (siehe Phase 5, Abschnitt 8).
+6. ~~Umlaute prüfen~~: entfällt, die Spieltexte sind jetzt englisch ([Spieltexte auf Englisch](spieltexte-englisch.md)).

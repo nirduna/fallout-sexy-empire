@@ -7,7 +7,12 @@ den Options-Makros, mstr und display_mstr vorkommen, dazu die berechneten
 Bereiche (Preisstufe, Krisen, Module). Jede Nummer muss in der .msg-Datei
 des Skripts stehen (nach Aufloesen von "# @include").
 
-Ausserdem: doppelte Nummern und geschweifte Klammern im Text.
+Das globale Skript holt seine Texte mit rl_text(n) aus game/rotlicht.msg;
+auch diese Nummern werden geprueft.
+
+Ausserdem: doppelte Nummern, geschweifte Klammern im Text und Zeichen
+ausserhalb von ASCII (die englischen Fallout-2-Schriften haben keine Umlaute
+und keine typografischen Anfuehrungszeichen).
 
 Aufruf:  python3 tools/check_msg.py
 """
@@ -16,7 +21,8 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-DIALOG = ROOT / "text_src/german/dialog"
+TEXTE = ROOT / "text_src/english"
+DIALOG = TEXTE / "dialog"
 MODULE_ANZAHL = 23
 
 # Berechnete Nummern: Basis + Wertebereich
@@ -62,8 +68,32 @@ def msg_nummern(msg):
     return nummern, fehler
 
 
+def nicht_ascii():
+    fehler = []
+    for f in sorted(TEXTE.rglob("*")):
+        if f.is_file():
+            for nr, zeile in enumerate(f.read_text(encoding="utf-8").splitlines(), 1):
+                if not zeile.isascii():
+                    fehler.append(f"{f.relative_to(ROOT)}:{nr}: Zeichen ausserhalb von ASCII")
+    return fehler
+
+
 def main():
     gesamt = 0
+    for f in nicht_ascii():
+        print(f)
+        gesamt += 1
+    # Globales Skript: rl_text(n) und Hausnamen rl_text(100 + h)
+    gl = (ROOT / "scripts_src/global/gl_rotlicht.ssl").read_text(encoding="utf-8")
+    genutzt = {int(n) for n in re.findall(r"\brl_text\((\d+)\)", gl)}
+    if re.search(r"rl_text\(100 \+ h\)", gl):
+        genutzt |= set(range(100, 107))                  # sechs Haeuser und das Testhaus
+    nummern, fehler = msg_nummern(TEXTE / "game/rotlicht.msg")
+    fehlend = sorted(genutzt - set(nummern))
+    for f in fehler + ([f"fehlende Nummern {fehlend}"] if fehlend else []):
+        print(f"rotlicht.msg: {f}")
+        gesamt += 1
+    print(f"gl_rotlicht.ssl: {len(genutzt)} Nummern genutzt, {len(nummern)} vorhanden")
     for ssl in sorted((ROOT / "scripts_src/rotlicht").glob("*.ssl")):
         msg = DIALOG / (ssl.stem + ".msg")
         text = quelltext(ssl)
