@@ -107,11 +107,26 @@
 #define RL_F_KRISENWOCHEN           (25)
 #define RL_F_FUEHRUNG               (26)    // Fuehrung der Madame (Phase 4)
 #define RL_F_ZWANG                  (27)    // 1 = Zwangspersonal im Haus (Tyrannen-Route)
+#define RL_F_ANWERBER               (28)    // RL_ANWERBER_*: Methode des Anwerbers (Phase 4, 2.2)
+#define RL_F_ANWERB_PUNKTE          (29)    // Fortschritt bis zur naechsten Person
+#define RL_F_GEZWUNGEN              (30)    // davon mit Gewalt, Schulden oder Jet angeworben
 #define RL_F_ZUSTAND_TEST           (31)    // nur Selbsttest
 #define RL_F_MODUL_STADTMOD         (32)    // Kunden-% aus gebauten Modulen (Goldwaage, Tunnel ...)
 #define RL_F_GEKAUFT                (33)    // Bitmaske der gekauften Module (rl_katalog.h)
 #define RL_F_BAU_ID                 (34)    // Modul-ID + 1 der laufenden Baustelle, 0 = keine
 #define RL_F_BAU_WOCHEN             (35)    // verbleibende Bauwochen
+
+// Anwerber (Phase 4, Abschnitt 2.2). Eine Person je RL_ANWERB_PUNKTE Punkte:
+// Werben 2/Woche (Anstaendiges Haus 4), Zwingen 4/Woche, Zulauf ab Moral 75 +1.
+#define RL_ANWERBER_KEINER          (0)
+#define RL_ANWERBER_WERBEN          (1)
+#define RL_ANWERBER_ZWINGEN         (2)
+#define RL_ANWERB_PUNKTE            (4)
+#define RL_ANWERBER_LOHN            (40)    // $/Woche
+#define RL_ANWERB_KOPFGELD          (50)    // $ je angeworbener Person, aus der Kasse
+#define RL_ZWINGEN_MORAL_CAP        (50)    // solange Gezwungene im Haus sind
+#define RL_ZWINGEN_KARMA            (3)     // Karma -3/Woche, solange gezwungen wird (Phase 6)
+#define RL_ZWINGEN_HITZE            (5)     // Hitze +5/Woche statt -5
 
 // Modul-Bitmaske
 #define RL_MOD_KONTOR               (1)
@@ -267,6 +282,8 @@ procedure rl_lade_welt;
 procedure rl_stadt(variable stadt, variable was);
 procedure rl_haus_uebernehmen(variable haus, variable welt, variable h);
 procedure rl_rechne_woche(variable haus, variable h, variable stadt);
+procedure rl_anwerber_setzen(variable haus, variable h, variable methode);
+procedure rl_personal_verlust(variable haus, variable h);
 
 procedure rl_clamp(variable v, variable lo, variable hi) begin
    if (v < lo) then return lo;
@@ -295,14 +312,12 @@ procedure rl_woche_jetzt begin
 end
 
 /* Fertigstellung einer Baustelle: Effekte aus dem Katalog anwenden (Phase 2).
-   Vorlaeufig werden neue Zimmer sofort besetzt, bis die Anwerbung (Phase 4)
-   umgesetzt ist. */
+   Neue Zimmer stehen leer, bis jemand angeworben ist (Umsetzung 3). */
 procedure rl_bau_fertig(variable haus, variable h) begin
    variable id := haus[rl_idx(h, RL_F_BAU_ID)] - 1;
    if (id < 0) then return;
    haus[rl_idx(h, RL_F_KLASSE)]         := haus[rl_idx(h, RL_F_KLASSE)] + rl_modul(id, RL_MK_KLASSE);
    haus[rl_idx(h, RL_F_ZIMMER)]         := haus[rl_idx(h, RL_F_ZIMMER)] + rl_modul(id, RL_MK_ZIMMER);
-   haus[rl_idx(h, RL_F_PERSONAL)]       := haus[rl_idx(h, RL_F_PERSONAL)] + rl_modul(id, RL_MK_ZIMMER);
    haus[rl_idx(h, RL_F_AUSSTATTUNG)]    := haus[rl_idx(h, RL_F_AUSSTATTUNG)] + rl_modul(id, RL_MK_AUSSTATTUNG);
    haus[rl_idx(h, RL_F_BAR)]            := haus[rl_idx(h, RL_F_BAR)] + rl_modul(id, RL_MK_BAR);
    haus[rl_idx(h, RL_F_SICHERHEIT)]     := haus[rl_idx(h, RL_F_SICHERHEIT)] + rl_modul(id, RL_MK_SICHERHEIT);
@@ -441,6 +456,11 @@ procedure rl_rechne_woche(variable haus, variable h, variable stadt) begin
       moral_cap  := rl_min(moral_cap, 40);
       karma_tick := karma_tick - 3;
    end
+   // Zwingen (Phase 4, 2.2): Gezwungene deckeln die Moral, der Anwerber kostet Karma
+   if (haus[rl_idx(h, RL_F_GEZWUNGEN)] > 0) then
+      moral_cap := rl_min(moral_cap, RL_ZWINGEN_MORAL_CAP);
+   if (haus[rl_idx(h, RL_F_ANWERBER)] == RL_ANWERBER_ZWINGEN) then
+      karma_tick := karma_tick - RL_ZWINGEN_KARMA;
 
    // Attraktivitaet
    q_eff     := quali * (40 + 8 * moral / 10) / 100;
@@ -521,7 +541,10 @@ procedure rl_rechne_woche(variable haus, variable h, variable stadt) begin
    haus[rl_idx(h, RL_F_MORAL)]   := moral;
    haus[rl_idx(h, RL_F_RUF)]     := ruf;
    haus[rl_idx(h, RL_F_QUALI)]   := quali;
-   haus[rl_idx(h, RL_F_HITZE)]   := rl_max(0, hitze - 5);
+   if (haus[rl_idx(h, RL_F_ANWERBER)] == RL_ANWERBER_ZWINGEN) then
+      haus[rl_idx(h, RL_F_HITZE)] := rl_min(100, hitze + RL_ZWINGEN_HITZE);
+   else
+      haus[rl_idx(h, RL_F_HITZE)] := rl_max(0, hitze - 5);
    haus[rl_idx(h, RL_F_KUNDEN)]  := kunden;
    haus[rl_idx(h, RL_F_GEWINN)]  := gewinn;
 
@@ -531,6 +554,31 @@ procedure rl_rechne_woche(variable haus, variable h, variable stadt) begin
       set_global_var(GVAR_PLAYER_REPUTATION, global_var(GVAR_PLAYER_REPUTATION) + karma_tick);
 
    return gewinn;
+end
+
+/* Anwerber einstellen, wechseln oder entlassen (Phase 4, 2.2). Die beiden
+   Methoden schliessen sich pro Haus aus; der Lohn zaehlt zu den Fixloehnen. */
+procedure rl_anwerber_setzen(variable haus, variable h, variable methode) begin
+   variable alt := haus[rl_idx(h, RL_F_ANWERBER)];
+   if (alt == methode) then return;
+   if (alt == RL_ANWERBER_KEINER) then
+      haus[rl_idx(h, RL_F_LOEHNE)] := haus[rl_idx(h, RL_F_LOEHNE)] + RL_ANWERBER_LOHN;
+   else if (methode == RL_ANWERBER_KEINER) then
+      haus[rl_idx(h, RL_F_LOEHNE)] := rl_max(0, haus[rl_idx(h, RL_F_LOEHNE)] - RL_ANWERBER_LOHN);
+   haus[rl_idx(h, RL_F_ANWERBER)] := methode;
+   haus[rl_idx(h, RL_F_ANWERB_PUNKTE)] := 0;
+end
+
+/* Eine Person verlaesst das Haus. Gezwungene fliehen zuerst, sie haben am
+   wenigsten zu verlieren. Gibt 1 zurueck, wenn es eine Gezwungene war. */
+procedure rl_personal_verlust(variable haus, variable h) begin
+   if (haus[rl_idx(h, RL_F_PERSONAL)] <= 0) then return 0;
+   haus[rl_idx(h, RL_F_PERSONAL)] := haus[rl_idx(h, RL_F_PERSONAL)] - 1;
+   if (haus[rl_idx(h, RL_F_GEZWUNGEN)] > 0) then begin
+      haus[rl_idx(h, RL_F_GEZWUNGEN)] := haus[rl_idx(h, RL_F_GEZWUNGEN)] - 1;
+      return 1;
+   end
+   return 0;
 end
 
 #endif

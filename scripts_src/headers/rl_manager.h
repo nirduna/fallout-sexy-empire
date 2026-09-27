@@ -5,6 +5,7 @@
    Texten in der eigenen .msg-Datei:
      100-199  Bericht, Kasse, Preise, Anteil, Moral, Krisen
      460-477  Ausbau-Menue
+     480-493  Personal und Anwerber (Umsetzung 3)
      400-422  Modulnamen, 500-522 Moduleffekte (aus _rl_module.inc)
 
    Das einbindende Skript stellt bereit:
@@ -46,6 +47,11 @@ procedure RLM_StoffLeine;
 procedure RLM_StoffRauswurf;
 procedure RLM_KriseGeld;
 procedure RLM_Abspann;
+procedure RLM_Personal;
+procedure RLM_Werben;
+procedure RLM_Zwingen;
+procedure RLM_AnwerberWeg;
+procedure RLM_DebugZimmer;
 procedure RLM_Ausbau;
 procedure RLM_Gruppe0;
 procedure RLM_Gruppe1;
@@ -78,10 +84,12 @@ procedure RLM_Start begin
    NOption(111, RLM_Preise, 004);
    NOption(112, RLM_Anteil, 004);
    NOption(113, RLM_Moral, 004);
+   NOption(118, RLM_Personal, 004);
    NOption(117, RLM_Ausbau, 004);
    if (haus[rl_idx(h, RL_F_KRISE)] != RL_EV_KEINS) then
       NOption(114, RLM_Krise, 004);
 #ifdef RL_DEBUG
+   NOption(195, RLM_DebugZimmer, 001);
    NOption(194, RLM_Abspann, 001);
 #endif
    NOption(115, RLM_Ende, 004);
@@ -217,7 +225,7 @@ end
 
 procedure RLM_StoffRauswurf begin
    call rlm_krise_loesen;
-   haus[rl_idx(h, RL_F_PERSONAL)] := rl_max(0, haus[rl_idx(h, RL_F_PERSONAL)] - 1);
+   call rl_personal_verlust(haus, h);
    haus[rl_idx(h, RL_F_MORAL)] := rl_max(0, haus[rl_idx(h, RL_F_MORAL)] - 10);
    Reply(168);
    NOption(123, RLM_Start, 004);
@@ -232,6 +240,50 @@ end
 
 procedure RLM_Abspann begin
    rlm_zeige_abspann := 1;
+end
+
+/* ------------------------------------------------------------------ */
+/* Personal und Anwerber (Umsetzung 3, Phase 4 Abschnitt 2.2)          */
+/* ------------------------------------------------------------------ */
+procedure RLM_Personal begin
+   variable methode := haus[rl_idx(h, RL_F_ANWERBER)];
+   variable text;
+   text := mstr(480) + haus[rl_idx(h, RL_F_ZIMMER)] + mstr(481) + haus[rl_idx(h, RL_F_PERSONAL)]
+           + mstr(482) + " " + mstr(483 + methode);
+   if (methode and (haus[rl_idx(h, RL_F_PERSONAL)] >= haus[rl_idx(h, RL_F_ZIMMER)])) then
+      text := text + " " + mstr(493);
+   Reply(text);
+   if (methode != RL_ANWERBER_WERBEN) then
+      GOption(486, RLM_Werben, 004);
+   if (methode != RL_ANWERBER_ZWINGEN) then
+      BOption(487, RLM_Zwingen, 004);
+   if (methode != RL_ANWERBER_KEINER) then
+      NOption(488, RLM_AnwerberWeg, 004);
+   NOption(489, RLM_Start, 004);
+end
+
+procedure RLM_Werben begin
+   call rl_anwerber_setzen(haus, h, RL_ANWERBER_WERBEN);
+   Reply(490);
+   NOption(123, RLM_Start, 004);
+end
+
+procedure RLM_Zwingen begin
+   call rl_anwerber_setzen(haus, h, RL_ANWERBER_ZWINGEN);
+   Reply(491);
+   NOption(123, RLM_Start, 004);
+end
+
+procedure RLM_AnwerberWeg begin
+   call rl_anwerber_setzen(haus, h, RL_ANWERBER_KEINER);
+   Reply(492);
+   NOption(123, RLM_Start, 004);
+end
+
+// Debug: zwei leere Zimmer, damit sich die Anwerbung ohne Ausbau testen laesst
+procedure RLM_DebugZimmer begin
+   haus[rl_idx(h, RL_F_ZIMMER)] := haus[rl_idx(h, RL_F_ZIMMER)] + 2;
+   call RLM_Personal;
 end
 
 /* ------------------------------------------------------------------ */

@@ -16,6 +16,7 @@
 {115}{}{Later.}
 {116}{}{Money?}
 {117}{}{Let's talk about the house. What could we build?}
+{118}{}{Let's talk about our people.}
 
 # Payout
 {120}{}{Here. $}
@@ -80,6 +81,7 @@
 {192}{}{[Debug] Take over the Gutter.}
 {193}{}{[Debug] The Gutter is yours now. House class 1, three rooms, three people.}
 {194}{}{[Debug] Show me the ending.}
+{195}{}{[Debug] Add two empty rooms.}
 
 # Look
 {200}{}{A woman around fifty with a hard stare and too much rouge.}
@@ -123,5 +125,21 @@
 {475}{}{Good. It'll be done in }
 {476}{}{ week(s). Until then there's hammering all day, and half the customers stay away.}
 {477}{}{Back.}
+
+# Staff and recruiter
+{480}{}{We have }
+{481}{}{ rooms and }
+{482}{}{ people to work them.}
+{483}{}{Nobody is out looking for new faces.}
+{484}{}{Our recruiter sits at Mom's and listens. The ones who want out of the Den come to us sooner or later. It's slow, but they stay.}
+{485}{}{Our recruiter doesn't ask. Debts, Jet, a hand on the neck. The ones he brings in don't look at anyone.}
+{486}{}{Find someone who talks people into it. ($40 a week, $50 a head)}
+{487}{}{Find someone who doesn't ask. ($40 a week, $50 a head)}
+{488}{}{Let the recruiter go.}
+{489}{}{Back.}
+{490}{}{I know a woman at Mom's who hears every sad story in the Den. She'll send us the ones who want out. Give it time.}
+{491}{}{There's always someone in the Den who knows who owes what. I'll find him, because it's your house. Don't ask me to like it. And don't expect them to smile.}
+{492}{}{Done. Nobody new is coming in for now.}
+{493}{}{Every room is taken. The recruiter is just costing us money.}
 
 # @include _rl_module.inc

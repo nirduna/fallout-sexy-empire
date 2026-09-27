@@ -290,6 +290,12 @@ Die Gosse:
   9. Speichern und Laden in der Gosse, der Spielstand heißt "The Gutter".
  10. Alle Texte da? Nirgends "Error"?
 
+NEU: ANWERBUNG (docs/umsetzung-3-anwerbung.md, Abschnitt 5)
+ 11. Bei Essie "[Debug] Add two empty rooms", dann "Let's talk about our
+     people": 5 Zimmer, 3 Leute.
+ 12. Werben wählen, im Pip-Boy 2 Wochen ruhen: eine neue Person.
+ 13. Zwingen wählen: jede Woche eine Person, aber die Moral sinkt deutlich.
+
 WENN ETWAS NICHT GEHT
 - Keine Treppe in der Ruine, F11 tut nichts: Steht  rotlicht  wirklich als
   LETZTE Zeile in mods_order.txt? (Braucht sfall 4.4 oder neuer; das

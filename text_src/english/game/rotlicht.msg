@@ -18,6 +18,12 @@
 {114}{}{The madam handled an incident on her own.}
 {115}{}{Trouble. You're needed there.}
 
+# Staff turnover (Umsetzung 3)
+{116}{}{A new face in the house. Someone who wanted out of where they were.}
+{117}{}{Someone new was brought in. They don't look at anyone.}
+{118}{}{One of our people is gone. Packed up and left.}
+{119}{}{One of the ones who were brought in ran off. Nobody saw anything.}
+
 # Prologue aftermath
 {120}{}{Metzger counted again. The debt note is missing, and he knows who took it.}
 

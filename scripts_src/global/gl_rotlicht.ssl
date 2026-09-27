@@ -11,6 +11,7 @@
      5. Stadtruf, Titel und Endslides nachfuehren (Phase 6).
      6. Selbsttest gegen tools/economy_sim.py (mit -mRL_SELBSTTEST).
      7. Die Kellertreppe zur Gosse auf Den Business 2 setzen (Umsetzung 2).
+     8. Personalwechsel: Anwerbung und Abgaenge (Umsetzung 3, Phase 4).
 
    sfall laedt alle gl*.int beim Spielstart. Die Wochenlogik laeuft nur
    auf lokalen Karten; Reisezeit auf der Weltkarte wird beim naechsten
@@ -38,6 +39,7 @@ procedure start;
 procedure map_enter_p_proc;
 procedure rl_tick;
 procedure rl_gosse_eingang;
+procedure rl_personalwechsel(variable h);
 procedure rl_welt_modifikatoren;
 procedure rl_laeufer;
 procedure rl_ereignis_wurf(variable h);
@@ -135,6 +137,7 @@ procedure rl_tick begin
                   display_msg(rl_haus_name(h) + ": " + rl_text(110));
                end
             end
+            call rl_personalwechsel(h);
             if (haus[rl_idx(h, RL_F_KRISE)] != RL_EV_KEINS) then begin
                haus[rl_idx(h, RL_F_KRISENWOCHEN)] := haus[rl_idx(h, RL_F_KRISENWOCHEN)] + 1;
                // Nach drei Wochen ohne Loesung eskaliert die Krise (Phase 4, Abschnitt 4.1)
@@ -252,7 +255,7 @@ procedure rl_ereignis_wurf(variable h) begin
       if (ereignis == RL_EV_STOFF) then
          haus[rl_idx(h, RL_F_MORAL)] := rl_max(0, haus[rl_idx(h, RL_F_MORAL)] - 2);
       else if (ereignis == RL_EV_FLUCHT) then
-         haus[rl_idx(h, RL_F_PERSONAL)] := rl_max(0, haus[rl_idx(h, RL_F_PERSONAL)] - 1);
+         call rl_personal_verlust(haus, h);
       else if (ereignis == RL_EV_FREIER) then
          haus[rl_idx(h, RL_F_RUF)] := rl_max(0, haus[rl_idx(h, RL_F_RUF)] - 2);
       else
@@ -263,6 +266,60 @@ procedure rl_ereignis_wurf(variable h) begin
       haus[rl_idx(h, RL_F_KRISENWOCHEN)] := 0;
       display_msg(rl_haus_name(h) + ": " + rl_text(115));
    end
+end
+
+/* Personalwechsel am Ende der Woche (Umsetzung 3, Phase 4 Abschnitt 1 und 2.2):
+   1. Unter Moral 25 geht jede Woche eine Person (Gezwungene fliehen zuerst).
+   2. Ist ein Zimmer frei, sammelt das Haus Anwerbe-Punkte: Werben 2 pro Woche
+      (mit dem Titel "Anstaendiges Haus" 4, Phase 6), Zwingen 4, dazu Zulauf
+      ab Moral 75 +1 (nicht beim Zwingen). Je 4 Punkte kommt eine Person.
+      Neue bringen ihre Qualitaet und Moral in den Hausdurchschnitt ein:
+      geworben 40-60 und Moral 50, gezwungen 30-50 und Moral 15. */
+procedure rl_personalwechsel(variable h) begin
+   variable methode, punkte, n, neu_q, neu_m;
+
+   if ((haus[rl_idx(h, RL_F_MORAL)] < RL_FLUCHT_MORAL) and (haus[rl_idx(h, RL_F_PERSONAL)] > 0)) then begin
+      if (rl_personal_verlust(haus, h)) then
+         display_msg(rl_haus_name(h) + ": " + rl_text(119));
+      else
+         display_msg(rl_haus_name(h) + ": " + rl_text(118));
+   end
+
+   n := haus[rl_idx(h, RL_F_PERSONAL)];
+   if (n >= haus[rl_idx(h, RL_F_ZIMMER)]) then return;     // keine freie Stelle
+   methode := haus[rl_idx(h, RL_F_ANWERBER)];
+   punkte := 0;
+   if (methode == RL_ANWERBER_WERBEN) then begin
+      punkte := 2;
+      if (global_var(GVAR_RL_TITEL_ANSTAND)) then punkte := 4;
+   end else if (methode == RL_ANWERBER_ZWINGEN) then
+      punkte := 4;
+   if ((haus[rl_idx(h, RL_F_MORAL)] >= 75) and (methode != RL_ANWERBER_ZWINGEN)) then
+      punkte := punkte + 1;
+   if (punkte == 0) then return;
+
+   punkte := haus[rl_idx(h, RL_F_ANWERB_PUNKTE)] + punkte;
+   if (punkte < RL_ANWERB_PUNKTE) then begin
+      haus[rl_idx(h, RL_F_ANWERB_PUNKTE)] := punkte;
+      return;
+   end
+   haus[rl_idx(h, RL_F_ANWERB_PUNKTE)] := punkte - RL_ANWERB_PUNKTE;
+
+   if (methode == RL_ANWERBER_ZWINGEN) then begin
+      neu_q := random(30, 50);
+      neu_m := 15;
+      haus[rl_idx(h, RL_F_GEZWUNGEN)] := haus[rl_idx(h, RL_F_GEZWUNGEN)] + 1;
+      display_msg(rl_haus_name(h) + ": " + rl_text(117));
+   end else begin
+      neu_q := random(40, 60);
+      neu_m := 50;
+      display_msg(rl_haus_name(h) + ": " + rl_text(116));
+   end
+   if (methode != RL_ANWERBER_KEINER) then
+      haus[rl_idx(h, RL_F_KASSE)] := haus[rl_idx(h, RL_F_KASSE)] - RL_ANWERB_KOPFGELD;
+   haus[rl_idx(h, RL_F_QUALI)] := (haus[rl_idx(h, RL_F_QUALI)] * n + neu_q) / (n + 1);
+   haus[rl_idx(h, RL_F_MORAL)] := (haus[rl_idx(h, RL_F_MORAL)] * n + neu_m) / (n + 1);
+   haus[rl_idx(h, RL_F_PERSONAL)] := n + 1;
 end
 
 /* Gewichtete Auswahl (Phase 4, Abschnitt 4.2/4.3) */
@@ -291,7 +348,8 @@ procedure rl_ereignis_waehlen(variable h) begin
    g[RL_EV_KASSE] := 3;
    if (moral < 40) then g[RL_EV_KASSE] := 10;
    // Flucht
-   if ((moral < RL_FLUCHT_MORAL) or haus[rl_idx(h, RL_F_ZWANG)]) then g[RL_EV_FLUCHT] := 20;
+   if ((moral < RL_FLUCHT_MORAL) or haus[rl_idx(h, RL_F_ZWANG)] or (haus[rl_idx(h, RL_F_GEZWUNGEN)] > 0)) then
+      g[RL_EV_FLUCHT] := 20;
 
    summe := 0;
    i := 1;

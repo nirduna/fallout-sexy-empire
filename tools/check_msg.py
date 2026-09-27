@@ -29,6 +29,7 @@ MODULE_ANZAHL = 23
 BERECHNET = {
     r"mstr\(135 \+": range(135, 139),                 # Preisstufen 0..3
     r"mstr\(180 \+": range(181, 188),                 # Krisen 1..7
+    r"mstr\(483 \+": range(483, 486),                 # Anwerber-Methode 0..2
     r"mstr\(RL_MSG_MODUL_NAME \+": range(400, 400 + MODULE_ANZAHL),    # Modulnamen
     r"mstr\(RL_MSG_MODUL_EFFEKT \+": range(500, 500 + MODULE_ANZAHL),  # Moduleffekte
 }

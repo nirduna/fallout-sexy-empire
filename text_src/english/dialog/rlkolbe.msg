@@ -49,6 +49,7 @@
 {115}{}{Later.}
 {116}{}{Money.}
 {117}{}{What can we build?}
+{118}{}{The people.}
 {120}{}{There. $}
 {121}{}{. Count it if you don't trust me. I would.}
 {122}{}{Empty. Bad week. Complain to the johns.}
@@ -98,6 +99,7 @@
 {186}{}{Something's missing from the till. Wasn't me.}
 {187}{}{Two are gone. Just gone.}
 {194}{}{[Debug] Show me the ending.}
+{195}{}{[Debug] Add two empty rooms.}
 
 # Construction
 {460}{}{Metzger says investing is for people with too much money. So, what do you want?}
@@ -118,5 +120,21 @@
 {475}{}{It'll be done in }
 {476}{}{ week(s). Until then half the customers stay away.}
 {477}{}{Back.}
+
+# Staff and recruiter
+{480}{}{Rooms: }
+{481}{}{. People: }
+{482}{}{.}
+{483}{}{Nobody's out hunting.}
+{484}{}{Some talker is out collecting sob stories. Slow.}
+{485}{}{Our man brings them in. They don't ask questions. Neither do I.}
+{486}{}{Find someone who talks people into it. ($40 a week, $50 a head)}
+{487}{}{Find someone who doesn't ask. ($40 a week, $50 a head)}
+{488}{}{Let the recruiter go.}
+{489}{}{Back.}
+{490}{}{A talker. Metzger will laugh. Your money.}
+{491}{}{Now we're talking. I know a few guys from the pens. Give it a week.}
+{492}{}{He's gone.}
+{493}{}{Every room's full. You're paying him to drink.}
 
 # @include _rl_module.inc

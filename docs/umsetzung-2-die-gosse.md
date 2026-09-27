@@ -1,10 +1,9 @@
 # Umsetzung 2 – Die Gosse: Eingang in der Den und Innenkarte RLDEN01
 
 **Arbeitstitel:** *Rotlicht über dem Ödland* – Addon-Modifikation für Fallout 2
-**Status:** Umgesetzt und automatisch geprüft, aber **nicht im Spiel gesehen**, weil hier keine Spielgrafiken vorliegen:
+**Status:** Umgesetzt und **im Spiel getestet**: Die Kellertreppe, die Gosse sowie Essie und Kolbe funktionieren, mit englischen Texten. Die Abweichung in Abschnitt 3 ist bestätigt.
 - Die Skripte kompilieren gegen das Restoration Project (RPU) und den Unofficial Patch, mit und ohne Debug.
 - Die Karte entsteht aus Beckys Keller im RPU, und das Werkzeug liest sie byte-gleich wieder ein.
-- Die Sichtprüfung im Spiel übernimmst du mit der Prüfliste in Abschnitt 5.
 
 **Grundlage:** [Phase 2](phase-2-standorte-und-ausbau.md) (Abschnitt 2.1, Map `RLDEN01`), [Phase 5](phase-5-technik.md) (Abschnitt Karten), [Umsetzung 1](umsetzung-1-prolog-und-ausbau.md) (Essie und Kolbe).
 
@@ -74,7 +73,9 @@ Die Treppe in RLDEN01 führt ohne Skript zurück. Ihr Ziel steht in den Objektda
 
 ---
 
-## 3. Abweichung vom Entwurf (bitte bestätigen)
+## 3. Abweichung vom Entwurf (bestätigt)
+
+> **Freigabe:** Nach dem Test im Spiel übernommen. Die Gosse bleibt im Gewölbe unter der Ruine.
 
 Phase 2 beschreibt die Gosse als **baufälliges Haus mit Tür und Laterne**, mit drei Ebenen:
 

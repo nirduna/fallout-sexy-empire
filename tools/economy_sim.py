@@ -61,7 +61,10 @@ def simulate(city, weeks=12, staff_q=60, furnishing=50, rep=55, moral=50,
              price_tier="standard", share_tier="branchenueblich",
              security=70, heat=0, accountant=True, doc=False, bar_level=1,
              upgrade_levels=4, fixed_wages=310, city_mod=100,
-             rooms=None, side_per_client=0, moral_bonus=0):
+             rooms=None, side_per_client=0, moral_bonus=0,
+             forced_staff=False, forcing=False):
+    """forced_staff: Gezwungene im Haus (Moral hoechstens 50, Phase 4 Abschnitt 2.2);
+    forcing: der Anwerber zwingt gerade (Karma -3/Woche, Hitze +5/Woche statt -5)."""
     c = CITIES[city]
     p_mult, demand_by_wealth, rep_tick = PRICE_TIERS[price_tier]
     d_mult = demand_by_wealth[c["wealth"]]
@@ -99,15 +102,17 @@ def simulate(city, weeks=12, staff_q=60, furnishing=50, rep=55, moral=50,
         total += profit
         rows.append((week, moral, staff_q, clients, revenue, costs, profit, total))
         # Zustandsfortschreibung
+        cap = min(MORAL_CAP[share_tier], 50) if forced_staff else MORAL_CAP[share_tier]
         moral = clamp(moral + moral_tick + (1 if doc else 0) + moral_bonus,
-                      0, max(moral, MORAL_CAP[share_tier]))
+                      0, max(moral, cap))
         rep = clamp(rep + (score - rep) // 8 + rep_tick
                     + (1 if moral >= 70 else 0) - (2 if moral < 30 else 0), 0, 100)
         if moral < FLIGHT_MORAL:
             staff_q = max(20, staff_q - 2)   # gute Leute hauen ab
         if moral >= 75:
             staff_q = min(85, staff_q + 1)   # zufriedenes Personal wirbt Talente an
-        karma += karma_tick
+        heat = min(100, heat + 5) if forcing else max(0, heat - 5)
+        karma += karma_tick - (3 if forcing else 0)
     return rows, total, karma
 
 
