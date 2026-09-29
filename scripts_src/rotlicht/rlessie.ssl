@@ -63,6 +63,11 @@ end
 procedure talk_p_proc begin
    haus := rl_lade_haeuser;
    welt := rl_lade_welt;
+   // Ausgeliefert: Metzgers Leute holen sie sofort; kein Gespraech mehr
+   if (welt[RL_W_ESSIE] == RL_ESSIE_AUSGELIEFERT) then begin
+      destroy_object(self_obj);
+      return;
+   end
    start_gdialog(NAME, self_obj, 4, -1, -1);
    gSay_Start;
       if (welt[RL_W_PROLOG] == RL_PROLOG_OFFEN) then
