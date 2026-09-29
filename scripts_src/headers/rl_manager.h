@@ -568,6 +568,9 @@ procedure rlm_modul_frei(variable id) begin
    if (rlm_gekauft(id)) then return 0;
    // Riegel innen und Riegel aussen schliessen sich aus (Phase 2)
    if ((id == RL_M_DEN_RIEGEL_INNEN) and (haus[rl_idx(h, RL_F_MODULE)] bwand RL_MOD_RIEGEL_AUSSEN)) then return 0;
+   // Die ehrliche und die gezinkte Waage schliessen sich aus (Phase 2)
+   if ((id == RL_M_RED_GOLDWAAGE) and ((haus[rl_idx(h, RL_F_MODULE)] bwand RL_MOD_WAAGE_GEZINKT)
+       or (haus[rl_idx(h, RL_F_BAU_ID)] == RL_SONDER_BASIS + RL_SM_WAAGE + 1))) then return 0;
    if ((rl_modul(id, RL_MK_STAEDTE) bwand rl_bit(h)) == 0) then return 0;
    if ((voraus >= 0) and not rlm_gekauft(voraus)) then return 0;
    if ((rl_modul(id, RL_MK_BEDINGUNG) == 1) and (welt[RL_W_SHI_GEFALLEN] == 0)) then return 0;
@@ -629,6 +632,8 @@ procedure rlm_sonder_frei(variable sm) begin
       if (welt[RL_W_NR_SEGEN] == RL_SEGEN_WRIGHT) then return 0;
       return ((welt[RL_W_NR_SEGEN] == RL_SEGEN_MORDINO) or welt[RL_W_JET_VERTRAG]);
    end
+   if (sm == RL_SM_WAAGE) then
+      return ((h == RL_REDDING) and not rlm_gekauft(RL_M_RED_GOLDWAAGE));
    return 0;
 end
 

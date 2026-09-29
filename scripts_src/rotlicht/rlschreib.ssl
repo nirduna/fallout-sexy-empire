@@ -1,0 +1,169 @@
+/*
+   rlschreib.ssl - Otis Pruett, Ascortis Schreiber (Redding, Die Schlacke)
+
+   Umsetzung 8, "Ascortis Lizenz" (Phase 3, Abschnitt 2.3). Ascorti spricht
+   nicht selbst (Fahrplan, Grundsatz 1); sein Schreiber sitzt in der leeren
+   Schlacke und verkauft die Lizenz. Die vier Wege stehen in rl_redding.h.
+   Stirbt der Schreiber, schickt Ascorti den naechsten.
+
+   Texte: text_src/english/dialog/rlschreib.msg
+*/
+
+#define SCRIPT_REALNAME "rlschreib"
+#define NAME                    SCRIPT_RLSCHREIBER
+#include "define.h"
+#include "../headers/rotlicht.h"
+#include "command.h"
+
+procedure start;
+procedure talk_p_proc;
+procedure map_enter_p_proc;
+procedure destroy_p_proc;
+procedure look_at_p_proc;
+procedure description_p_proc;
+
+procedure Node100;      // Begruessung
+procedure Node110;      // das Paket
+procedure Node111;      // bezahlt
+procedure Node112;      // mit Rabatt
+procedure Node120;      // Aufschlag (Speech)
+procedure Node130;      // Ascorti
+procedure Node133;      // das Kassenbuch
+procedure Node135;      // zu Marion
+procedure Node140;      // Einschuechtern
+procedure Node999;
+procedure rl_lizenz_da(variable text);
+
+variable haus;
+variable welt;
+variable gehen := 0;
+variable selbst_weg := 0;
+
+procedure start begin
+end
+
+procedure map_enter_p_proc begin
+   haus := rl_lade_haeuser;
+   if (rl_red_besitz(haus)) then begin
+      selbst_weg := 1;
+      destroy_object(self_obj);
+   end
+end
+
+procedure destroy_p_proc begin
+   if (selbst_weg) then return;
+   welt := rl_lade_welt;
+   welt[RL_W_RED_SCHREIBER] := welt[RL_W_RED_SCHREIBER] + 1;
+end
+
+procedure look_at_p_proc begin
+   script_overrides;
+   display_mstr(300);
+end
+
+procedure description_p_proc begin
+   script_overrides;
+   display_mstr(301);
+end
+
+procedure talk_p_proc begin
+   haus := rl_lade_haeuser;
+   welt := rl_lade_welt;
+   start_gdialog(NAME, self_obj, 4, -1, -1);
+   gSay_Start;
+      call Node100;
+   gSay_End;
+   end_dialogue;
+   if (gehen) then begin
+      gehen := 0;
+      gfade_out(600);
+      set_obj_visibility(self_obj, 1);
+      selbst_weg := 1;
+      call rl_red_figuren(haus, welt);
+      gfade_in(600);
+      destroy_object(self_obj);      // beendet das Skript: muss zuletzt stehen
+   end
+end
+
+procedure Node100 begin
+   if (welt[RL_W_RED_SCHREIBER] > 0) then
+      Reply(mstr(102) + " " + mstr(100));
+   else
+      Reply(100);
+   NOption(101, Node110, 004);
+   if (has_skill(dude_obj, SKILL_SPEECH) >= 70) then
+      GOption(103, Node120, 004);
+   NOption(104, Node130, 004);
+   if ((has_skill(dude_obj, SKILL_UNARMED_COMBAT) >= 60) or (dude_strength >= 7)) then
+      BOption(105, Node140, 004);
+   NOption(106, Node999, 004);
+   NLowOption(107, Node999);
+end
+
+procedure Node110 begin
+   Reply(110);
+   if (dude_caps >= RL_LIZENZ_PREIS) then
+      NOption(111, Node111, 004);
+   if ((has_skill(dude_obj, SKILL_BARTER) >= 60) and (dude_caps >= RL_LIZENZ_RABATT)) then
+      NOption(112, Node112, 004);
+   NOption(113, Node100, 004);
+end
+
+procedure Node111 begin
+   item_caps_adjust(dude_obj, -RL_LIZENZ_PREIS);
+   call rl_red_lizenz(haus, welt, RL_LIZENZ_PAKET);
+   call rl_lizenz_da(mstr(114));
+end
+
+procedure Node112 begin
+   item_caps_adjust(dude_obj, -RL_LIZENZ_RABATT);
+   call rl_red_lizenz(haus, welt, RL_LIZENZ_PAKET);
+   call rl_lizenz_da(mstr(115));
+end
+
+procedure Node120 begin
+   call rl_red_lizenz(haus, welt, RL_LIZENZ_AUFSCHLAG);
+   call rl_lizenz_da(mstr(121));
+end
+
+procedure Node130 begin
+   Reply(130);
+   if (welt[RL_W_RED_BELEG] == 0) then begin
+      if (has_skill(dude_obj, SKILL_STEAL) >= 60) then
+         NOption(131, Node133, 004);
+      if (has_skill(dude_obj, SKILL_LOCKPICK) >= 60) then
+         NOption(132, Node133, 004);
+   end else if (has_skill(dude_obj, SKILL_SPEECH) >= 60) then
+      GOption(134, Node135, 004);
+   NOption(139, Node100, 004);
+end
+
+procedure Node133 begin
+   welt[RL_W_RED_BELEG] := 1;
+   if (has_skill(dude_obj, SKILL_SPEECH) >= 60) then begin
+      Reply(137);
+      GOption(134, Node135, 004);
+   end else
+      Reply(mstr(137) + " " + mstr(136));
+   NOption(139, Node100, 004);
+end
+
+procedure Node135 begin
+   call rl_red_lizenz(haus, welt, RL_LIZENZ_MARION);
+   call rl_lizenz_da(mstr(138));
+end
+
+procedure Node140 begin
+   call rl_red_lizenz(haus, welt, RL_LIZENZ_DROHUNG);
+   call rl_lizenz_da(mstr(141));
+end
+
+// Die Lizenz ist da: Der Schreiber geht, Nell kommt
+procedure rl_lizenz_da(variable text) begin
+   gehen := 1;
+   Reply(text + " " + mstr(190));
+   NOption(191, Node999, 004);
+end
+
+procedure Node999 begin
+end

@@ -62,13 +62,17 @@ def simulate(city, weeks=12, staff_q=60, furnishing=50, rep=55, moral=50,
              security=70, heat=0, accountant=True, doc=False, bar_level=1,
              upgrade_levels=4, fixed_wages=310, city_mod=100,
              rooms=None, side_per_client=0, moral_bonus=0,
-             forced_staff=False, forcing=False, staff=None, forced_labor=0):
+             forced_staff=False, forcing=False, staff=None, forced_labor=0,
+             price_mod=0, bribe_mod=0, closed=False):
     """forced_staff: Gezwungene im Haus (Moral hoechstens 50, Phase 4 Abschnitt 2.2);
     forcing: der Anwerber zwingt gerade (Karma -3/Woche, Hitze +5/Woche statt -5);
     staff/forced_labor: Arbeitende insgesamt und davon Zwangspersonal hinter dem
-    Riegel aussen, das ohne Anteil arbeitet (Umsetzung 4, Karma -5/Woche)."""
+    Riegel aussen, das ohne Anteil arbeitet (Umsetzung 4, Karma -5/Woche).
+    price_mod: Preisaufschlag in % (gezinkte Waage, Umsetzung 8); bribe_mod:
+    Abweichung vom Schmiergeld der Stadt ($/Woche); closed: Haus geschlossen."""
     c = CITIES[city]
     p_mult, demand_by_wealth, rep_tick = PRICE_TIERS[price_tier]
+    p_mult = p_mult * (100 + price_mod) // 100
     d_mult = demand_by_wealth[c["wealth"]]
     share_pct, moral_tick, karma_tick = SHARE_TIERS[share_tier]
     if forced_labor and staff:
@@ -92,6 +96,8 @@ def simulate(city, weeks=12, staff_q=60, furnishing=50, rep=55, moral=50,
         clients = v // 100
         if rooms is not None:                             # Phase 2: Kapazitaet
             clients = min(clients, rooms * ROOM_CAPACITY)
+        if closed:
+            clients = 0
         rev_service = clients * c["price"] * p_mult // 100
         rev_bar = clients * (BAR_PER_CLIENT_PER_LEVEL * bar_level + side_per_client)
         revenue = rev_service + rev_bar
@@ -100,7 +106,7 @@ def simulate(city, weeks=12, staff_q=60, furnishing=50, rep=55, moral=50,
         costs = (rev_service * share_pct // 100 + fixed_wages
                  + clients * CONSUMABLES_PER_CLIENT
                  + upgrade_levels * UPKEEP_PER_LEVEL
-                 + revenue * c["tribute"] // 100 + c["bribe"]
+                 + revenue * c["tribute"] // 100 + max(0, c["bribe"] + bribe_mod)
                  + revenue * shrink_pct // 100
                  + (FLIGHT_COST if moral < FLIGHT_MORAL else 0))
         profit = revenue - costs

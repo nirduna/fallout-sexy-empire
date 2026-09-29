@@ -1,0 +1,153 @@
+/*
+   rlnell.ssl - Nell Harrow, Madame der Schlacke (Redding)
+
+   Umsetzung 8: Nell kommt mit der Lizenz. Sie hat die Waescherei im
+   Bergbaulager gefuehrt, bis das Jet ihren Mann geholt hat. Fuehrung 50.
+   Das gemeinsame Manager-Menue (rl_manager.h) und der Malamute Saloon
+   (Phase 3, Abschnitt 4.2): Beteiligung, Preiskrieg, Sabotage, Uebernahme.
+
+   Texte: text_src/english/dialog/rlnell.msg (ihre Saetze) und
+   _rl_manager.inc (die neutralen Texte des Manager-Menues)
+*/
+
+#define SCRIPT_REALNAME "rlnell"
+#define NAME                    SCRIPT_RLNELL
+#include "define.h"
+#include "../headers/rotlicht.h"
+#include "command.h"
+
+procedure start;
+procedure talk_p_proc;
+procedure map_enter_p_proc;
+procedure destroy_p_proc;
+procedure look_at_p_proc;
+procedure description_p_proc;
+procedure Node800;      // erste Begegnung
+procedure Node850;      // der Malamute
+procedure Node855;      // Beteiligung
+procedure Node857;      // Preiskrieg
+procedure Node859;      // Sabotage
+procedure Node861;      // Uebernahme
+procedure Node999;
+
+variable haus;
+variable welt;
+variable h := RL_REDDING;
+variable selbst_weg := 0;
+
+#define RLM_EXTRA_OPTIONEN   if (welt[RL_W_MALAMUTE] == 0) then NOption(850, Node850, 004);
+
+#include "../headers/rl_manager.h"
+
+procedure start begin
+end
+
+procedure map_enter_p_proc begin
+   haus := rl_lade_haeuser;
+   if (not rl_red_besitz(haus)) then begin
+      selbst_weg := 1;
+      destroy_object(self_obj);
+   end
+end
+
+procedure destroy_p_proc begin
+   if (selbst_weg) then return;
+   welt := rl_lade_welt;
+   haus := rl_lade_haeuser;
+   welt[RL_W_RED_TOTE] := 1;
+   haus[rl_idx(RL_REDDING, RL_F_FUEHRUNG)] := RL_OHNE_NELL_FUEHRUNG;
+end
+
+procedure look_at_p_proc begin
+   script_overrides;
+   display_mstr(200);
+end
+
+procedure description_p_proc begin
+   script_overrides;
+   display_mstr(201);
+end
+
+procedure talk_p_proc begin
+   haus := rl_lade_haeuser;
+   welt := rl_lade_welt;
+   start_gdialog(NAME, self_obj, 4, -1, -1);
+   gSay_Start;
+      if (welt[RL_W_RED_KENNT] == 0) then
+         call Node800;
+      else
+         call RLM_Start;
+   gSay_End;
+   end_dialogue;
+   RLM_NACH_DIALOG
+end
+
+procedure Node800 begin
+   welt[RL_W_RED_KENNT] := 1;
+   Reply(800);
+   NOption(801, RLM_Start, 004);
+   NOption(115, RLM_Ende, 004);
+   NLowOption(116, RLM_Kasse);
+end
+
+/* ------------------------------------------------------------------ */
+/* Der Malamute Saloon (Phase 3, Abschnitt 4.2)                        */
+/* ------------------------------------------------------------------ */
+procedure Node850 begin
+   if (welt[RL_W_MALAMUTE_WEG] == RL_MALAMUTE_PREISKRIEG) then begin
+      Reply(mstr(851) + welt[RL_W_MALAMUTE_WOCHEN] + mstr(852));
+      NOption(123, RLM_Start, 004);
+      return;
+   end
+   Reply(853);
+   if ((has_skill(dude_obj, SKILL_BARTER) >= 60) and rl_zahlbar(haus, h, RL_MALAMUTE_ANTEIL_PREIS)) then
+      NOption(854, Node855, 004);
+   NOption(856, Node857, 004);
+   if (has_skill(dude_obj, SKILL_SNEAK) >= 60) then
+      BOption(858, Node859, 004);
+   if ((haus[rl_idx(h, RL_F_EINFLUSS)] >= 40) and rl_zahlbar(haus, h, RL_MALAMUTE_KAUFPREIS)) then
+      NOption(860, Node861, 004);
+   NOption(123, RLM_Start, 004);
+end
+
+procedure Node855 begin
+   call rl_zahlen(haus, h, RL_MALAMUTE_ANTEIL_PREIS);
+   welt[RL_W_MALAMUTE] := 1;
+   welt[RL_W_MALAMUTE_WEG] := RL_MALAMUTE_BETEILIGUNG;
+   Reply(862);
+   NOption(123, RLM_Start, 004);
+end
+
+procedure Node857 begin
+   welt[RL_W_MALAMUTE_WEG] := RL_MALAMUTE_PREISKRIEG;
+   welt[RL_W_MALAMUTE_WOCHEN] := 0;
+   haus[rl_idx(h, RL_F_PREISSTUFE)] := RL_PREIS_RAMSCH;
+   Reply(863);
+   NOption(123, RLM_Start, 004);
+end
+
+// Gepanschter Schnaps: Karma -10; wer nicht leise genug ist, hat Marion zum Feind
+procedure Node859 begin
+   rl_karma(-10);
+   welt[RL_W_MALAMUTE] := 1;
+   welt[RL_W_MALAMUTE_WEG] := RL_MALAMUTE_SABOTAGE;
+   if (random(1, 100) > has_skill(dude_obj, SKILL_SNEAK)) then begin
+      call rl_red_marion_feind(haus, welt);
+      Reply(mstr(864) + " " + mstr(865));
+   end else
+      Reply(864);
+   NOption(123, RLM_Start, 004);
+end
+
+procedure Node861 begin
+   call rl_zahlen(haus, h, RL_MALAMUTE_KAUFPREIS);
+   welt[RL_W_MALAMUTE] := 1;
+   welt[RL_W_MALAMUTE_WEG] := RL_MALAMUTE_UEBERNAHME;
+   haus[rl_idx(h, RL_F_ZIMMER)] := haus[rl_idx(h, RL_F_ZIMMER)] + 2;
+   haus[rl_idx(h, RL_F_STUFEN)] := haus[rl_idx(h, RL_F_STUFEN)] + 1;
+   Reply(866);
+   NOption(123, RLM_Start, 004);
+end
+
+procedure Node999 begin
+end

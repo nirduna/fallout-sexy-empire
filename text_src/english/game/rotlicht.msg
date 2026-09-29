@@ -56,3 +56,8 @@
 {153}{}{Nobody sat at the table for us. The families decided without us.}
 {154}{}{Westin's people took Bishop's letter without a word. Pagano will want to know.}
 {155}{}{The Mordinos' contract is worthless now. There's nobody left who could sign for them.}
+
+# Redding (Umsetzung 8)
+{160}{}{Sheriff Marion found the rigged scale. By midnight the miners had torn the counter out of the floor. The Slag stays shut for three weeks, and Ascorti wants double.}
+{161}{}{The Malamute gave up the girls upstairs. Four weeks of our prices were more than they could stand.}
+{162}{}{The Wanamingo mine is clean. Sheriff Marion let it be known that the Slag is under his protection now.}

@@ -46,6 +46,8 @@
 #define SCRIPT_RLFIXER              (RL_SCRIPT_BASE + 15)  // Frankie Pagano, Mittelsmann der Familien (Segen)
 #define SCRIPT_RLROZ                (RL_SCRIPT_BASE + 16)  // Roz Mercer, Madame des Strumpfbands
 #define SCRIPT_RLCONSIG             (RL_SCRIPT_BASE + 17)  // Leopold Asch, Consigliere im Hauptquartier
+#define SCRIPT_RLSCHREIBER          (RL_SCRIPT_BASE + 18)  // Ascortis Schreiber (Redding, Lizenz)
+#define SCRIPT_RLNELL               (RL_SCRIPT_BASE + 19)  // Nell Harrow, Madame der Schlacke
 
 /* ------------------------------------------------------------------ */
 /* Echte GVARs (Phase 6). Nur dort, wo die Engine sie verlangt:        */
@@ -131,6 +133,9 @@
 #define RL_F_BAU_WOCHEN             (35)    // verbleibende Bauwochen
 #define RL_F_ANGRIFF                (36)    // laufender Kampf im Haus (RL_ANGRIFF_*), nicht fuer die Gosse
 #define RL_F_ANGREIFER              (37)    // wie viele Angreifer dort noch stehen
+#define RL_F_BESTECHUNG_MOD         (38)    // Abweichung vom Schmiergeld der Stadt in $/Woche (Lizenz, Schweigegeld)
+#define RL_F_PREISMOD               (39)    // Aufschlag auf den Preis in % (gezinkte Waage)
+#define RL_F_GESCHLOSSEN            (40)    // Wochen, die das Haus noch geschlossen ist (Revolte, Seuche)
 
 // Anwerber (Phase 4, Abschnitt 2.2). Eine Person je RL_ANWERB_PUNKTE Punkte:
 // Werben 2/Woche (Anstaendiges Haus 4), Zwingen 4/Woche, Zulauf ab Moral 75 +1.
@@ -153,9 +158,10 @@
 #define RL_MOD_AKTE                 (32)
 #define RL_MOD_LEINE                (64)    // "An der Leine halten": Jet statt Lohn (Phase 4)
 #define RL_MOD_ZUFLUCHT             (128)   // Die Zuflucht: versteckte Kammer (Den, Ketten Akt 2)
+#define RL_MOD_WAAGE_GEZINKT        (256)   // Redding: die gezinkte Goldwaage (Umsetzung 8)
 
 // Welt-Felder (aeltere Spielstaende mit weniger Feldern werden beim Laden erweitert)
-#define RL_WELT_FELDER              (96)
+#define RL_WELT_FELDER              (160)
 #define RL_W_WOCHE                  (0)     // zuletzt abgerechnete Woche
 #define RL_W_AKTIV                  (1)     // 1, sobald das erste Haus uebernommen ist
 #define RL_W_HQ_KASSE               (2)     // Geld, das Laeufer ins Hauptquartier gebracht haben
@@ -228,6 +234,17 @@
 #define RL_W_HAUS_HIER              (70)    // Haus + 1 der Innenkarte, auf der der Spieler steht (Kartenskripte)
 #define RL_W_NR_TOTE                (71)    // Bitfeld RL_NR_TOT_*: wer im Strumpfband gestorben ist
 #define RL_W_NR_KENNT               (72)    // Bitfeld RL_NR_KENNT_*: wen der Spieler schon kennt
+// Redding (Umsetzung 8, rl_redding.h)
+#define RL_W_RED_LIZENZ             (73)    // RL_LIZENZ_*: wie die Schlacke an ihre Lizenz kam
+#define RL_W_MARION                 (74)    // RL_MARION_*: Sheriff Marion
+#define RL_W_RED_BELEG              (75)    // 1 = Ascortis Kassenbuch in der Hand des Spielers
+#define RL_W_RED_SCHREIBER          (76)    // wie viele von Ascortis Schreibern gestorben sind
+#define RL_W_MALAMUTE_WEG           (77)    // RL_MALAMUTE_*: wie der Malamute Saloon aufgab
+#define RL_W_MALAMUTE_WOCHEN        (78)    // Wochen im Preiskrieg
+#define RL_W_RED_TOTE               (79)    // 1 = Nell ist tot
+#define RL_W_RED_KENNT              (80)    // 1 = Nell kennt den Spieler
+#define RL_W_MARION_BONUS           (81)    // 1 = Sicherheit +10 durch Marion ist angewendet
+#define RL_W_ASCORTI                (82)    // 1 = Ascorti ist Feind (blossgestellt)
 
 #define RL_PROLOG_OFFEN             (0)
 #define RL_PROLOG_LAEUFT            (1)
@@ -543,6 +560,7 @@ procedure rl_rechne_woche(variable haus, variable h, variable stadt) begin
 
    // Preisstufe (Phase 1, Abschnitt 3.6)
    preis_prozent := get_array([60, 100, 150, 250], preisstufe);
+   preis_prozent := preis_prozent * (100 + haus[rl_idx(h, RL_F_PREISMOD)]) / 100;
    ruf_tick      := get_array([-1, 0, 1, 2], preisstufe);
    if (preisstufe == RL_PREIS_RAMSCH) then
       nachfrage := get_array([140, 140, 100], rl_stadt(stadt, RL_S_KAUFKRAFT));
@@ -595,6 +613,7 @@ procedure rl_rechne_woche(variable haus, variable h, variable stadt) begin
    // Kapazitaet: ein Zimmer braucht eine Person (Phase 4)
    kapazitaet := rl_min(haus[rl_idx(h, RL_F_ZIMMER)], haus[rl_idx(h, RL_F_PERSONAL)]) * RL_KUNDEN_JE_ZIMMER;
    kunden := rl_min(kunden, kapazitaet);
+   if (haus[rl_idx(h, RL_F_GESCHLOSSEN)] > 0) then kunden := 0;       // geschlossen (Revolte, Seuche)
 
    // Baustelle: halbe Kundschaft (Phase 2, Abschnitt 3)
    if (haus[rl_idx(h, RL_F_BAU_ID)] and (haus[rl_idx(h, RL_F_BAU_WOCHEN)] > 0)) then
@@ -622,13 +641,13 @@ procedure rl_rechne_woche(variable haus, variable h, variable stadt) begin
            + kunden * RL_VERBRAUCH_JE_KUNDE
            + haus[rl_idx(h, RL_F_STUFEN)] * RL_UNTERHALT_JE_STUFE
            + umsatz * tribut / 100
-           + rl_stadt(stadt, RL_S_BESTECHUNG)
+           + rl_max(0, rl_stadt(stadt, RL_S_BESTECHUNG) + haus[rl_idx(h, RL_F_BESTECHUNG_MOD)])
            + umsatz * schwund / 100;
    if (moral < RL_FLUCHT_MORAL) then kosten := kosten + RL_FLUCHT_KOSTEN;
    gewinn := umsatz - kosten;
 
    // VIP-Trakt: eigene Kundschaft zum dreifachen Preis ab Moral 65 (Phase 2)
-   if ((module bwand RL_MOD_VIP) and (moral >= 65)) then begin
+   if ((module bwand RL_MOD_VIP) and (moral >= 65) and (haus[rl_idx(h, RL_F_GESCHLOSSEN)] == 0)) then begin
       vip_kunden := get_array([0, 10, 0, 2, 6, 5, 0], stadt);
       vip_umsatz := vip_kunden * basispreis * 3;
       if (module bwand RL_MOD_KONTOR) then schwund := 4; else schwund := 10;
@@ -752,6 +771,7 @@ end
 #include "rl_ketten.h"
 #include "rl_haeuser.h"
 #include "rl_newreno.h"
+#include "rl_redding.h"
 #include "rl_kampf.h"
 
 #endif

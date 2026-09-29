@@ -16,3 +16,5 @@ rlwitwe.int     ; Loretta Varga, die Witwe, New Reno (Rotlicht)         # local_
 rlfixer.int     ; Frankie Pagano, Mittelsmann der Familien (Rotlicht)   # local_vars=0
 rlroz.int       ; Roz Mercer, Madame des Strumpfbands (Rotlicht)        # local_vars=0
 rlconsig.int    ; Leopold Asch, Consigliere im Hauptquartier (Rotlicht) # local_vars=0
+rlschreib.int   ; Ascortis Schreiber, Redding (Rotlicht)                # local_vars=0
+rlnell.int      ; Nell Harrow, Madame der Schlacke (Rotlicht)           # local_vars=0

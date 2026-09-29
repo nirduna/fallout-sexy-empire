@@ -478,7 +478,9 @@ def test_wirtschaft_paritaet(u):
                  kranken=rng.random() < 0.3, stufen=rng.randint(0, 12), loehne=rng.randint(0, 400),
                  smod=rng.randint(-40, 40), mmod=rng.randint(0, 30), zimmer=rng.randint(1, 10),
                  personal=rng.randint(1, 10), bonus=rng.randint(0, 3),
-                 gezwungen=rng.choice([0, 0, 1, 2]), anwerber=rng.randrange(3))
+                 gezwungen=rng.choice([0, 0, 1, 2]), anwerber=rng.randrange(3),
+                 pmod=rng.choice([0, 0, 15, rng.randint(0, 40)]), bmod=rng.choice([0, 0, -75, 50, 400]),
+                 zu=rng.random() < 0.1)
         c['zwang'] = rng.choice([0, 0, min(2, c['personal'])])
         for i in range(k['RL_FELDER']):
             sp.arrays[hid].werte[i] = 0
@@ -489,6 +491,7 @@ def test_wirtschaft_paritaet(u):
                       RL_F_STADTMOD=c['smod'], RL_F_MODUL_STADTMOD=c['mmod'], RL_F_ZIMMER=c['zimmer'],
                       RL_F_PERSONAL=c['personal'], RL_F_MORALBONUS=c['bonus'],
                       RL_F_GEZWUNGEN=c['gezwungen'], RL_F_ANWERBER=c['anwerber'], RL_F_ZWANG=c['zwang'],
+                      RL_F_PREISMOD=c['pmod'], RL_F_BESTECHUNG_MOD=c['bmod'], RL_F_GESCHLOSSEN=1 if c['zu'] else 0,
                       RL_F_MODULE=(k['RL_MOD_KONTOR'] if c['kontor'] else 0)
                       | (k['RL_MOD_KRANKENSTUBE'] if c['kranken'] else 0))
         for f, v in felder.items():
@@ -507,7 +510,7 @@ def test_wirtschaft_paritaet(u):
             city_mod=100 + c['smod'] + c['mmod'], rooms=min(c['zimmer'], c['personal']),
             side_per_client=c['neben'], moral_bonus=c['bonus'], forced_staff=c['gezwungen'] > 0,
             forcing=c['anwerber'] == k['RL_ANWERBER_ZWINGEN'], staff=c['personal'],
-            forced_labor=c['zwang'])
+            forced_labor=c['zwang'], price_mod=c['pmod'], bribe_mod=c['bmod'], closed=c['zu'])
         soll = [(r[3], r[6]) for r in rows]
         pruefe(ist == soll, f'Fall {fall} {c}: Skript {ist[:4]} ... Simulator {soll[:4]} ...')
         pruefe(sp.gvars.get(karma_gvar, 0) == karma, f'Fall {fall}: Karma {sp.gvars.get(karma_gvar)} statt {karma}')
@@ -1480,6 +1483,260 @@ def test_erkundung_newreno(u):
     print(f'      {gesamt} Dialogzustaende in New Reno erkundet')
 
 
+# --------------------------------------------------------------------------
+# Umsetzung 8: Redding, Ascortis Lizenz, Waage, Malamute
+
+RED = 2
+
+
+def schlacke(u, sp=None):
+    """Die Schlacke betreten (Kartenskript RLRED01); liefert (sp, w)."""
+    k = u.k
+    sp = sp or u.neues_spiel()
+    if not sp.finde(k['SCRIPT_RLRED01']):
+        sp.erzeuge(0, -1, 0, k['SCRIPT_RLRED01'], 'Kartenskript RLRED01')
+    betrete_schlacke(u, sp)
+    return sp, Welt(sp, k)
+
+
+def betrete_schlacke(u, sp):
+    sp.betrete_karte(u.cfg['RL_MAP_INDEX'] + RED)
+    sp.temp_freigeben()
+
+
+def _red_uebernommen(u, sp=None):
+    k = u.k
+    sp, w = schlacke(u, sp)
+    rede(sp, figur(sp, k, 'RLSCHREIBER'), ['package cost', "Here's a thousand", None])
+    pruefe(w.haus(RED, 'RL_F_BESITZ') == 1, 'Schlacke nicht uebernommen')
+    return sp, w
+
+
+def test_red_lizenz_wege(u):
+    k = u.k
+    # Paket
+    sp, w = schlacke(u)
+    keine_figur(sp, k, 'RLNELL')
+    geld = sp.dude.kronkorken
+    v = rede(sp, figur(sp, k, 'RLSCHREIBER'), ['package cost', "Here's a thousand", None])
+    pruefe(sp.dude.kronkorken == geld - 1000 and w.welt('RL_W_RED_LIZENZ') == k['RL_LIZENZ_PAKET'], 'Paket')
+    pruefe(w.haus(RED, 'RL_F_BESITZ') == 1 and w.haus(RED, 'RL_F_BESTECHUNG_MOD') == 0, 'Besitz, 75 $/Woche')
+    pruefe(w.haus(RED, 'RL_F_FUEHRUNG') == 50 and w.haus(RED, 'RL_F_EINFLUSS') == 20, 'Fuehrung, Einfluss')
+    pruefe('Nell Harrow' in texte(v), 'Nell angekuendigt')
+    keine_figur(sp, k, 'RLSCHREIBER')
+    nell = figur(sp, k, 'RLNELL')
+    v = rede(sp, nell, ['how the house'])
+    pruefe('laundress' in texte(v) or 'Nell Harrow' in texte(v), 'Nell stellt sich vor')
+    betrete_schlacke(u, sp)
+    figur(sp, k, 'RLNELL')
+    keine_figur(sp, k, 'RLSCHREIBER')
+    # Barter
+    sp, w = schlacke(u)
+    sp.dude.skills[k['SKILL_BARTER']] = 60
+    geld = sp.dude.kronkorken
+    rede(sp, figur(sp, k, 'RLSCHREIBER'), ['package cost', '[Barter]', None])
+    pruefe(sp.dude.kronkorken == geld - 600, 'Barter 600')
+    # Aufschlag
+    sp, w = schlacke(u)
+    sp.dude.skills[k['SKILL_SPEECH']] = 70
+    geld = sp.dude.kronkorken
+    rede(sp, figur(sp, k, 'RLSCHREIBER'), ['[Speech]', None])
+    pruefe(sp.dude.kronkorken == geld and w.haus(RED, 'RL_F_BESTECHUNG_MOD') == 50
+           and w.welt('RL_W_RED_LIZENZ') == k['RL_LIZENZ_AUFSCHLAG'], 'Aufschlag 125 $/Woche')
+    # Blossstellen: Kassenbuch und Marion
+    sp, w = schlacke(u)
+    sp.dude.skills[k['SKILL_LOCKPICK']] = 60
+    schreiber = figur(sp, k, 'RLSCHREIBER')
+    v = rede(sp, schreiber, ['about Ascorti', '[Lockpick]', None])
+    pruefe(w.welt('RL_W_RED_BELEG') == 1 and w.haus(RED, 'RL_F_BESITZ') == 0, 'Beleg ohne Speech')
+    pruefe('worth nothing' in texte(v), 'ohne Speech wertlos')
+    sp.dude.skills[k['SKILL_SPEECH']] = 60
+    rede(sp, schreiber, ['about Ascorti', 'Sheriff Marion', None])
+    pruefe(w.welt('RL_W_RED_LIZENZ') == k['RL_LIZENZ_MARION'] and w.welt('RL_W_MARION') == k['RL_MARION_SCHUTZ'], 'Marion')
+    pruefe(w.haus(RED, 'RL_F_SICHERHEIT') == 55 and w.haus(RED, 'RL_F_BESTECHUNG_MOD') == -75
+           and w.welt('RL_W_ASCORTI') == 1, 'Schutzherr, kein Schmiergeld, Ascorti Feind')
+    # Einschuechtern
+    sp, w = schlacke(u)
+    sp.dude.stats[k['STAT_st']] = 7
+    rede(sp, figur(sp, k, 'RLSCHREIBER'), ['[Threaten]', None])
+    pruefe(w.welt('RL_W_RED_LIZENZ') == k['RL_LIZENZ_DROHUNG'] and w.haus(RED, 'RL_F_BESTECHUNG_MOD') == -75
+           and w.haus(RED, 'RL_F_HITZE') == 20 and w.welt('RL_W_MARION') == k['RL_MARION_WACHSAM'], 'Drohung')
+    allgemein(sp, 'red lizenz')
+
+
+def test_red_schreiber_tot(u):
+    k = u.k
+    sp, w = schlacke(u)
+    sp.zerstoere(figur(sp, k, 'RLSCHREIBER'))
+    pruefe(w.welt('RL_W_RED_SCHREIBER') == 1, 'Tod gezaehlt')
+    betrete_schlacke(u, sp)
+    v = rede(sp, figur(sp, k, 'RLSCHREIBER'), [])
+    pruefe('last clerk had an accident' in texte(v), 'der Neue')
+    allgemein(sp, 'schreiber tot')
+
+
+def test_red_waage(u):
+    k = u.k
+    sp, w = _red_uebernommen(u)
+    nell = figur(sp, k, 'RLNELL')
+    rede(sp, nell, ['how the house', None])
+    sp.dude.kronkorken = 5000
+    rede(sp, nell, ['build', 'only get in Redding', 'Rigged Scale', 'Build it', None])
+    pruefe(w.haus(RED, 'RL_F_BAU_ID') == k['RL_SONDER_BASIS'] + k['RL_SM_WAAGE'] + 1, 'Baustelle Waage')
+    v = rede(sp, nell, ['build'])
+    pruefe(not any('Honest Gold Scale' in o for o in _optionen_bei(v, 'build')), 'ehrliche Waage trotz gezinkter')
+    sp.zufall_fest = 'max'                  # keine Ereignisse, Marion findet nichts
+    woche(sp)
+    pruefe(w.haus(RED, 'RL_F_MODULE') & k['RL_MOD_WAAGE_GEZINKT'] and w.haus(RED, 'RL_F_PREISMOD') == 15, 'Waage fertig')
+    karma = sp.gvars.get(k['GVAR_PLAYER_REPUTATION'], 0)
+    woche(sp)
+    sp.zufall_fest = None
+    pruefe(sp.gvars[k['GVAR_PLAYER_REPUTATION']] == karma - 2, f'Karma {karma} -> {sp.gvars[k["GVAR_PLAYER_REPUTATION"]]}')
+    # Marion findet sie: Revolte
+    sp.zufall_folge = [1]
+    woche(sp)
+    pruefe(w.haus(RED, 'RL_F_GESCHLOSSEN') == 3 - 1 or w.haus(RED, 'RL_F_GESCHLOSSEN') == 3, 'geschlossen')
+    pruefe(not (w.haus(RED, 'RL_F_MODULE') & k['RL_MOD_WAAGE_GEZINKT']) and w.haus(RED, 'RL_F_PREISMOD') == 0, 'Waage weg')
+    pruefe(w.haus(RED, 'RL_F_BESTECHUNG_MOD') == 75, 'Ascorti will das Doppelte')
+    pruefe(w.welt('RL_W_MARION') == k['RL_MARION_WACHSAM'], 'Marion wachsam')
+    pruefe(any('rigged scale' in m for m in sp.meldungen), 'Meldung Revolte')
+    sp.zufall_fest = 'max'
+    woche(sp)
+    pruefe(w.haus(RED, 'RL_F_KUNDEN') == 0, 'keine Kunden, solange geschlossen')
+    woche(sp, 3)
+    sp.zufall_fest = None
+    pruefe(w.haus(RED, 'RL_F_GESCHLOSSEN') == 0 and w.haus(RED, 'RL_F_KUNDEN') > 0, 'wieder offen')
+    # Die ehrliche Waage schliesst die gezinkte aus
+    sp, w = _red_uebernommen(u)
+    nell = figur(sp, k, 'RLNELL')
+    rede(sp, nell, ['how the house', None])
+    rede(sp, nell, ['build', 'only get in Redding', 'Honest Gold Scale', 'Build it', None])
+    pruefe(w.haus(RED, 'RL_F_BAU_ID') == k['RL_M_RED_GOLDWAAGE'] + 1, 'ehrliche Waage')
+    woche(sp)
+    v = rede(sp, nell, ['build'])
+    gruppe = _optionen_bei(rede(sp, nell, ['build', 'only get in Redding']), 'only get in Redding') \
+        if any('only get in Redding' in o for o in _optionen_bei(v, 'build')) else []
+    pruefe(not any('Rigged' in o for o in gruppe), 'gezinkte Waage trotz ehrlicher')
+    allgemein(sp, 'waage')
+
+
+def test_red_malamute(u):
+    k = u.k
+    # Beteiligung
+    sp, w = _red_uebernommen(u)
+    nell = figur(sp, k, 'RLNELL')
+    rede(sp, nell, ['how the house', None])
+    sp.dude.skills[k['SKILL_BARTER']] = 60
+    rede(sp, nell, ['Malamute', 'Buy a share', None])
+    pruefe(w.welt('RL_W_MALAMUTE') == 1 and w.welt('RL_W_MALAMUTE_WEG') == k['RL_MALAMUTE_BETEILIGUNG'], 'Beteiligung')
+    kasse = w.haus(RED, 'RL_F_KASSE')
+    sp.zufall_fest = 'max'
+    woche(sp)
+    sp.zufall_fest = None
+    pruefe(w.haus(RED, 'RL_F_KASSE') == kasse + 60 + w.haus(RED, 'RL_F_GEWINN'), 'Anteil 60 $')
+    pruefe(w.haus(RED, 'RL_F_STADTMOD') > -30, 'Abzug weg')
+    v = rede(sp, nell, [])
+    pruefe(not any('Malamute' in o for o in v[0][1]), 'Malamute-Option nach der Loesung')
+    # Preiskrieg: nur Wochen mit Ramsch zaehlen
+    sp, w = _red_uebernommen(u)
+    nell = figur(sp, k, 'RLNELL')
+    rede(sp, nell, ['how the house', None])
+    rede(sp, nell, ['Malamute', 'Undercut', None])
+    pruefe(w.haus(RED, 'RL_F_PREISSTUFE') == k['RL_PREIS_RAMSCH'], 'Ramsch')
+    woche(sp, 2)
+    w.setze_haus(RED, 'RL_F_PREISSTUFE', k['RL_PREIS_STANDARD'])
+    woche(sp)
+    pruefe(w.welt('RL_W_MALAMUTE_WOCHEN') == 2 and w.welt('RL_W_MALAMUTE') == 0, 'Standard zaehlt nicht')
+    v = rede(sp, nell, ['Malamute'])
+    pruefe('2 week(s)' in texte(v), 'Stand des Preiskriegs')
+    w.setze_haus(RED, 'RL_F_PREISSTUFE', k['RL_PREIS_RAMSCH'])
+    woche(sp, 2)
+    pruefe(w.welt('RL_W_MALAMUTE') == 1 and any('Malamute gave up' in m for m in sp.meldungen), 'Preiskrieg gewonnen')
+    # Sabotage: erwischt oder nicht
+    for wurf, feind in ((100, True), (1, False)):
+        sp, w = _red_uebernommen(u)
+        nell = figur(sp, k, 'RLNELL')
+        rede(sp, nell, ['how the house', None])
+        sp.dude.skills[k['SKILL_SNEAK']] = 60
+        karma = sp.gvars.get(k['GVAR_PLAYER_REPUTATION'], 0)
+        sp.zufall_folge = [wurf]
+        rede(sp, nell, ['Malamute', '[Sneak]', None])
+        pruefe(w.welt('RL_W_MALAMUTE') == 1 and sp.gvars[k['GVAR_PLAYER_REPUTATION']] == karma - 10, 'Sabotage')
+        pruefe((w.welt('RL_W_MARION') == k['RL_MARION_FEIND']) == feind, f'Marion Feind: {feind}')
+    # Uebernahme
+    sp, w = _red_uebernommen(u)
+    nell = figur(sp, k, 'RLNELL')
+    rede(sp, nell, ['how the house', None])
+    sp.dude.kronkorken = 3000
+    v = rede(sp, nell, ['Malamute'])
+    pruefe(not any('Buy them out' in o for o in _optionen_bei(v, 'Malamute')), 'Uebernahme ohne E 40')
+    w.setze_haus(RED, 'RL_F_EINFLUSS', 40)
+    zimmer = w.haus(RED, 'RL_F_ZIMMER')
+    rede(sp, nell, ['Malamute', 'Buy them out', None])
+    pruefe(w.welt('RL_W_MALAMUTE_WEG') == k['RL_MALAMUTE_UEBERNAHME'] and w.haus(RED, 'RL_F_ZIMMER') == zimmer + 2, 'Uebernahme')
+    allgemein(sp, 'malamute')
+
+
+def test_red_marion_wanamingo(u):
+    k = u.k
+    sp, w = _red_uebernommen(u)
+    sich = w.haus(RED, 'RL_F_SICHERHEIT')
+    sp.gvars[k['GVAR_WANAMINGO_OCCUPADO']] = k['WANAMINGO_CLEARED_OUT']
+    woche(sp)
+    pruefe(w.welt('RL_W_MARION') == k['RL_MARION_SCHUTZ'] and w.haus(RED, 'RL_F_SICHERHEIT') == sich + 10, 'Schutzherr')
+    woche(sp)
+    pruefe(w.haus(RED, 'RL_F_SICHERHEIT') == sich + 10, 'nur einmal')
+    # Vor der Lizenz: Schutz zaehlt bei der Uebernahme
+    sp, w = schlacke(u)
+    sp.gvars[k['GVAR_WANAMINGO_OCCUPADO']] = k['WANAMINGO_CLEARED_OUT']
+    w.setze_haus(0, 'RL_F_BESITZ', 1)          # Wochentakt laeuft erst mit einem eigenen Haus
+    w.setze_welt('RL_W_AKTIV', 1)
+    woche(sp)
+    pruefe(w.welt('RL_W_MARION') == k['RL_MARION_SCHUTZ'], 'Schutzherr vor der Lizenz')
+    rede(sp, figur(sp, k, 'RLSCHREIBER'), ['package cost', "Here's a thousand", None])
+    pruefe(w.haus(RED, 'RL_F_SICHERHEIT') == 55, 'Bonus bei der Uebernahme')
+    allgemein(sp, 'marion')
+
+
+def test_red_entzugsstube(u):
+    k = u.k
+    sp, w = _red_uebernommen(u)
+    g = sp.globale[0]
+    hid = sp.gespeichert['RL_HAUS']
+    pruefe(g.rufe_mit('rl_red_entzug', hid) == 0, 'ohne Entzugsstube')
+    w.setze_haus(RED, 'RL_F_GEKAUFT', 1 << k['RL_M_RED_ENTZUGSSTUBE'])
+    w.setze_haus(RED, 'RL_F_BAU_ID', k['RL_M_RED_ENTZUGSSTUBE'] + 1)
+    pruefe(g.rufe_mit('rl_red_entzug', hid) == 0, 'im Bau')
+    w.setze_haus(RED, 'RL_F_BAU_ID', 0)
+    pruefe(g.rufe_mit('rl_red_entzug', hid) != 0, 'gebaut')
+    allgemein(sp, 'entzugsstube')
+
+
+def test_erkundung_redding(u):
+    k = u.k
+    gesamt = 0
+    for skill in (0, 70):
+        sp, w = schlacke(u)
+        for s in ('SKILL_BARTER', 'SKILL_SPEECH', 'SKILL_STEAL', 'SKILL_LOCKPICK', 'SKILL_UNARMED_COMBAT', 'SKILL_SNEAK'):
+            sp.dude.skills[k[s]] = skill
+        gesamt += erkunde(sp, figur(sp, k, 'RLSCHREIBER'), f'Schreiber {skill}')[1]
+        w.setze_welt('RL_W_RED_BELEG', 1)
+        w.setze_welt('RL_W_RED_SCHREIBER', 1)
+        gesamt += erkunde(sp, figur(sp, k, 'RLSCHREIBER'), f'Schreiber mit Beleg {skill}')[1]
+    sp, w = _red_uebernommen(u)
+    nell = figur(sp, k, 'RLNELL')
+    gesamt += erkunde(sp, nell, 'Nell erstes Gespraech')[1]
+    rede(sp, nell, ['how the house', None])
+    for skill in (0, 60):
+        sp.dude.skills[k['SKILL_BARTER']] = skill
+        sp.dude.skills[k['SKILL_SNEAK']] = skill
+        w.setze_haus(RED, 'RL_F_EINFLUSS', 40 if skill else 20)
+        gesamt += erkunde(sp, nell, f'Nell {skill}')[1]
+    w.setze_welt('RL_W_MALAMUTE_WEG', k['RL_MALAMUTE_PREISKRIEG'])
+    gesamt += erkunde(sp, nell, 'Nell Preiskrieg')[1]
+    print(f'      {gesamt} Dialogzustaende in Redding erkundet')
+
+
 TESTS = [test_wirtschaft_paritaet, test_erkundung, test_eingang, test_prolog_wege, test_diebstahl_erwischt, test_ketten_annehmen,
          test_ketten_ablehnen, test_ketten_kein_geld, test_kolbe_stirbt, test_kolbe_kommt_zurueck,
          test_wochen, test_anwerbung_werben, test_anwerbung_zwingen, test_pferch_flucht_und_nachschub,
@@ -1488,7 +1745,9 @@ TESTS = [test_wirtschaft_paritaet, test_erkundung, test_eingang, test_prolog_weg
          test_kampf_deke_und_jess, test_tyler_tot_vanilla, test_eingaenge_haeuser, test_alter_spielstand, test_erkundung_ketten,
          test_nr_kauf_und_mordino, test_nr_urkunde_wege, test_nr_faelschung, test_nr_bishop_brief,
          test_nr_made_man_und_vanilla, test_nr_eroeffnungsnacht, test_nr_pagano_tot, test_nr_hauptquartier,
-         test_nr_jet_theke, test_nr_tote_figuren, test_erkundung_newreno]
+         test_nr_jet_theke, test_nr_tote_figuren, test_erkundung_newreno,
+         test_red_lizenz_wege, test_red_schreiber_tot, test_red_waage, test_red_malamute,
+         test_red_marion_wanamingo, test_red_entzugsstube, test_erkundung_redding]
 
 
 def main():

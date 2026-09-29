@@ -17,6 +17,8 @@
     10. New Reno (Umsetzung 7, rl_newreno.h): Bishops Brief bei Westin abgeben,
         die aufgeflogene Faelschung, Familientreffen, Shark Club, Jet-Vertrag,
         misstrauische Familien.
+    11. Redding (Umsetzung 8, rl_redding.h): gezinkte Waage und Revolte,
+        Malamute Saloon, Marion als Schutzherr nach der Wanamingo-Mine.
 
    sfall laedt alle gl*.int beim Spielstart. Die Wochenlogik laeuft nur
    auf lokalen Karten; Reisezeit auf der Weltkarte wird beim naechsten
@@ -62,6 +64,7 @@ procedure rl_ketten_tick;
 procedure rl_auftrag_abschluss;
 procedure rl_nr_woche(variable woche);
 procedure rl_nr_brief;
+procedure rl_red_woche(variable woche);
 #ifdef RL_DEBUG
 procedure rl_taste;
 procedure rl_debug_spawn;
@@ -153,6 +156,7 @@ procedure rl_tick begin
    while (wochen > 0) do begin
       call rl_ketten_woche(jetzt - wochen + 1);
       call rl_nr_woche(jetzt - wochen + 1);
+      call rl_red_woche(jetzt - wochen + 1);
       tyrann := 0;
       ausbeutung := 0;
       h := 0;
@@ -164,6 +168,8 @@ procedure rl_tick begin
                ausbeutung := 1;
             call rl_stadtruf(h, jetzt - wochen + 1);
             haus[rl_idx(h, RL_F_KASSE)] := haus[rl_idx(h, RL_F_KASSE)] + rl_rechne_woche(haus, h, h);
+            if (haus[rl_idx(h, RL_F_GESCHLOSSEN)] > 0) then
+               haus[rl_idx(h, RL_F_GESCHLOSSEN)] := haus[rl_idx(h, RL_F_GESCHLOSSEN)] - 1;
             // Baustelle: eine Woche weniger, danach wirkt das Modul (Phase 2)
             if (haus[rl_idx(h, RL_F_BAU_ID)]) then begin
                haus[rl_idx(h, RL_F_BAU_WOCHEN)] := haus[rl_idx(h, RL_F_BAU_WOCHEN)] - 1;
@@ -277,6 +283,7 @@ end
 procedure rl_ereignis_wurf(variable h) begin
    variable chance, bedrohung, ereignis;
 
+   if (haus[rl_idx(h, RL_F_GESCHLOSSEN)] > 0) then return;     // geschlossen: niemand da
    bedrohung := rl_stadt(h, RL_S_RISIKO) * 20 + haus[rl_idx(h, RL_F_HITZE)];
    chance := 10 + haus[rl_idx(h, RL_F_HITZE)] / 5
            + rl_max(0, bedrohung - haus[rl_idx(h, RL_F_SICHERHEIT)]) / 2;
@@ -387,6 +394,7 @@ procedure rl_ereignis_waehlen(variable h) begin
       else if (welt[RL_W_NR_SEGEN] == RL_SEGEN_WRIGHT) then
          g[RL_EV_STOFF] := g[RL_EV_STOFF] / 2;
    end
+   if ((h == RL_REDDING) and rl_red_entzug(haus)) then g[RL_EV_STOFF] := g[RL_EV_STOFF] / 2;   // Entzugsstube
    if (moral < 40) then g[RL_EV_STOFF] := g[RL_EV_STOFF] * 3 / 2;
    // Razzia
    g[RL_EV_RAZZIA] := 5 + rl_stadt(h, RL_S_RISIKO) * 3 + haus[rl_idx(h, RL_F_HITZE)] / 2;
@@ -735,6 +743,43 @@ procedure rl_nr_woche(variable woche) begin
          display_msg(rl_haus_name(RL_NEW_RENO) + ": " + rl_text(153));
       end
    end
+end
+
+/* ------------------------------------------------------------------ */
+/* Redding (Umsetzung 8, rl_redding.h)                                 */
+/* ------------------------------------------------------------------ */
+procedure rl_red_woche(variable woche) begin
+   variable h := RL_REDDING;
+
+   // Die Wanamingo-Mine ist sauber (Vanilla): Marion nimmt die Schlacke unter seinen Schutz
+   if ((global_var(GVAR_WANAMINGO_OCCUPADO) == WANAMINGO_CLEARED_OUT)
+       and ((welt[RL_W_MARION] == RL_MARION_NEUTRAL) or (welt[RL_W_MARION] == RL_MARION_WACHSAM))) then begin
+      call rl_red_marion_schutz(haus, welt);
+      if (rl_red_besitz(haus)) then display_msg(rl_haus_name(h) + ": " + rl_text(162));
+   end
+
+   if (not rl_red_besitz(haus)) then return;
+
+   // Die gezinkte Waage: Karma -2 je Woche, und Marion sucht
+   if (haus[rl_idx(h, RL_F_MODULE)] bwand RL_MOD_WAAGE_GEZINKT) then begin
+      rl_karma(-RL_WAAGE_KARMA);
+      if (random(1, 100) <= rl_red_waage_chance(haus, welt)) then begin
+         call rl_red_revolte(haus, welt);
+         display_msg(rl_haus_name(h) + ": " + rl_text(160));
+      end
+   end
+
+   // Der Malamute: Preiskrieg zaehlt nur Wochen mit Ramsch-Preisen; die Beteiligung zahlt
+   if ((welt[RL_W_MALAMUTE] == 0) and (welt[RL_W_MALAMUTE_WEG] == RL_MALAMUTE_PREISKRIEG)
+       and (haus[rl_idx(h, RL_F_PREISSTUFE)] == RL_PREIS_RAMSCH)) then begin
+      welt[RL_W_MALAMUTE_WOCHEN] := welt[RL_W_MALAMUTE_WOCHEN] + 1;
+      if (welt[RL_W_MALAMUTE_WOCHEN] >= RL_PREISKRIEG_WOCHEN) then begin
+         welt[RL_W_MALAMUTE] := 1;
+         display_msg(rl_haus_name(h) + ": " + rl_text(161));
+      end
+   end
+   if (welt[RL_W_MALAMUTE_WEG] == RL_MALAMUTE_BETEILIGUNG) then
+      haus[rl_idx(h, RL_F_KASSE)] := haus[rl_idx(h, RL_F_KASSE)] + RL_MALAMUTE_ANTEIL_WOCHE;
 end
 
 #ifdef RL_DEBUG

@@ -58,7 +58,7 @@ NAMEN = {
     0x8044: 'floor', 0x8045: 'not', 0x8046: 'negate',
     0x80A7: 'tile_contains_pid_obj', 0x80AA: 'has_skill', 0x80B4: 'random',
     0x80B6: 'move_to', 0x80B7: 'create_object_sid', 0x80B8: 'display_msg',
-    0x80E3: 'set_obj_visibility', 0x80B9: 'script_overrides', 0x80BA: 'obj_is_carrying_obj_pid', 0x80BC: 'self_obj', 0x80BD: 'source_obj',
+    0x80E3: 'set_obj_visibility', 0x80FB: 'critter_state', 0x80B9: 'script_overrides', 0x80BA: 'obj_is_carrying_obj_pid', 0x80BC: 'self_obj', 0x80BD: 'source_obj',
     0x80BE: 'target_obj', 0x80BF: 'dude_obj', 0x80C1: 'local_var', 0x80C2: 'set_local_var',
     0x80C3: 'map_var', 0x80C4: 'set_map_var', 0x80C5: 'global_var', 0x80C6: 'set_global_var',
     0x80CA: 'get_critter_stat', 0x80D4: 'tile_num', 0x80D5: 'tile_num_in_direction',
@@ -802,6 +802,11 @@ def _s_create_object_sid(vm, sp):
     vm.stack.append(o)
 
 
+def _s_critter_state(vm, sp):
+    o = vm.pop_obj()
+    vm.stack.append(1 if (o and o.tot) else 0)
+
+
 def _s_gfade_out(vm, sp):
     vm.pop()
     sp.abgeblendet = True
@@ -1236,6 +1241,7 @@ SPIEL = {
     0x8136: _s_gfade_out,
     0x8137: _s_gfade_in,
     0x80E3: _s_set_obj_visibility,
+    0x80FB: _s_critter_state,
     0x8138: _s_caps_total,
     0x8139: _s_caps_adjust,
     0x8143: _s_attack_setup,

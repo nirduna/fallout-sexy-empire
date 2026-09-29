@@ -78,10 +78,12 @@ procedure rl_haus_von_stadtkarte(variable karte) begin
    return -1;
 end
 
+// Lebt eine Figur mit diesem Skript auf der Karte? Tote zaehlen nicht: Wer
+// nachruecken kann (Ascortis Schreiber), rueckt nach; wer nicht, hat ein Tot-Bit.
 procedure rl_figur_da(variable skript) begin
    variable o;
    foreach o in list_as_array(LIST_CRITTERS) begin
-      if (get_script(o) == skript) then return 1;
+      if ((get_script(o) == skript) and ((critter_state(o) bwand 1) == 0)) then return 1;
    end
    return 0;
 end
