@@ -34,6 +34,9 @@ BERECHNET = {
     r"mstr\(483 \+": range(483, 486),                 # Anwerber-Methode 0..2
     r"mstr\(RL_MSG_MODUL_NAME \+": range(400, 400 + MODULE_ANZAHL),    # Modulnamen
     r"mstr\(RL_MSG_MODUL_EFFEKT \+": range(500, 500 + MODULE_ANZAHL),  # Moduleffekte
+    r"Reply\(630 \+ stadt - 1\)": range(630, 635),                # die anderen Staedte
+    r"display_mstr\(100 \+ 10 \* h\)": range(110, 160, 10),        # Eingaenge (rltuer)
+    r"display_mstr\(101 \+ 10 \* h\)": range(111, 161, 10),
     r"mstr\(RL_MSG_SONDER_NAME \+": range(430, 430 + SONDER_ANZAHL),   # Sondermodule
     r"mstr\(RL_MSG_SONDER_EFFEKT \+": range(530, 530 + SONDER_ANZAHL),
 }

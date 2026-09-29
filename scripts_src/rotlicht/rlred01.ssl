@@ -1,0 +1,46 @@
+/*
+   rlred01.ssl - Kartenskript: Die Schlacke (Redding), Innenkarte RLRED01
+
+   Umsetzung 6: Licht und ein Satz beim ersten Besuch. Die Figuren (Madame,
+   Quest-Figuren) setzt das Kartenskript zur Laufzeit, sobald sie dazukommen
+   (rl_figur in rl_haeuser.h, Plaetze aus rl_karten.h).
+
+   Die Karte baut tools/bau_karten.py aus einer Vorlage des RPU (HAEUSER).
+   Texte: text_src/english/dialog/rlred01.msg
+*/
+
+#define SCRIPT_REALNAME "rlred01"
+#include "define.h"
+#include "../headers/rotlicht.h"
+
+#define NAME                    SCRIPT_RLRED01
+#include "command.h"
+#include "updatmap.h"
+
+#define RL_HAUS                 (RL_REDDING)
+
+procedure start;
+procedure map_enter_p_proc;
+procedure map_update_p_proc;
+procedure rl_figuren;
+
+procedure start begin
+end
+
+procedure map_enter_p_proc begin
+   if (map_first_run) then
+      display_mstr(100);
+   Basement_Lighting;
+   call rl_figuren;
+end
+
+procedure map_update_p_proc begin
+   Basement_Lighting;
+end
+
+// Figuren nach dem Stand des Hauses (folgt mit den Madames und Quests)
+procedure rl_figuren begin
+   variable haus, welt;
+   haus := rl_lade_haeuser;
+   welt := rl_lade_welt;
+end

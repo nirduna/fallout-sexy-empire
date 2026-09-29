@@ -186,5 +186,21 @@
 {870}{}{(Something closes in her face.) I owe you. Yes. That's how Metzger talked too. (She turns toward the door.) There's a woman in the NCR who fights people like you. Maybe I'll go and help her.}
 {871}{}{...}
 
+# The other towns (Umsetzung 6)
+{620}{}{Where else could we open a house?}
+{621}{}{Every town has people who need a door that opens from the inside. Which one?}
+{622}{}{New Reno.}
+{623}{}{Redding.}
+{624}{}{Vault City.}
+{625}{}{The NCR.}
+{626}{}{San Francisco.}
+{627}{}{Enough for now.}
+{628}{}{Tell me about another town.}
+{630}{}{New Reno. An old hotel on Virgin Street, the Silver Garter, across from the Cat's Paw. The families there own everything that breathes. Someone has to own it differently.}
+{631}{}{Redding. The miners come up from the shafts with gold in their pockets and nothing in their eyes. There's an old tunnel behind the sheds in the mining camp.}
+{632}{}{Vault City. A widow in the Courtyard, behind Cassidy's, has a cellar. The citizens who come at night are the same ones who make the laws in the morning.}
+{633}{}{The NCR. Number nine in the Bazaar, next to the Rawhide. They have laws there. Laws can protect people. Sometimes.}
+{634}{}{San Francisco. A sunk ferry terminal at the docks. The ones who wash up there have nowhere else left.}
+
 # @include _rl_module.inc
 # @include _rl_sonder.inc

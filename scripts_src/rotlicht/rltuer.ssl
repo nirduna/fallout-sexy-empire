@@ -1,0 +1,54 @@
+/*
+   rltuer.ssl - Eingaenge der weiteren Haeuser (Umsetzung 6)
+
+   Dieselbe Steintreppe wie bei der Gosse, vom globalen Skript zur Laufzeit auf
+   die Vanilla-Stadtkarte gesetzt (rl_eingaenge in gl_rotlicht.ssl). Welches
+   Haus gemeint ist, ergibt sich aus der Karte (eine Treppe je Stadt):
+     New Reno 1 (Virgin Street)   -> Das Silberne Strumpfband (rlren01.map)
+     Redding Mine Entrance        -> Die Schlacke (rlred01.map)
+     Vault City Courtyard         -> Die Kloake (rlvct01.map)
+     NCR Bazaar                   -> Die Traenke (rlncr01.map)
+     San Francisco Dock           -> Die Bilge (rlsfr01.map)
+   Die Haeuser sind vor der Uebernahme zugaenglich: Drinnen wartet, wer die
+   Uebernahme-Quest vergibt.
+
+   Texte: text_src/english/dialog/rltuer.msg (Ansehen 100 + 10 * Haus, Beschreibung 101 + 10 * Haus)
+*/
+
+#define SCRIPT_REALNAME "rltuer"
+#include "define.h"
+#include "../headers/rotlicht.h"
+
+#define NAME                    SCRIPT_RLTUER
+#include "command.h"
+
+procedure start;
+procedure look_at_p_proc;
+procedure description_p_proc;
+procedure use_p_proc;
+
+procedure start begin
+end
+
+procedure look_at_p_proc begin
+   variable h := rl_haus_von_stadtkarte(cur_map_index);
+   script_overrides;
+   if (h > 0) then display_mstr(100 + 10 * h);
+end
+
+procedure description_p_proc begin
+   variable h := rl_haus_von_stadtkarte(cur_map_index);
+   script_overrides;
+   if (h > 0) then display_mstr(101 + 10 * h);
+end
+
+procedure use_p_proc begin
+   variable h := rl_haus_von_stadtkarte(cur_map_index);
+   script_overrides;
+   if (source_obj != dude_obj) then return;
+   if (combat_is_initialized) then begin
+      display_mstr(102);
+      return;
+   end
+   if (h > 0) then load_map(rl_haus_karte(h), 0);
+end

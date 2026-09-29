@@ -29,8 +29,6 @@
 procedure start;
 procedure map_enter_p_proc;
 procedure map_update_p_proc;
-procedure rl_figur_da(variable skript);
-procedure rl_figur(variable pid, variable hex, variable skript);
 
 procedure start begin
 end
@@ -50,21 +48,6 @@ procedure map_enter_p_proc begin
       call rl_figur(PID_TOUGH_THUG_MALE, RL_GOSSE_DEKE_HEX, SCRIPT_RLDEKE);
    if (rl_jess_bleibt(welt) and (welt[RL_W_LARA] == RL_LARA_OFFEN)) then
       call rl_figur(PID_TOUGH_THUG_FEMALE, RL_GOSSE_DEKE_HEX, SCRIPT_RLJESS);
-end
-
-// Setzt eine Figur, wenn sie nicht schon auf der Karte steht
-procedure rl_figur(variable pid, variable hex, variable skript) begin
-   variable obj;
-   if (not rl_figur_da(skript)) then
-      obj := create_object_sid(pid, hex, 0, skript);
-end
-
-procedure rl_figur_da(variable skript) begin
-   variable o;
-   foreach o in list_as_array(LIST_CRITTERS) begin
-      if (get_script(o) == skript) then return 1;
-   end
-   return 0;
 end
 
 procedure map_update_p_proc begin

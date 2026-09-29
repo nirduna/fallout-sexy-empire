@@ -41,6 +41,7 @@ procedure start;
 procedure map_enter_p_proc;
 procedure rl_tick;
 procedure rl_gosse_eingang;
+procedure rl_eingaenge;
 procedure rl_personalwechsel(variable h);
 procedure rl_welt_modifikatoren;
 procedure rl_laeufer;
@@ -85,6 +86,7 @@ end
 // sfall ruft map_enter_p_proc globaler Skripte bei jedem Kartenwechsel auf
 procedure map_enter_p_proc begin
    if (cur_map_index == MAP_DEN_BUSINESS) then call rl_gosse_eingang;
+   call rl_eingaenge;
 end
 
 /* Die Gosse: Die Vanilla-Karte Den Business 2 bleibt unveraendert. Die
@@ -105,10 +107,29 @@ procedure rl_gosse_eingang begin
    welt[RL_W_GOSSE_TREPPE] := RL_GOSSE_TREPPE_HEX + 1;
 end
 
+/* Die weiteren Haeuser (Umsetzung 6): je Stadt eine Treppe auf der Vanilla-
+   Stadtkarte, gesetzt wie die Kellertreppe der Gosse. */
+procedure rl_eingaenge begin
+   variable h, alt, obj, hexfeld;
+   h := rl_haus_von_stadtkarte(cur_map_index);
+   if (h <= 0) then return;
+   if (welt == 0) then welt := rl_lade_welt;
+   hexfeld := rl_eingang_hex(h);
+   alt := welt[RL_W_EINGANG + h] - 1;
+   if ((alt >= 0) and (alt != hexfeld)) then begin
+      obj := tile_contains_pid_obj(alt, 0, RL_GOSSE_TREPPE_PID);
+      if (obj) then destroy_object(obj);
+   end
+   if (tile_contains_pid_obj(hexfeld, 0, RL_GOSSE_TREPPE_PID) == 0) then
+      obj := create_object_sid(RL_GOSSE_TREPPE_PID, hexfeld, 0, SCRIPT_RLTUER);
+   welt[RL_W_EINGANG + h] := hexfeld + 1;
+end
+
 procedure rl_tick begin
    variable jetzt, wochen, h, tyrann, ausbeutung;
 
    if (cur_map_index == MAP_DEN_BUSINESS) then call rl_gosse_eingang;
+   call rl_eingaenge;
    call rl_prolog_nachlauf;
    if (welt[RL_W_AKTIV] == 0) then return;
    call rl_ketten_tick;

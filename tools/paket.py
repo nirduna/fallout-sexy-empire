@@ -103,27 +103,39 @@ def vault13_gam(basis, gvar_basis):
 
 
 def maps_txt(basis, karten_index):
+    """Unsere Karten ans Ende, fortlaufend ab der naechsten freien Nummer."""
     n = sum(1 for z in zeilen(basis) if re.match(r"\[Map \d+\]", z))
     if n != karten_index:
         raise Fehler(f"maps.txt hat {n} Karten, der Build erwartet Nummer {karten_index} "
                      f"fuer die Gosse. Mit RL_MAP_INDEX={n} neu bauen.")
-    neu = ["; Rotlicht ueber dem Oedland: Innenkarte der Gosse"]
-    neu += [f"[Map {karten_index:03d}]" if z.startswith("[Map ") else z
-            for z in add_datei("maps.txt.add") if z.strip() and not z.startswith(";")]
+    neu = ["; Rotlicht ueber dem Oedland: Innenkarten der Haeuser"]
+    nr = karten_index
+    for z in add_datei("maps.txt.add"):
+        if z.startswith(";"):
+            continue
+        if z.startswith("[Map "):
+            neu.append(f"[Map {nr:03d}]")
+            nr += 1
+        else:
+            neu.append(z)
     return anhaengen(basis, [""] + neu)
 
 
 def city_txt(basis):
-    """Eingang ohne Koordinaten im Abschnitt der Den, mit der naechsten freien Nummer."""
+    """Je Haus ein Eingang ohne Koordinaten im Abschnitt seiner Stadt, mit der
+    naechsten freien Nummer (Zeilen "area_name|entrance_N=..." in city.txt.add)."""
     z = zeilen(basis)
-    start = next((i for i, l in enumerate(z) if l.strip() == "area_name=Den"), None)
-    if start is None:
-        raise Fehler("city.txt: Abschnitt area_name=Den nicht gefunden")
-    ende = next((i for i in range(start + 1, len(z)) if z[i].startswith("[")), len(z))
-    eingaenge = [i for i in range(start, ende) if re.match(r"entrance_\d+=", z[i])]
-    naechste = max(int(re.match(r"entrance_(\d+)", z[i]).group(1)) for i in eingaenge) + 1
-    vorlage = next(l for l in add_datei("city.txt.add") if l.startswith("entrance_"))
-    z.insert(eingaenge[-1] + 1, re.sub(r"entrance_\d+", f"entrance_{naechste}", vorlage))
+    for zeile in add_datei("city.txt.add"):
+        if zeile.startswith(";") or "|" not in zeile:
+            continue
+        gebiet, vorlage = zeile.split("|", 1)
+        start = next((i for i, l in enumerate(z) if l.strip() == f"area_name={gebiet}"), None)
+        if start is None:
+            raise Fehler(f"city.txt: Abschnitt area_name={gebiet} nicht gefunden")
+        ende = next((i for i in range(start + 1, len(z)) if z[i].startswith("[")), len(z))
+        eingaenge = [i for i in range(start, ende) if re.match(r"entrance_\d+=", z[i])]
+        naechste = max(int(re.match(r"entrance_(\d+)", z[i]).group(1)) for i in eingaenge) + 1
+        z.insert(eingaenge[-1] + 1, re.sub(r"entrance_\d+", f"entrance_{naechste}", vorlage.strip()))
     return CRLF.join(l.encode("cp1252") for l in z) + CRLF
 
 
@@ -206,12 +218,18 @@ def packen(a):
             rel.datei(f"data/text/{sprache}/game/editor.msg"), txt / "game" / "editor.msg.add")
         dateien[f"text/{sprache}/game/rotlicht.msg"] = (txt / "game" / "rotlicht.msg").read_bytes()
 
-    # Innenkarte aus der Vorlage desselben Releases
+    # Innenkarten aus den Vorlagen desselben Releases, Eingaenge gegen dessen Stadtkarten geprueft
     with tempfile.TemporaryDirectory() as tmp:
-        vorlage = Path(tmp) / f"{bau_karten.RLDEN01['vorlage']}.map"
-        vorlage.write_bytes(rel.datei(f"data/maps/{vorlage.name}"))
-        karte = bau_karten.baue_rlden01(tmp, fomap.ProtoDB(), sb, ki)
-    dateien[f"maps/{bau_karten.RLDEN01['datei']}"] = karte.schreiben()
+        noetig_karten = {bau_karten.RLDEN01["vorlage"]} | {h["vorlage"] for h in bau_karten.HAEUSER} \
+            | {h["stadtkarte"] for h in bau_karten.HAEUSER}
+        for name in noetig_karten:
+            (Path(tmp) / f"{name}.map").write_bytes(rel.datei(f"data/maps/{name}.map"))
+        db = fomap.ProtoDB()
+        dateien[f"maps/{bau_karten.RLDEN01['datei']}"] = bau_karten.baue_rlden01(tmp, db, sb, ki).schreiben()
+        for i, h in enumerate(bau_karten.HAEUSER, 1):
+            stadt = fomap.Karte.lesen((Path(tmp) / f"{h['stadtkarte']}.map").read_bytes(), db)
+            bau_karten.pruefe_eingang(stadt, db, h)
+            dateien[f"maps/{h['datei']}"] = bau_karten.baue_haus(h, tmp, db, sb, ki + i).schreiben()
 
     # Skripte und Texte aus dem Build
     noetig = {"gl_rotlicht.int"} | {z.split()[0].lower() for z in add_datei("scripts.lst.add") if z.strip()}

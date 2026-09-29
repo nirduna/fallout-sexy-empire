@@ -78,6 +78,56 @@ RLDEN01 = dict(
 # Szenerie, die nicht im Weg steht (unsichtbare Lichtquelle)
 NICHT_BLOCKIEREND = {0x200008D}
 
+# ------------------------------------------------------------------ weitere Haeuser (Umsetzung 6)
+# Jedes Haus: ein Eingang auf der Vanilla-Stadtkarte (zur Laufzeit gesetzt, dieselbe
+# Steintreppe wie bei der Gosse) und eine Innenkarte aus einer Vorlage des RPU.
+# Aus der Vorlage bleiben Boden, Waende und Einrichtung; Figuren, lose Gegenstaende,
+# Kartenausgaenge und alle Vanilla-Skripte fallen weg. Eine vorhandene Treppe oder
+# Leiter der Vorlage wird zum Rueckweg auf die Stadtkarte.
+# Figuren setzt das Kartenskript zur Laufzeit an die Plaetze in "plaetze", gefunden
+# mit einer Breitensuche vom Startpunkt: erreichbar und frei in RPU 2.3.34, 2.4.34
+# und dem aktuellen Stand; die Madame 4-10 Schritte vom Eingang, die Angreifer 2-8,
+# die Gaeste verteilt bis 16 Schritte.
+HAEUSER = [
+    dict(kuerzel="STRUMPF", haus="RL_NEW_RENO", titel="Das Silberne Strumpfband",
+         stadtkarte="newr1", stadtkarte_index=54, stadtkarte_konst="MAP_NEW_RENO_1",
+         treppe_hex=23296, ankunft_hex=23496, ankunft_rot=3,          # Virgin Street, am Cat's Paw
+         datei="rlren01.map", name=b"RLREN01.MAP", vorlage="newr3", vorlage_ebene=1,
+         ausgang_hex=22692, eingang_hex=23093, eingang_rot=3, kartenskript="SCRIPT_RLREN01",
+         plaetze=dict(MADAME=23699, GAST1=25699, GAST2=24703, GAST3=24900, GAST4=23106,
+                      ANGREIFER1=23300, ANGREIFER2=24098)),
+    dict(kuerzel="SCHLACKE", haus="RL_REDDING", titel="Die Schlacke",
+         stadtkarte="redment", stadtkarte_index=65, stadtkarte_konst="MAP_REDDING_MINE_ENT",
+         treppe_hex=16483, ankunft_hex=16683, ankunft_rot=3,          # Mining Camp, zwischen den Schuppen
+         datei="rlred01.map", name=b"RLRED01.MAP", vorlage="redmtun", vorlage_ebene=0,
+         ausgang_hex=11475, eingang_hex=11075, eingang_rot=3, kartenskript="SCRIPT_RLRED01",
+         plaetze=dict(MADAME=9674, GAST1=9459, GAST2=12459, GAST3=13679, GAST4=9088,
+                      ANGREIFER1=10674, ANGREIFER2=10676)),
+    dict(kuerzel="KLOAKE", haus="RL_VAULT_CITY", titel="Die Kloake",
+         stadtkarte="vctyctyd", stadtkarte_index=15, stadtkarte_konst="MAP_VAULTCITY_COURTYARD",
+         treppe_hex=15671, ankunft_hex=15871, ankunft_rot=3,          # Courtyard, hinter Cassidy's
+         datei="rlvct01.map", name=b"RLVCT01.MAP", vorlage="abbasem", vorlage_ebene=0,
+         ausgang_hex=12282, eingang_hex=12683, eingang_rot=3, kartenskript="SCRIPT_RLVCT01",
+         plaetze=dict(MADAME=13884, GAST1=12679, GAST2=14683, GAST3=14680, GAST4=13678,
+                      ANGREIFER1=12284, ANGREIFER2=13483)),
+    dict(kuerzel="TRAENKE", haus="RL_NCR", titel="Die Traenke",
+         stadtkarte="ncrent", stadtkarte_index=46, stadtkarte_konst="MAP_NCR_BAZAAR",
+         treppe_hex=24947, ankunft_hex=25147, ankunft_rot=3,          # Bazaar, am Rawhide Saloon
+         datei="rlncr01.map", name=b"RLNCR01.MAP", vorlage="ncrent", vorlage_ebene=1,
+         ausgang_hex=20358, eingang_hex=20756, eingang_rot=3, kartenskript="SCRIPT_RLNCR01",
+         plaetze=dict(MADAME=21958, GAST1=21344, GAST2=23758, GAST3=20748, GAST4=22758,
+                      ANGREIFER1=21157, ANGREIFER2=20754)),
+    dict(kuerzel="BILGE", haus="RL_SAN_FRAN", titel="Die Bilge",
+         stadtkarte="sfdock", stadtkarte_index=136, stadtkarte_konst="MAP_SAN_FRAN_DOCK",
+         treppe_hex=25075, ankunft_hex=25076, ankunft_rot=3,          # Docks
+         datei="rlsfr01.map", name=b"RLSFR01.MAP", vorlage="sftanker", vorlage_ebene=2,
+         ausgang_hex=22483, eingang_hex=22682, eingang_rot=3, kartenskript="SCRIPT_RLSFR01",
+         plaetze=dict(MADAME=22290, GAST1=22098, GAST2=21091, GAST3=21894, GAST4=21690,
+                      ANGREIFER1=22885, ANGREIFER2=22488)),
+]
+TREPPE_PID = 0x2000164          # Steintreppe (stway.frm), wie bei der Gosse
+EXIT_GRIDS = set(range(0x5000010, 0x5000018))
+
 
 def built_tile(tile, ebene, rot):
     """Ziel von Treppen und Leitern: Hex | Ebene << 29 | Blickrichtung << 26."""
@@ -97,7 +147,7 @@ def header():
     zeilen = [
         "/*",
         "   rl_karten.h - Kartenpositionen, ERZEUGT von tools/bau_karten.py.",
-        "   Nicht von Hand aendern: Die Werte stehen dort in GOSSE und RLDEN01.",
+        "   Nicht von Hand aendern: Die Werte stehen dort in GOSSE, RLDEN01 und HAEUSER.",
         "*/",
         "#ifndef RL_KARTEN_H",
         "#define RL_KARTEN_H",
@@ -114,11 +164,23 @@ def header():
         f"#define RL_GOSSE_ESSIE_HEX          ({RLDEN01['figuren'][0]['hex']})",
         f"#define RL_GOSSE_KOLBE_HEX          ({RLDEN01['figuren'][1]['hex']})",
     ] + [f"#define RL_GOSSE_{name}_HEX{' ' * (15 - len(name))}({hexfeld})"
-         for name, hexfeld in RLDEN01["laufzeit"].items()] + [
-        "",
-        "#endif",
-        "",
-    ]
+         for name, hexfeld in RLDEN01["laufzeit"].items()]
+    for h in HAEUSER:
+        k = h["kuerzel"]
+        def d(name, wert):
+            return f"#define RL_{k}_{name}".ljust(36) + f"({wert})"
+        zeilen += [
+            "",
+            f"// {h['titel']}: Eingang auf {h['stadtkarte']} ({h['stadtkarte_konst']}), Innenkarte {h['datei']}",
+            d("TREPPE_PID", TREPPE_PID),
+            d("TREPPE_HEX", h["treppe_hex"]),
+            d("TREPPE_EBENE", 0),
+            d("ANKUNFT_HEX", h["ankunft_hex"]),
+            d("STADTKARTE", h["stadtkarte_konst"]),
+            f"#define RL_KARTE_{k}".ljust(36) + f"\"{h['datei']}\"",
+            d("EINGANG_HEX", h["eingang_hex"]),
+        ] + [d(f"{n}_HEX", v) for n, v in h["plaetze"].items()]
+    zeilen += ["", "#endif", ""]
     ziel = ROOT / "scripts_src/headers/rl_karten.h"
     ziel.write_text("\n".join(zeilen), encoding="utf-8")
     print(f"{ziel.relative_to(ROOT)} geschrieben.")
@@ -252,16 +314,138 @@ def pruefe(k, db):
     assert len(felder) == len(set(felder)), "zwei Positionen auf einem Feld"
 
 
+def hex_nachbarn(t):
+    """Die sechs Nachbarn eines Hexfelds (fallout2-ce tile.cc, _dir_tile)."""
+    x, y = t % 200, t // 200
+    d = ([(-1, 0), (-1, 1), (0, 1), (1, 1), (1, 0), (0, -1)] if x % 2 == 0
+         else [(-1, -1), (-1, 0), (0, 1), (1, 0), (1, -1), (0, -1)])
+    for dx, dy in d:
+        nx, ny = x + dx, y + dy
+        if 0 <= nx < 200 and 0 <= ny < 200:
+            yield ny * 200 + nx
+
+
+def ist_leiter(obj, db):
+    """Leitern speichern [Flags, Zielkarte, Ziel]; Treppen [Flags, Ziel, Zielkarte]."""
+    sub = db.subtyp(obj["kopf"]["pid"]) if hasattr(db, "subtyp") else None
+    if sub is not None:
+        return sub in (3, 4)
+    return obj["kopf"]["pid"] in (0x200008B, 0x20008C9, 0x20008CA, 0x2000891, 0x2000840)
+
+
+def baue_haus(h, karten_dir, db, skript_basis, karten_index):
+    """Innenkarte eines weiteren Hauses aus seiner Vorlage (siehe HAEUSER)."""
+    offs = skript_offsets()
+    v = fomap.Karte.lesen((Path(karten_dir) / f"{h['vorlage']}.map").read_bytes(), db)
+    e = h["vorlage_ebene"]
+    k = fomap.Karte()
+    k.kopf = dict(version=20, name=h["name"].ljust(16, b"\0"),
+                  entering_tile=h["eingang_hex"], entering_elevation=0,
+                  entering_rotation=h["eingang_rot"], local_vars=0,
+                  script_index=skript_basis + offs[h["kartenskript"]],   # 1-basiert
+                  flags=fomap.ELEV_FLAGS[1] | fomap.ELEV_FLAGS[2],         # nur Ebene 0
+                  darkness=v.kopf["darkness"], global_vars=0, index=karten_index, last_visit=0)
+    k.kopf_rest = [0] * 44
+    k.kacheln = {0: v.kacheln[e]}
+
+    def saeubern(obj):
+        obj["kopf"]["elevation"] = 0
+        obj["kopf"]["sid"] = -1                 # keine Vanilla-Skripte
+        obj["kopf"]["script_index"] = -1
+        if obj["inventar"]:                    # keine Beute aus der Vorlage
+            obj["inventar"] = []
+            obj["inv"][0] = 0
+
+    objekte = []
+    ausgang = None
+    for o in v.objekte[e]:
+        pid = o["kopf"]["pid"]
+        typ = fomap.pid_typ(pid)
+        if typ in (fomap.T_CRITTER, fomap.T_ITEM) or pid in EXIT_GRIDS:
+            continue
+        o = copy.deepcopy(o)
+        saeubern(o)
+        if o["kopf"]["tile"] == h["ausgang_hex"] and typ == fomap.T_SCENERY and len(o["daten"]) >= 3:
+            ausgang = o
+        objekte.append(o)
+    if ausgang is None:
+        raise SystemExit(f"{h['datei']}: Treppe/Leiter auf Hex {h['ausgang_hex']} nicht in der Vorlage")
+    ziel = built_tile(h["ankunft_hex"], 0, h["ankunft_rot"])
+    if ist_leiter(ausgang, db):
+        ausgang["daten"] = [ausgang["daten"][0], h["stadtkarte_index"], ziel]
+    else:
+        ausgang["daten"] = [ausgang["daten"][0], ziel, h["stadtkarte_index"]]
+
+    k.skripte = skriptlisten({})
+    k.objekte = [objekte, [], []]
+    k.objekte_gesamt = len(objekte)
+    pruefe_haus(k, db, h)
+    return k
+
+
+def pruefe_haus(k, db, h):
+    """Round-Trip; keine Skripte ausser dem Kartenskript; Start und alle Figurenplaetze
+    frei und vom Startpunkt aus erreichbar; Ausgang fuehrt zur Stadtkarte."""
+    daten = k.schreiben()
+    assert fomap.Karte.lesen(daten, db).schreiben() == daten, f"{h['datei']}: Round-Trip"
+    assert not list(k.skript_saetze()), f"{h['datei']}: Skriptsaetze uebrig"
+    blockiert, belegt = set(), {}
+    for _, o in k.alle_objekte():
+        p, t = o["kopf"]["pid"], o["kopf"]["tile"]
+        if fomap.pid_typ(p) in (fomap.T_WALL, fomap.T_SCENERY) and p not in NICHT_BLOCKIEREND:
+            blockiert.add(t)
+        if p not in NICHT_BLOCKIEREND:
+            belegt.setdefault(t, hex(p))
+    start = h["eingang_hex"]
+    assert start not in belegt, f"{h['datei']}: Startpunkt {start} belegt ({belegt.get(start)})"
+    erreichbar, offen = {start}, [start]
+    while offen:
+        t = offen.pop()
+        for n in hex_nachbarn(t):
+            if n not in erreichbar and n not in blockiert:
+                erreichbar.add(n)
+                offen.append(n)
+    plaetze = list(h["plaetze"].items())
+    felder = [t for _, t in plaetze] + [start]
+    assert len(felder) == len(set(felder)), f"{h['datei']}: zwei Plaetze auf einem Feld"
+    for name, t in plaetze:
+        assert t not in belegt, f"{h['datei']}: {name} auf Hex {t}, dort ist schon {belegt[t]}"
+        assert t in erreichbar, f"{h['datei']}: {name} (Hex {t}) ist vom Start aus nicht erreichbar"
+    aus = [o for _, o in k.alle_objekte() if o["kopf"]["tile"] == h["ausgang_hex"] and len(o["daten"]) >= 3]
+    assert aus and h["stadtkarte_index"] in aus[0]["daten"][1:], f"{h['datei']}: Ausgang zeigt nicht zur Stadt"
+
+
+def pruefe_eingang(stadt, db, h):
+    """Eingang und Ankunft auf der Vanilla-Stadtkarte: frei, nicht unter einem Dach."""
+    import struct
+    kach = stadt.kacheln[0]
+
+    def dach(t):
+        sq = (t // 200 // 2) * 100 + (t % 200) // 2
+        return ((struct.unpack(">I", kach[sq * 4:sq * 4 + 4])[0] >> 16) & 0xFFF) != 1
+    belegt = {}
+    for o in stadt.objekte[0]:
+        if o["kopf"]["pid"] not in NICHT_BLOCKIEREND:
+            belegt.setdefault(o["kopf"]["tile"], hex(o["kopf"]["pid"]))
+    for name, t in (("Treppe", h["treppe_hex"]), ("Ankunft", h["ankunft_hex"])):
+        assert t not in belegt, f"{h['stadtkarte']}: {name} {t} belegt ({belegt[t]})"
+        assert not dach(t), f"{h['stadtkarte']}: {name} {t} liegt unter einem Dach"
+
+
 def bauen(a):
     db = fomap.ProtoDB([a.protos] if a.protos else [])
-    k = baue_rlden01(a.karten, db, a.skript_basis, a.karten_index)
     out = Path(a.out)
     out.mkdir(parents=True, exist_ok=True)
-    ziel = out / RLDEN01["datei"]
-    ziel.write_bytes(k.schreiben())
-    anz = [l["anzahl"] for l in k.skripte]
-    print(f"OK    {ziel.name}: {len(k.objekte[0])} Objekte, Skripte je Typ {anz}, "
-          f"Kartenskript {k.kopf['script_index']}, Index {k.kopf['index']}")
+    karten = [(RLDEN01["datei"], baue_rlden01(a.karten, db, a.skript_basis, a.karten_index))]
+    for i, h in enumerate(HAEUSER, 1):
+        stadt = fomap.Karte.lesen((Path(a.karten) / f"{h['stadtkarte']}.map").read_bytes(), db)
+        pruefe_eingang(stadt, db, h)
+        karten.append((h["datei"], baue_haus(h, a.karten, db, a.skript_basis, a.karten_index + i)))
+    for datei, k in karten:
+        (out / datei).write_bytes(k.schreiben())
+        anz = [l["anzahl"] for l in k.skripte]
+        print(f"OK    {datei}: {len(k.objekte[0])} Objekte, Skripte je Typ {anz}, "
+              f"Kartenskript {k.kopf['script_index']}, Index {k.kopf['index']}")
 
 
 # ------------------------------------------------------------------ Bilder
@@ -286,6 +470,19 @@ def bilder(a):
               (RLDEN01["eingang_hex"], f"Start {RLDEN01['eingang_hex']}")]
     fb.zeichne(k, db, ziel / "rlden01.png", 0, namen, mitte=17670, radius=12, massstab=1.8,
                markiere=marken, raster=2, extra_namen=extra)
+    # weitere Haeuser: Eingang auf der Stadtkarte und Innenkarte mit allen Plaetzen
+    for h in HAEUSER:
+        stadt = fomap.Karte.lesen((Path(a.karten) / f"{h['stadtkarte']}.map").read_bytes(), db)
+        marken = [(h["treppe_hex"], f"Treppe {h['treppe_hex']}"), (h["ankunft_hex"], "Ankunft")]
+        fb.zeichne(stadt, db, ziel / f"{h['kuerzel'].lower()}_eingang.png", 0, namen, mitte=h["treppe_hex"],
+                   radius=16, massstab=1.2, markiere=marken)
+        innen_pfad = Path(a.karte).parent / h["datei"]
+        if innen_pfad.exists():
+            innen = fomap.Karte.lesen(innen_pfad.read_bytes(), db)
+            marken = [(h["ausgang_hex"], "Ausgang"), (h["eingang_hex"], "Start")] + \
+                     [(t, n.title()) for n, t in h["plaetze"].items()]
+            fb.zeichne(innen, db, ziel / f"{h['datei'][:-4]}.png", 0, namen, mitte=h["eingang_hex"],
+                       radius=18, massstab=1.2, markiere=marken)
     for p in sorted(ziel.glob("*.png")):
         print(f"OK    {p.relative_to(ROOT)}")
 

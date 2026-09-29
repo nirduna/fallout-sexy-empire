@@ -201,5 +201,21 @@
 {760}{}{Found a runaway in the cellar. Guild property, from one of Metzger's caravans. She's tied up behind the boiler. Metzger pays five hundred for her. Your call, but make it soon, before somebody else makes it for you.}
 {761}{}{I'll deal with her.}
 
+# The other towns (Umsetzung 6)
+{620}{}{Where else could we open a house?}
+{621}{}{Metzger knows every town that buys what he sells. Which one?}
+{622}{}{New Reno.}
+{623}{}{Redding.}
+{624}{}{Vault City.}
+{625}{}{The NCR.}
+{626}{}{San Francisco.}
+{627}{}{Enough.}
+{628}{}{Another town.}
+{630}{}{Old hotel on Virgin Street, the Silver Garter. Across from the Cat's Paw. The families decide who opens there. Or you open anyway and count the bodies.}
+{631}{}{Redding. Miners, gold dust, Jet. Old tunnel behind the sheds in the mining camp. The mayor wants his cut.}
+{632}{}{Vault City. Widow with a cellar in the Courtyard, behind Cassidy's. The citizens pay double to be ashamed in private.}
+{633}{}{NCR Bazaar. House number nine, next to the Rawhide. Licenses, stamps, a doctor. The Republic likes its whores clean.}
+{634}{}{San Francisco docks. The Shi say who gets a door. There's a sunk ferry terminal nobody wants.}
+
 # @include _rl_module.inc
 # @include _rl_sonder.inc

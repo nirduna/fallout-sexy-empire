@@ -10,6 +10,7 @@
      430-439  Namen der Sondermodule, 530-539 ihre Wirkung (rl_sonder.h)
      174-177  Metzgers Vergeltung (Krise), 188 ihr Text
      600-619  Die Route nach Sueden (Ketten, Akt 3, Umsetzung 5)
+     620-639  Die anderen Staedte (nur in der Gosse, Umsetzung 6)
 
    Das einbindende Skript stellt bereit:
      variable haus, welt, h   (Haus-Array, Welt-Array, Hausnummer)
@@ -81,6 +82,13 @@ procedure rlm_modul_effekt(variable id);
 procedure rlm_modul_kosten(variable id);
 procedure rlm_modul_wochen(variable id);
 procedure rlm_sonder_frei(variable sm);
+procedure RLM_Staedte;
+procedure RLM_StadtNR;
+procedure RLM_StadtRed;
+procedure RLM_StadtVC;
+procedure RLM_StadtNCR;
+procedure RLM_StadtSF;
+procedure rlm_stadt_erzaehlt(variable stadt);
 procedure RLM_Route;
 procedure RLM_RoutePerception;
 procedure RLM_RouteStart;
@@ -104,6 +112,9 @@ procedure RLM_Start begin
    NOption(117, RLM_Ausbau, 004);
    if (haus[rl_idx(h, RL_F_KRISE)] != RL_EV_KEINS) then
       NOption(114, RLM_Krise, 004);
+   // Die Gosse kennt die anderen Staedte (Umsetzung 6)
+   if (h == RL_DEN) then
+      NOption(620, RLM_Staedte, 004);
    // Ketten, Akt 3 im Fluchtzweig: die Route nach Sueden (Umsetzung 5)
    if ((h == RL_DEN) and (welt[RL_W_KETTEN_ZWEIG] == RL_KETTEN_ZWEIG_FLUCHT)
        and (((welt[RL_W_KETTEN] >= RL_KETTEN_KETTE) and (welt[RL_W_KETTEN] <= RL_KETTEN_STURM))
@@ -240,6 +251,46 @@ procedure RLM_VergeltungRangers begin
    call rlm_krise_loesen;
    Reply(177);
    NOption(123, RLM_Start, 004);
+end
+
+/* ------------------------------------------------------------------ */
+/* Die anderen Staedte (Umsetzung 6): wo die weiteren Haeuser liegen   */
+/* ------------------------------------------------------------------ */
+procedure RLM_Staedte begin
+   Reply(621);
+   NOption(622, RLM_StadtNR, 004);
+   NOption(623, RLM_StadtRed, 004);
+   NOption(624, RLM_StadtVC, 004);
+   NOption(625, RLM_StadtNCR, 004);
+   NOption(626, RLM_StadtSF, 004);
+   NOption(627, RLM_Start, 004);
+end
+
+procedure rlm_stadt_erzaehlt(variable stadt) begin
+   welt[RL_W_STAEDTE_ERZAEHLT] := welt[RL_W_STAEDTE_ERZAEHLT] bwor rl_bit(stadt);
+   Reply(630 + stadt - 1);
+   NOption(628, RLM_Staedte, 004);
+   NOption(627, RLM_Start, 004);
+end
+
+procedure RLM_StadtNR begin
+   call rlm_stadt_erzaehlt(RL_NEW_RENO);
+end
+
+procedure RLM_StadtRed begin
+   call rlm_stadt_erzaehlt(RL_REDDING);
+end
+
+procedure RLM_StadtVC begin
+   call rlm_stadt_erzaehlt(RL_VAULT_CITY);
+end
+
+procedure RLM_StadtNCR begin
+   call rlm_stadt_erzaehlt(RL_NCR);
+end
+
+procedure RLM_StadtSF begin
+   call rlm_stadt_erzaehlt(RL_SAN_FRAN);
 end
 
 /* ------------------------------------------------------------------ */

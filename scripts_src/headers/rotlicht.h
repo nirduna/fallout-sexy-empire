@@ -36,6 +36,12 @@
 #define SCRIPT_RLDEKE               (RL_SCRIPT_BASE + 5)   // Deke, einer von Tylers Leuten (Akt 4, Fluchtzweig)
 #define SCRIPT_RLJESS               (RL_SCRIPT_BASE + 6)   // Jess, Laras Leutnant (Akt 4, Tyrannen-Zweig)
 #define SCRIPT_RLANGREIFER          (RL_SCRIPT_BASE + 7)   // Angreifer bei Kaempfen im Haus
+#define SCRIPT_RLTUER               (RL_SCRIPT_BASE + 8)   // Eingaenge der weiteren Haeuser auf den Stadtkarten
+#define SCRIPT_RLREN01              (RL_SCRIPT_BASE + 9)   // Kartenskript: Das Silberne Strumpfband (New Reno)
+#define SCRIPT_RLRED01              (RL_SCRIPT_BASE + 10)  // Kartenskript: Die Schlacke (Redding)
+#define SCRIPT_RLVCT01              (RL_SCRIPT_BASE + 11)  // Kartenskript: Die Kloake (Vault City)
+#define SCRIPT_RLNCR01              (RL_SCRIPT_BASE + 12)  // Kartenskript: Die Traenke (NCR)
+#define SCRIPT_RLSFR01              (RL_SCRIPT_BASE + 13)  // Kartenskript: Die Bilge (San Francisco)
 
 /* ------------------------------------------------------------------ */
 /* Echte GVARs (Phase 6). Nur dort, wo die Engine sie verlangt:        */
@@ -194,6 +200,9 @@
 #define RL_W_MARA_GESEHEN           (45)    // 1 = Essie hat Mara gezeigt
 #define RL_W_KETTEN_MELDUNG         (46)    // zuletzt gemeldeter Aktstand (einmalige Meldungen)
 #define RL_W_VORTIS                 (47)    // 1 = Vortis ist Feind (Die Gilde faellt)
+// Umsetzung 6: Eingaenge der weiteren Haeuser (Hex + 1, an dem die Treppe gesetzt wurde)
+#define RL_W_EINGANG                (48)    // + Hausnummer 1..5 (48 ist frei, 49 New Reno ... 53 San Francisco)
+#define RL_W_STAEDTE_ERZAEHLT       (54)    // Bitfeld: welche Staedte Essie schon erwaehnt hat
 
 #define RL_PROLOG_OFFEN             (0)
 #define RL_PROLOG_LAEUFT            (1)
@@ -716,5 +725,6 @@ procedure rl_ketten_akt1(variable welt, variable zweig) begin
 end
 
 #include "rl_ketten.h"
+#include "rl_haeuser.h"
 
 #endif

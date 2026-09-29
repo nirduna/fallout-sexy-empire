@@ -25,8 +25,9 @@ Konzept und Skripte für eine Addon-Modifikation für **Fallout 2** (sfall 4.x).
 | 4 | „Ketten“, Akt 1: Metzgers Angebot, Riegel außen, Zwangspersonal | umgesetzt, kompiliert, Test im Spiel offen: [docs/umsetzung-4-ketten-akt1.md](docs/umsetzung-4-ketten-akt1.md) |
 | – | Prüfwerkzeug: Skripte ohne das Spiel ausführen und testen | fertig: [docs/pruefwerkzeug.md](docs/pruefwerkzeug.md) |
 | 5 | „Ketten“, Akt 2–5: Mara, Zuflucht, Route nach Süden, Lieferungen, Tylers Preis, Laras Sturm, vier Enden, Mara als Madame | umgesetzt, im Prüfwerkzeug getestet, Test im Spiel offen: [docs/umsetzung-5-ketten-akt2-5.md](docs/umsetzung-5-ketten-akt2-5.md) |
+| 6 | Technik für die weiteren Häuser: fünf Innenkarten, Eingänge in fünf Städten, Karten-Prüfungen gegen alle RPU-Stände | umgesetzt, geprüft, Test im Spiel offen: [docs/umsetzung-6-haeuser-technik.md](docs/umsetzung-6-haeuser-technik.md) |
 
-Die übrigen Schritte 6–16 stehen im [Fahrplan](docs/fahrplan.md).
+Die übrigen Schritte 7–16 stehen im [Fahrplan](docs/fahrplan.md).
 
 ## Werkzeuge
 

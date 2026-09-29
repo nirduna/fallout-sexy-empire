@@ -1,13 +1,55 @@
-; Rotlicht ueber dem Oedland: Innenkarte der Gosse.
-; Ans Ende der maps.txt anhaengen. Die Nummer muss die naechste freie sein
-; (Restoration Project: 173, weil der letzte Eintrag [Map 172] ist).
-; Wer eine andere Nummer braucht, aendert auch text_src/english/game/map.msg.add
-; (dort 200 + 3 * Nummer + Ebene) und baut mit RL_MAP_INDEX=<Nummer>.
+; Rotlicht ueber dem Oedland: Innenkarten der Haeuser.
+; Ans Ende der maps.txt anhaengen, in dieser Reihenfolge und mit fortlaufenden
+; Nummern ab der naechsten freien (Restoration Project: 173, weil der letzte
+; Eintrag [Map 172] ist). tools/paket.py nummeriert selbst.
+; Wer von Hand installiert und eine andere erste Nummer braucht, aendert auch
+; text_src/english/game/map.msg.add (dort 200 + 3 * Nummer + Ebene) und baut mit
+; RL_MAP_INDEX=<erste Nummer>.
 
 [Map 173]
 lookup_name=Rotlicht Gosse
 map_name=rlden01
 music=05RAIDER
 ambient_sfx=dogbark:10, dogbark1:10, blank:80
+saved=Yes
+can_rest_here=Yes,No,No
+
+[Map 174]
+lookup_name=Rotlicht Strumpfband
+map_name=rlren01
+music=19reno
+ambient_sfx=drunkla1:20, drunklaf:20, laughter:15, laughte1:15, blank:30
+saved=Yes
+can_rest_here=Yes,No,No
+
+[Map 175]
+lookup_name=Rotlicht Schlacke
+map_name=rlred01
+music=24redd
+ambient_sfx=ore:20, ore1:20, mechpump:20, blank:40
+saved=Yes
+can_rest_here=Yes,No,No
+
+[Map 176]
+lookup_name=Rotlicht Kloake
+map_name=rlvct01
+music=22vcity
+ambient_sfx=blank:100
+saved=Yes
+can_rest_here=Yes,No,No
+
+[Map 177]
+lookup_name=Rotlicht Traenke
+map_name=rlncr01
+music=01hub
+ambient_sfx=gntlwin1:25, gntlwind:25, blank:50
+saved=Yes
+can_rest_here=Yes,No,No
+
+[Map 178]
+lookup_name=Rotlicht Bilge
+map_name=rlsfr01
+music=21sf
+ambient_sfx=seawind1:25, clang:10, waves1:15, clangl:15, waves:15, seawind:20
 saved=Yes
 can_rest_here=Yes,No,No

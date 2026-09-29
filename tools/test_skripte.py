@@ -915,6 +915,47 @@ def test_tyler_tot_vanilla(u):
     allgemein(sp, 'tyler tot')
 
 
+def test_eingaenge_haeuser(u):
+    """Umsetzung 6: je Stadt eine Treppe auf der Vanilla-Karte, die ins Haus fuehrt;
+    die Kartenskripte zeigen beim ersten Besuch ihren Satz."""
+    import bau_karten
+    k = u.k
+    sp = u.neues_spiel()
+    for nr, h in enumerate(bau_karten.HAEUSER, 1):
+        sp.betrete_karte(h['stadtkarte_index'])
+        treppen = [o for o in sp.objekte if o.pid == bau_karten.TREPPE_PID and o.tile == h['treppe_hex']]
+        pruefe(len(treppen) == 1 and treppen[0].skript_nr == k['SCRIPT_RLTUER'], f'{h["kuerzel"]}: Treppe')
+        sp.betrete_karte(h['stadtkarte_index'])
+        pruefe(len([o for o in sp.objekte if o.pid == bau_karten.TREPPE_PID and o.tile == h['treppe_hex']]) == 1,
+               f'{h["kuerzel"]}: Treppe doppelt')
+        t = treppen[0]
+        sp.meldungen.clear()
+        t.skript.rufe('look_at_p_proc', self_obj=t, source=sp.dude)
+        t.skript.rufe('use_p_proc', self_obj=t, source=sp.dude)
+        pruefe(sp.karten_wechsel[-1] == (h['datei'], 0), f'{h["kuerzel"]}: {sp.karten_wechsel[-1]}')
+        pruefe(sp.meldungen and 'Error' not in sp.meldungen[0], f'{h["kuerzel"]}: Ansehen {sp.meldungen}')
+        # Kartenskript: Satz beim ersten Besuch
+        karte = sp.erzeuge(0, -1, 0, k[h['kartenskript']], 'Kartenskript ' + h['kuerzel'])
+        sp.karte = u.cfg['RL_MAP_INDEX'] + nr
+        sp.erster_besuch = True
+        sp.meldungen.clear()
+        karte.skript.rufe('map_enter_p_proc', self_obj=karte)
+        pruefe(len(sp.meldungen) == 1, f'{h["kuerzel"]}: erster Besuch {sp.meldungen}')
+        # Treppe im Kampf und fuer Begleiter: nichts
+        n = len(sp.karten_wechsel)
+        sp.kampf = True
+        t.skript.rufe('use_p_proc', self_obj=t, source=sp.dude)
+        sp.kampf = False
+        t.skript.rufe('use_p_proc', self_obj=t, source=karte)
+        pruefe(len(sp.karten_wechsel) == n, f'{h["kuerzel"]}: Kartenwechsel im Kampf/fuer andere')
+    # Essie kennt die anderen Staedte
+    sp, e, ko, w = prolog(u, 'bezahlt')
+    v = rede(sp, e, ['Go on', 'Where else', 'New Reno', 'another town', 'San Francisco'])
+    pruefe('Silver Garter' in texte(v) and 'ferry terminal' in texte(v), 'Staedte')
+    pruefe(w.welt('RL_W_STAEDTE_ERZAEHLT') == (1 << k['RL_NEW_RENO']) | (1 << k['RL_SAN_FRAN']), 'Bits')
+    allgemein(sp, 'eingaenge')
+
+
 def test_alter_spielstand(u):
     """Spielstand aus Umsetzung 4: Welt-Array mit 32 Feldern wird erweitert."""
     k = u.k
@@ -981,7 +1022,7 @@ TESTS = [test_wirtschaft_paritaet, test_erkundung, test_eingang, test_prolog_weg
          test_wochen, test_anwerbung_werben, test_anwerbung_zwingen, test_pferch_flucht_und_nachschub,
          test_akt2_verstecken_bis_madame, test_suche_ohne_zuflucht, test_akt2_retten_stiller_krieg,
          test_akt2_ausliefern_essie_geht, test_tyrann_bis_metzgers_mann, test_neuer_metzger,
-         test_kampf_deke_und_jess, test_tyler_tot_vanilla, test_alter_spielstand, test_erkundung_ketten]
+         test_kampf_deke_und_jess, test_tyler_tot_vanilla, test_eingaenge_haeuser, test_alter_spielstand, test_erkundung_ketten]
 
 
 def main():

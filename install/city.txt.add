@@ -1,6 +1,12 @@
-; Rotlicht ueber dem Oedland: Die Gosse gehoert zur Den.
-; In city.txt im Abschnitt [Area 01] (area_name=Den) nach entrance_2 einfuegen.
+; Rotlicht ueber dem Oedland: Die Haeuser gehoeren zu ihren Staedten.
+; Format: <area_name>|<Eingang>. In city.txt im Abschnitt mit diesem area_name
+; nach dem letzten entrance_N einfuegen, mit der naechsten freien Nummer.
 ; Ohne Koordinaten (-1,-1) erscheint der Eingang nicht auf der Stadtkarte;
-; er sorgt nur dafuer, dass die Engine die Karte der Den zuordnet
+; er sorgt nur dafuer, dass die Engine die Karte der Stadt zuordnet
 ; (Pip-Boy, Spielstand, cur_town).
-entrance_3=Off,-1,-1,Rotlicht Gosse,-1,-1,0
+Den|entrance_3=Off,-1,-1,Rotlicht Gosse,-1,-1,0
+New Reno|entrance_9=Off,-1,-1,Rotlicht Strumpfband,-1,-1,0
+Redding|entrance_9=Off,-1,-1,Rotlicht Schlacke,-1,-1,0
+Vault City|entrance_9=Off,-1,-1,Rotlicht Kloake,-1,-1,0
+NCR|entrance_9=Off,-1,-1,Rotlicht Traenke,-1,-1,0
+San Francisco|entrance_9=Off,-1,-1,Rotlicht Bilge,-1,-1,0

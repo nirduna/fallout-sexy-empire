@@ -6,3 +6,9 @@ rlmara.int      ; Mara, die Frau aus dem Keller (Rotlicht)              # local_
 rldeke.int      ; Deke, einer von Tylers Leuten (Rotlicht)              # local_vars=0
 rljess.int      ; Jess, Laras Leutnant (Rotlicht)                       # local_vars=0
 rlangreifer.int ; Angreifer bei Kaempfen im Haus (Rotlicht)             # local_vars=0
+rltuer.int      ; Eingaenge der weiteren Haeuser (Rotlicht)             # local_vars=0
+rlren01.int     ; Kartenskript Silbernes Strumpfband RLREN01 (Rotlicht) # local_vars=0
+rlred01.int     ; Kartenskript Schlacke RLRED01 (Rotlicht)              # local_vars=0
+rlvct01.int     ; Kartenskript Kloake RLVCT01 (Rotlicht)                # local_vars=0
+rlncr01.int     ; Kartenskript Traenke RLNCR01 (Rotlicht)               # local_vars=0
+rlsfr01.int     ; Kartenskript Bilge RLSFR01 (Rotlicht)                 # local_vars=0

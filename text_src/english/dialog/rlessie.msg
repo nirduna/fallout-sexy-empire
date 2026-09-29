@@ -190,5 +190,21 @@
 {835}{}{Lara's people are waiting near the Guild. They won't wait forever, and neither will Metzger once he smells it. He's yours.}
 {836}{}{Then we keep taking them out one at a time, and Metzger keeps hunting us one at a time. That's a war too. Just a quiet one. He'll hit back, you know. Sooner or later he always does.}
 
+# The other towns (Umsetzung 6)
+{620}{}{Where else could we open a house?}
+{621}{}{Every town with money has a house. Every town without one is waiting for somebody like you. Which one do you want to hear about?}
+{622}{}{New Reno.}
+{623}{}{Redding.}
+{624}{}{Vault City.}
+{625}{}{The NCR.}
+{626}{}{San Francisco.}
+{627}{}{Enough for now.}
+{628}{}{Tell me about another town.}
+{630}{}{The Silver Garter, on Virgin Street, across from the Cat's Paw. A hotel from before the war. Empty since its last owner went into the ground at Golgotha. You'll need the deed, and you'll need one of the four families to bless it. Or you open without a blessing and see who comes knocking the first night. Take the servants' stairs at the side, somebody's always hanging around in there.}
+{631}{}{Redding digs gold, and the miners spend it before the dust settles. Behind the sheds in the mining camp there's an old ore tunnel with stairs going down. Mayor Ascorti sells licenses for it. What he calls licenses.}
+{632}{}{Vault City preaches by day and pays by night. In the Courtyard, behind Cassidy's, there's a widow with a boarding house and a very quiet cellar. The citizens come through the gate after dark. Nobody says a word, least of all the ones who vote on morality.}
+{633}{}{The Republic licenses everything, even us. In the Bazaar, next to the Rawhide, there's a house with a number over the stairs: nine. It's waiting for a license and a sick room. Paperwork, fees, inspections. The most honest house on the coast. That isn't saying much.}
+{634}{}{San Francisco. The Shi own the docks, and nothing happens down there they don't allow. There's a half-sunk ferry terminal nobody wants. The Shi's overseer decides who gets to keep a door open in it.}
+
 # @include _rl_module.inc
 # @include _rl_sonder.inc
