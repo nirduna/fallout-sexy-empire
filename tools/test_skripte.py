@@ -2425,6 +2425,176 @@ def test_erkundung_sanfran(u):
     print(f'      {gesamt} Dialogzustaende in San Francisco erkundet')
 
 
+# --------------------------------------------------------------------------
+# Umsetzung 12: Blut auf der Virgin Street, Miss Kitty
+
+def _virgin_akt(u, sp, w, akt, wochen=8):
+    k = u.k
+    for _ in range(wochen):
+        if w.welt('RL_W_VIRGIN') == k[akt]:
+            break
+        ruhige_woche(sp)
+    pruefe(w.welt('RL_W_VIRGIN') == k[akt], f'{akt} nicht erreicht ({w.welt("RL_W_VIRGIN")})')
+    betrete_strumpfband(u, sp)
+
+
+def test_virgin_gebuehr_und_kitty(u):
+    k = u.k
+    sp, w = _nr_uebernommen(u, 'Salvatore')
+    _virgin_akt(u, sp, w, 'RL_VIRGIN_GEBUEHR')
+    pruefe(any('Carlo Venuti' in m for m in sp.meldungen), 'Meldung Akt 1')
+    ven = figur(sp, k, 'RLVENUTI')
+    sp.dude.skills[k['SKILL_BARTER']] = 60
+    rede(sp, ven, ['[Barter]', None])
+    pruefe(w.welt('RL_W_VIRGIN_GEBUEHR') == 100 and w.haus(NR, 'RL_F_BESTECHUNG_MOD') == 100, 'halbiert')
+    keine_figur(sp, k, 'RLVENUTI')
+    kasse = w.haus(NR, 'RL_F_KASSE')
+    _virgin_akt(u, sp, w, 'RL_VIRGIN_KITTY')
+    jade = figur(sp, k, 'RLJADE')
+    sp.dude.skills[k['SKILL_SPEECH']] = 60
+    rede(sp, jade, ['refuse Venuti together', None])
+    pruefe(w.welt('RL_W_KITTY_WEG') == k['RL_KITTY_BUENDNIS'] and w.welt('RL_W_CATSPAW') == 1
+           and w.welt('RL_W_VIRGIN_GEBUEHR') == 0, 'Buendnis')
+    keine_figur(sp, k, 'RLJADE')
+    ruhige_woche(sp)
+    pruefe(w.haus(NR, 'RL_F_STADTMOD') == -5, f'Cat\'s Paw -5: {w.haus(NR, "RL_F_STADTMOD")}')
+    # Fusion mit Einfluss
+    sp, w = _nr_uebernommen(u, 'Salvatore')
+    w.setze_welt('RL_W_VIRGIN', k['RL_VIRGIN_KITTY'])
+    w.setze_welt('RL_W_VIRGIN_WOCHE', 99)
+    w.setze_haus(NR, 'RL_F_EINFLUSS', 40)
+    betrete_strumpfband(u, sp)
+    zimmer, personal = w.haus(NR, 'RL_F_ZIMMER'), w.haus(NR, 'RL_F_PERSONAL')
+    rede(sp, figur(sp, k, 'RLJADE'), ['take the Cat', None])
+    pruefe(w.welt('RL_W_KITTY_WEG') == k['RL_KITTY_FUSION'] and w.haus(NR, 'RL_F_ZIMMER') == zimmer + 3
+           and w.haus(NR, 'RL_F_PERSONAL') == personal + 3 and w.haus(NR, 'RL_F_FUEHRUNG') == 85, 'Fusion')
+    # Verrat: Rivalin, Kralle in Redding, Abwerbung, Anhoerung -10
+    sp, w = _nr_uebernommen(u, 'Salvatore')
+    w.setze_welt('RL_W_VIRGIN', k['RL_VIRGIN_KITTY'])
+    w.setze_welt('RL_W_VIRGIN_WOCHE', 99)
+    w.setze_welt('RL_W_VIRGIN_GEBUEHR', 200)
+    betrete_strumpfband(u, sp)
+    geld = sp.dude.kronkorken
+    rede(sp, figur(sp, k, 'RLJADE'), ['Tell Venuti', None])
+    pruefe(w.welt('RL_W_KITTY_RIVALIN') == 1 and w.welt('RL_W_CATSPAW') == k['RL_CATSPAW_MORDINO']
+           and sp.dude.kronkorken == geld + 1000 and w.welt('RL_W_VIRGIN_GEBUEHR') == 100, 'Verrat')
+    w.setze_haus(NR, 'RL_F_MORAL', 40)
+    personal = w.haus(NR, 'RL_F_PERSONAL')
+    ruhige_woche(sp, 4)
+    pruefe(w.haus(NR, 'RL_F_PERSONAL') < personal and any("Kitty's Claw" in m for m in sp.meldungen), 'Abwerbung')
+    # Die Kralle beenden: ueber Nell
+    sp, w = _red_uebernommen(u, sp)
+    nell = figur(sp, k, 'RLNELL')
+    rede(sp, nell, ['how the house', None])
+    w.setze_haus(RED, 'RL_F_EINFLUSS', 40)
+    rede(sp, nell, ["Kitty's Claw", 'Buy the Claw', None])
+    pruefe(w.welt('RL_W_KITTY_RIVALIN') == 0 and w.welt('RL_W_KITTY_WEG') == k['RL_KITTY_KRALLE_GEKAUFT'], 'Kralle gekauft')
+    allgemein(sp, 'kitty')
+
+
+def test_virgin_dealer_und_nacht(u):
+    k = u.k
+    sp, w = _nr_uebernommen(u, 'Salvatore')
+    _virgin_akt(u, sp, w, 'RL_VIRGIN_GEBUEHR')
+    rede(sp, figur(sp, k, 'RLVENUTI'), ['No.', None])
+    pruefe(w.welt('RL_W_VIRGIN') == k['RL_VIRGIN_JET'] and w.haus(NR, 'RL_F_HITZE') >= 10, 'verweigert: Akt 3 sofort')
+    roz = figur(sp, k, 'RLROZ')
+    rede(sp, roz, ['how the house', None])
+    sp.dude.stats[k['STAT_pe']] = 7
+    sp.dude.skills[k['SKILL_SPEECH']] = 70
+    sp.dude.skills[k['SKILL_DOCTOR']] = 60
+    moral = w.haus(NR, 'RL_F_MORAL')
+    rede(sp, roz, ['Jet in the house', '[Perception]', '[Speech] Turn', 'Go on', '[Doctor]', None])
+    f = w.welt('RL_W_VIRGIN_FLAGS')
+    pruefe(f & k['RL_VF_DEALER_WEG'] and f & k['RL_VF_BEWEISE'] and f & k['RL_VF_GEHEILT'], f'Dealer {f}')
+    pruefe(w.haus(NR, 'RL_F_MORAL') == moral + 10, 'geheilt')
+    _virgin_akt(u, sp, w, 'RL_VIRGIN_MESSER')
+    ven = figur(sp, k, 'RLVENUTI')
+    rede(sp, ven, ['Orville Wright', None])
+    pruefe(w.welt('RL_W_VIRGIN') == k['RL_VIRGIN_LEERER_STUHL'], 'zuvorgekommen')
+    keine_figur(sp, k, 'RLVENUTI')
+    # Kampf im Haus
+    sp, w = _nr_uebernommen(u, 'Salvatore')
+    w.setze_welt('RL_W_VIRGIN', k['RL_VIRGIN_MESSER'])
+    w.setze_welt('RL_W_VIRGIN_WOCHE', 99)
+    betrete_strumpfband(u, sp)
+    rede(sp, figur(sp, k, 'RLVENUTI'), ['Get out of my house', None])
+    ang = sp.finde(k['SCRIPT_RLANGREIFER'])
+    pruefe(len(ang) == 3 and w.haus(NR, 'RL_F_ANGRIFF') == k['RL_ANGRIFF_VIRGIN'], 'Angriff')
+    keine_figur(sp, k, 'RLVENUTI')
+    betrete_strumpfband(u, sp)
+    keine_figur(sp, k, 'RLVENUTI')
+    for o in ang:
+        sp.zerstoere(o)
+    pruefe(w.welt('RL_W_VIRGIN') == k['RL_VIRGIN_LEERER_STUHL'] and w.haus(NR, 'RL_F_ANGRIFF') == 0, 'verteidigt')
+    # Ultimatum liegen gelassen: das Haus wird verwuestet
+    sp, w = _nr_uebernommen(u, 'Salvatore')
+    w.setze_welt('RL_W_VIRGIN', k['RL_VIRGIN_MESSER'])
+    w.setze_welt('RL_W_VIRGIN_WOCHE', 1)
+    for _ in range(6):
+        ruhige_woche(sp)
+        if any('shut for two weeks' in m for m in sp.meldungen):
+            break
+    pruefe(w.haus(NR, 'RL_F_GESCHLOSSEN') >= 1 and any('shut for two weeks' in m for m in sp.meldungen), 'verwuestet')
+    pruefe(w.welt('RL_W_VIRGIN') == k['RL_VIRGIN_MESSER'], 'das Ultimatum bleibt')
+    allgemein(sp, 'dealer und nacht')
+
+
+def test_virgin_umarmung_und_vanilla(u):
+    k = u.k
+    sp, e, ko, w = prolog(u, 'bezahlt')
+    sp, w = _nr_uebernommen(u, 'Mordino', sp)
+    w.setze_welt('RL_W_VIRGIN', k['RL_VIRGIN_MESSER'])
+    w.setze_welt('RL_W_VIRGIN_WOCHE', 99)
+    betrete_strumpfband(u, sp)
+    karma = sp.gvars.get(k['GVAR_PLAYER_REPUTATION'], 0)
+    rede(sp, figur(sp, k, 'RLVENUTI'), ['make me family', None])
+    pruefe(w.welt('RL_W_VIRGIN') == k['RL_VIRGIN_UMARMUNG'] and sp.gvars[k['GVAR_MADE_MAN_MORDINO']] == 1, 'Umarmung')
+    pruefe(sp.gvars[k['GVAR_PLAYER_REPUTATION']] == karma - 30, 'K -30')
+    for h in (0, NR):
+        pruefe(w.haus(h, 'RL_F_MODULE') & k['RL_MOD_JET_THEKE'] and w.haus(h, 'RL_F_PREISMOD') == 20, f'Haus {h}')
+    # Die Mordinos fallen in Vanilla, waehrend die Linie laeuft
+    sp, w = _nr_uebernommen(u, 'Salvatore')
+    _virgin_akt(u, sp, w, 'RL_VIRGIN_GEBUEHR')
+    sp.gvars[k['GVAR_NEW_RENO_FLAG_2']] = k['bit_26']
+    ruhige_woche(sp)
+    pruefe(w.welt('RL_W_VIRGIN') == k['RL_VIRGIN_LEERER_STUHL'], 'Vanilla: leerer Stuhl')
+    # Die Mordinos sind schon gefallen: Venuti will Rache, ab Akt 3
+    sp, w = _nr_uebernommen(u, 'Salvatore')
+    sp.gvars[k['GVAR_NEW_RENO_FLAG_2']] = k['bit_26']
+    _virgin_akt(u, sp, w, 'RL_VIRGIN_JET')
+    pruefe(w.welt('RL_W_VIRGIN_FLAGS') & k['RL_VF_RACHE'], 'Rache')
+    allgemein(sp, 'umarmung')
+
+
+def test_erkundung_virgin(u):
+    k = u.k
+    gesamt = 0
+    sp, w = _nr_uebernommen(u, 'Mordino')
+    for akt in ('RL_VIRGIN_GEBUEHR', 'RL_VIRGIN_KITTY', 'RL_VIRGIN_JET', 'RL_VIRGIN_MESSER'):
+        w.setze_welt('RL_W_VIRGIN', k[akt])
+        w.setze_welt('RL_W_VIRGIN_WOCHE', 99)
+        betrete_strumpfband(u, sp)
+        for skill in (0, 90):
+            for s in ('SKILL_BARTER', 'SKILL_SPEECH', 'SKILL_UNARMED_COMBAT', 'SKILL_SNEAK', 'SKILL_DOCTOR'):
+                sp.dude.skills[k[s]] = skill
+            sp.dude.stats[k['STAT_pe']] = 7 if skill else 5
+            w.setze_welt('RL_W_VIRGIN_FLAGS', k['RL_VF_BEWEISE'] if skill else 0)
+            for name in ('RLVENUTI', 'RLJADE'):
+                fs = sp.finde(k['SCRIPT_' + name])
+                if fs:
+                    gesamt += erkunde(sp, fs[0], f'{name} {akt} {skill}')[1]
+            gesamt += erkunde(sp, figur(sp, k, 'RLROZ'), f'Roz {akt} {skill}')[1]
+    sp, w = _red_uebernommen(u)
+    w.setze_welt('RL_W_KITTY_RIVALIN', 1)
+    w.setze_welt('RL_W_RED_KENNT', 1)
+    for skill in (0, 80):
+        sp.dude.skills[k['SKILL_SPEECH']] = skill
+        w.setze_haus(RED, 'RL_F_EINFLUSS', 40 if skill else 20)
+        gesamt += erkunde(sp, figur(sp, k, 'RLNELL'), f'Nell Kralle {skill}')[1]
+    print(f'      {gesamt} Dialogzustaende der Virgin Street erkundet')
+
+
 TESTS = [test_wirtschaft_paritaet, test_erkundung, test_eingang, test_prolog_wege, test_diebstahl_erwischt, test_ketten_annehmen,
          test_ketten_ablehnen, test_ketten_kein_geld, test_kolbe_stirbt, test_kolbe_kommt_zurueck,
          test_wochen, test_anwerbung_werben, test_anwerbung_zwingen, test_pferch_flucht_und_nachschub,
@@ -2440,7 +2610,9 @@ TESTS = [test_wirtschaft_paritaet, test_erkundung, test_eingang, test_prolog_weg
          test_vc_akte_und_lynette, test_vc_pacht_und_sorensen, test_erkundung_vaultcity,
          test_ncr_lizenz_wege, test_ncr_auflage, test_ncr_vortis, test_reine_musterhaus, test_reine_verbot,
          test_reine_diskreditierung, test_reine_calloway_mara_gedraengt, test_erkundung_ncr,
-         test_sf_duldung, test_sf_schmuggelkammer, test_sf_hubologen, test_erkundung_sanfran]
+         test_sf_duldung, test_sf_schmuggelkammer, test_sf_hubologen, test_erkundung_sanfran,
+         test_virgin_gebuehr_und_kitty, test_virgin_dealer_und_nacht, test_virgin_umarmung_und_vanilla,
+         test_erkundung_virgin]
 
 
 def main():

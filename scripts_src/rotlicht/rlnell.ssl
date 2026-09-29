@@ -28,6 +28,11 @@ procedure Node855;      // Beteiligung
 procedure Node857;      // Preiskrieg
 procedure Node859;      // Sabotage
 procedure Node861;      // Uebernahme
+procedure Node870;      // Kittys Kralle
+procedure Node871;      // Versoehnung
+procedure Node872;      // die Kralle kaufen
+procedure Node873;      // Gewalt
+procedure rl_kralle_ende(variable weg, variable text);
 procedure Node999;
 
 variable haus;
@@ -35,7 +40,8 @@ variable welt;
 variable h := RL_REDDING;
 variable selbst_weg := 0;
 
-#define RLM_EXTRA_OPTIONEN   if (welt[RL_W_MALAMUTE] == 0) then NOption(850, Node850, 004);
+#define RLM_EXTRA_OPTIONEN   if (welt[RL_W_MALAMUTE] == 0) then NOption(850, Node850, 004);   \
+                             if (welt[RL_W_KITTY_RIVALIN]) then NOption(870, Node870, 004);
 
 #include "../headers/rl_manager.h"
 
@@ -147,6 +153,42 @@ procedure Node861 begin
    haus[rl_idx(h, RL_F_STUFEN)] := haus[rl_idx(h, RL_F_STUFEN)] + 1;
    Reply(866);
    NOption(123, RLM_Start, 004);
+end
+
+/* ------------------------------------------------------------------ */
+/* Kittys Kralle (Phase 4, Abschnitt 3.6)                              */
+/* ------------------------------------------------------------------ */
+procedure Node870 begin
+   Reply(874);
+   if ((has_skill(dude_obj, SKILL_SPEECH) >= 80) and rl_zahlbar(haus, h, RL_KITTY_VERSOEHNUNG)) then
+      GOption(875, Node871, 004);
+   if (haus[rl_idx(h, RL_F_EINFLUSS)] >= 40) then
+      NOption(876, Node872, 004);
+   BOption(877, Node873, 004);
+   NOption(123, RLM_Start, 004);
+end
+
+procedure rl_kralle_ende(variable weg, variable text) begin
+   welt[RL_W_KITTY_RIVALIN] := 0;
+   welt[RL_W_KITTY_WEG] := weg;
+   Reply(text);
+   NOption(123, RLM_Start, 004);
+end
+
+procedure Node871 begin
+   call rl_zahlen(haus, h, RL_KITTY_VERSOEHNUNG);
+   call rl_kralle_ende(RL_KITTY_VERSOEHNT, mstr(878));
+end
+
+procedure Node872 begin
+   haus[rl_idx(h, RL_F_ZIMMER)] := haus[rl_idx(h, RL_F_ZIMMER)] + 2;
+   call rl_kralle_ende(RL_KITTY_KRALLE_GEKAUFT, mstr(879));
+end
+
+procedure Node873 begin
+   rl_karma(-20);
+   call rl_nr_misstrauen(welt, RL_SEGEN_WRIGHT);
+   call rl_kralle_ende(RL_KITTY_GEWALT, mstr(880));
 end
 
 procedure Node999 begin

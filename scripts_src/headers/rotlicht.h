@@ -56,6 +56,8 @@
 #define SCRIPT_RLWEN                (RL_SCRIPT_BASE + 25)  // Aufseher Wen, die Shi an den Docks (San Francisco)
 #define SCRIPT_RLBOOTSMANN          (RL_SCRIPT_BASE + 26)  // Bo Harlan, Bootsmann des Tankers
 #define SCRIPT_RLKWAN               (RL_SCRIPT_BASE + 27)  // Tante Kwan, Madame der Bilge
+#define SCRIPT_RLVENUTI             (RL_SCRIPT_BASE + 28)  // Carlo Venuti, Mordino-Capo der Virgin Street
+#define SCRIPT_RLJADE               (RL_SCRIPT_BASE + 29)  // Jade, Miss Kittys rechte Hand (Cat's Paw)
 
 /* ------------------------------------------------------------------ */
 /* Echte GVARs (Phase 6). Nur dort, wo die Engine sie verlangt:        */
@@ -286,6 +288,15 @@
 #define RL_W_SF_LAGER               (107)   // 1 = die Tanker-Schmuggler duerfen lagern (Schmuggelkammer)
 #define RL_W_SF_TOTE                (108)   // Bits RL_SF_TOT_*
 #define RL_W_SF_KENNT               (109)   // 1 = Kwan kennt den Spieler
+// Blut auf der Virgin Street (Umsetzung 12, rl_virgin.h); Aktstand in RL_W_VIRGIN, Cat's Paw in RL_W_CATSPAW
+#define RL_W_VIRGIN_WOCHE           (110)   // Woche, in der der aktuelle Akt begann
+#define RL_W_VIRGIN_GEBUEHR         (111)   // Venutis Gebuehr in $/Woche
+#define RL_W_VIRGIN_FLAGS           (112)   // Bits RL_VF_*
+#define RL_W_KITTY_WEG              (113)   // RL_KITTY_*
+#define RL_W_VIRGIN_TOTE            (114)   // Bits RL_VIRGIN_TOT_*
+#define RL_W_KITTY_ABWERBUNG        (115)   // Woche der letzten Abwerbung
+#define RL_W_UMARMUNG_HAEUSER       (116)   // Bitfeld: Haeuser mit Jet-Theke und +20 % aus der Umarmung
+#define RL_W_VIRGIN_NACHT           (117)   // Woche, in der Venutis Leute das Haus zuletzt verwuestet haben
 
 #define RL_PROLOG_OFFEN             (0)
 #define RL_PROLOG_LAEUFT            (1)
@@ -816,6 +827,7 @@ end
 #include "rl_vaultcity.h"
 #include "rl_ncr.h"
 #include "rl_sanfran.h"
+#include "rl_virgin.h"
 #include "rl_kampf.h"
 
 #endif

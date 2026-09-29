@@ -24,6 +24,13 @@ procedure look_at_p_proc;
 procedure description_p_proc;
 procedure Node800;      // erste Begegnung
 procedure Node810;      // HQ-Kasse, wenn Asch tot ist
+procedure Node820;      // Virgin Street, Akt 3: der Dealer
+procedure Node821;      // gefunden
+procedure Node822;      // rauswerfen
+procedure Node823;      // umdrehen
+procedure Node824;      // verschwinden lassen
+procedure Node825;      // heilen
+procedure rl_dealer_weg(variable text);
 procedure Node999;
 
 variable haus;
@@ -32,7 +39,10 @@ variable h := RL_NEW_RENO;
 variable selbst_weg := 0;
 
 #define RLM_EXTRA_OPTIONEN   if ((welt[RL_W_NR_TOTE] bwand RL_NR_TOT_ASCH) and (welt[RL_W_HQ_KASSE] > 0)) then \
-                                NOption(810, Node810, 004);
+                                NOption(810, Node810, 004);                                                     \
+                             if ((welt[RL_W_VIRGIN] == RL_VIRGIN_JET) or ((welt[RL_W_VIRGIN] == RL_VIRGIN_MESSER) \
+                                 and ((welt[RL_W_VIRGIN_FLAGS] bwand RL_VF_GEHEILT) == 0))) then                \
+                                NOption(819, Node820, 004);
 
 #include "../headers/rl_manager.h"
 
@@ -95,6 +105,64 @@ procedure Node810 begin
    Reply(mstr(811) + betrag + mstr(812));
    NOption(123, RLM_Start, 004);
    NOption(124, RLM_Ende, 004);
+end
+
+/* ------------------------------------------------------------------ */
+/* Blut auf der Virgin Street, Akt 3: Jet im Blut (Phase 3, 3.1)        */
+/* ------------------------------------------------------------------ */
+procedure Node820 begin
+   variable f := welt[RL_W_VIRGIN_FLAGS];
+   if (f bwand RL_VF_DEALER_WEG) then
+      Reply(826);
+   else if (f bwand RL_VF_DEALER_GEFUNDEN) then begin
+      call Node821;
+      return;
+   end else begin
+      Reply(820);
+      if (dude_perception >= 7) then NOption(830, Node821, 004);
+      if (has_skill(dude_obj, SKILL_SNEAK) >= 60) then NOption(831, Node821, 004);
+      if (haus[rl_idx(h, RL_F_MORAL)] >= 70) then GOption(832, Node821, 004);
+   end
+   if (((f bwand RL_VF_GEHEILT) == 0) and ((has_skill(dude_obj, SKILL_DOCTOR) >= 60)
+       or obj_is_carrying_obj_pid(dude_obj, PID_JET_ANTIDOTE))) then
+      GOption(833, Node825, 004);
+   NOption(123, RLM_Start, 004);
+end
+
+procedure Node821 begin
+   welt[RL_W_VIRGIN_FLAGS] := welt[RL_W_VIRGIN_FLAGS] bwor RL_VF_DEALER_GEFUNDEN;
+   Reply(821);
+   if (has_skill(dude_obj, SKILL_UNARMED_COMBAT) >= 60) then NOption(834, Node822, 004);
+   if (has_skill(dude_obj, SKILL_SPEECH) >= 70) then GOption(835, Node823, 004);
+   BOption(836, Node824, 004);
+   NOption(123, RLM_Start, 004);
+end
+
+procedure rl_dealer_weg(variable text) begin
+   welt[RL_W_VIRGIN_FLAGS] := welt[RL_W_VIRGIN_FLAGS] bwor RL_VF_DEALER_WEG;
+   Reply(text);
+   NOption(123, Node820, 004);
+end
+
+procedure Node822 begin
+   call rl_dealer_weg(mstr(822));
+end
+
+procedure Node823 begin
+   welt[RL_W_VIRGIN_FLAGS] := welt[RL_W_VIRGIN_FLAGS] bwor RL_VF_BEWEISE;
+   call rl_dealer_weg(mstr(823));
+end
+
+procedure Node824 begin
+   call rl_haus_plus(haus, h, RL_F_HITZE, 20);
+   call rl_dealer_weg(mstr(824));
+end
+
+procedure Node825 begin
+   welt[RL_W_VIRGIN_FLAGS] := welt[RL_W_VIRGIN_FLAGS] bwor RL_VF_GEHEILT;
+   call rl_haus_plus(haus, h, RL_F_MORAL, 10);
+   Reply(825);
+   NOption(123, RLM_Start, 004);
 end
 
 procedure Node999 begin

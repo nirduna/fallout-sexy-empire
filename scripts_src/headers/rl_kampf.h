@@ -66,6 +66,11 @@ procedure rl_haus_kampf_ende(variable haus, variable welt, variable h) begin
       call rl_haus_plus(haus, RL_NEW_RENO, RL_F_EINFLUSS, 10);
       call rl_nr_segen(haus, welt, RL_SEGEN_UNABHAENGIG);
       if (rl_hier(welt) == RL_NEW_RENO) then call rl_nr_figuren(haus, welt);
+   end else if (typ == RL_ANGRIFF_VIRGIN) then begin
+      // Die Nacht der langen Messer ist ueberstanden: Venuti ist erledigt (Phase 3, 3.1)
+      welt[RL_W_VIRGIN_TOTE] := welt[RL_W_VIRGIN_TOTE] bwor RL_VIRGIN_TOT_VENUTI;
+      call rl_haus_plus(haus, RL_NEW_RENO, RL_F_HITZE, 20);
+      call rl_virgin_ende(haus, welt, RL_VIRGIN_LEERER_STUHL);
    end
 end
 

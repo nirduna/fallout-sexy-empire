@@ -1,0 +1,182 @@
+/*
+   rljade.ssl - Jade, Miss Kittys rechte Hand (Cat's Paw, New Reno)
+
+   Umsetzung 12, Akt 2 "Miss Kittys Angebot" (Phase 3, Abschnitt 4.1). Miss
+   Kitty ist eine Vanilla-Figur; Jade verhandelt fuer sie im Strumpfband.
+     Buendnis   Speech 60: Abzug -15 % -> -5 %, E +5, keine Gebuehr an Venuti
+     Fusion     Speech 70 und 3.000 $, oder E New Reno >= 40: +3 Zimmer, Kitty
+                als Madame der Filiale (Fuehrung 85, Qualitaet +10, Anwerben
+                doppelt so schnell), ihr Anteil 10 %
+     Druck      Unarmed 60 oder Erpressung (VIP-Trakt): Kitty verkauft fuer
+                1.500 $, +3 Zimmer, K -10, Kitty wird Rivalin
+     Sabotage   Sneak 60: K -10, Kitty wird Rivalin; fliegt es auf, E -15
+     Verrat     Kitty an Venuti: +1.000 $, Gebuehr -100 $, K -20, Rivalin,
+                das Cat's Paw gehoert den Mordinos
+
+   Texte: text_src/english/dialog/rljade.msg
+*/
+
+#define SCRIPT_REALNAME "rljade"
+#define NAME                    SCRIPT_RLJADE
+#include "define.h"
+#include "../headers/rotlicht.h"
+#include "command.h"
+
+procedure start;
+procedure talk_p_proc;
+procedure map_enter_p_proc;
+procedure destroy_p_proc;
+procedure look_at_p_proc;
+procedure description_p_proc;
+procedure Node100;
+procedure Node110;      // Buendnis
+procedure Node111;      // Fusion mit Geld
+procedure Node112;      // Fusion mit Einfluss
+procedure Node113;      // Druck
+procedure Node114;      // Sabotage
+procedure Node115;      // Verrat
+procedure Node999;
+procedure rl_fusion;
+procedure rl_entschieden(variable text);
+
+variable haus;
+variable welt;
+variable gehen := 0;
+variable selbst_weg := 0;
+
+procedure start begin
+end
+
+procedure map_enter_p_proc begin
+   welt := rl_lade_welt;
+   if (not rl_virgin_jade_da(welt)) then begin
+      selbst_weg := 1;
+      destroy_object(self_obj);
+   end
+end
+
+procedure destroy_p_proc begin
+   if (selbst_weg) then return;
+   welt := rl_lade_welt;
+   welt[RL_W_VIRGIN_TOTE] := welt[RL_W_VIRGIN_TOTE] bwor RL_VIRGIN_TOT_JADE;
+   // Kitty vergisst das nicht
+   if (welt[RL_W_KITTY_WEG] == RL_KITTY_OFFEN) then call rl_kitty_rivalin(welt, RL_KITTY_DRUCK);
+end
+
+procedure look_at_p_proc begin
+   script_overrides;
+   display_mstr(300);
+end
+
+procedure description_p_proc begin
+   script_overrides;
+   display_mstr(301);
+end
+
+procedure talk_p_proc begin
+   haus := rl_lade_haeuser;
+   welt := rl_lade_welt;
+   start_gdialog(NAME, self_obj, 4, -1, -1);
+   gSay_Start;
+      call Node100;
+   gSay_End;
+   end_dialogue;
+   if (gehen) then begin
+      gehen := 0;
+      gfade_out(600);
+      set_obj_visibility(self_obj, 1);
+      gfade_in(600);
+      selbst_weg := 1;
+      destroy_object(self_obj);      // beendet das Skript: muss zuletzt stehen
+   end
+end
+
+procedure Node100 begin
+   Reply(100);
+   if (has_skill(dude_obj, SKILL_SPEECH) >= 60) then
+      GOption(101, Node110, 004);
+   if ((has_skill(dude_obj, SKILL_SPEECH) >= 70) and rl_zahlbar(haus, RL_NEW_RENO, RL_KITTY_FUSION_PREIS)) then
+      NOption(102, Node111, 004);
+   if (haus[rl_idx(RL_NEW_RENO, RL_F_EINFLUSS)] >= 40) then
+      NOption(103, Node112, 004);
+   if (rl_zahlbar(haus, RL_NEW_RENO, RL_KITTY_DRUCK_PREIS)) then begin
+      if (has_skill(dude_obj, SKILL_UNARMED_COMBAT) >= 60) then
+         BOption(104, Node113, 004);
+      if (haus[rl_idx(RL_NEW_RENO, RL_F_MODULE)] bwand RL_MOD_VIP) then
+         BOption(105, Node113, 004);
+   end
+   if (has_skill(dude_obj, SKILL_SNEAK) >= 60) then
+      BOption(106, Node114, 004);
+   BOption(107, Node115, 004);
+   NOption(108, Node999, 004);
+   NLowOption(109, Node999);
+end
+
+procedure rl_entschieden(variable text) begin
+   gehen := 1;
+   Reply(text);
+   NOption(108, Node999, 004);
+end
+
+procedure Node110 begin
+   welt[RL_W_KITTY_WEG] := RL_KITTY_BUENDNIS;
+   welt[RL_W_CATSPAW] := 1;
+   call rl_haus_plus(haus, RL_NEW_RENO, RL_F_EINFLUSS, 5);
+   call rl_virgin_gebuehr(haus, welt, 0);
+   call rl_entschieden(mstr(120));
+end
+
+// Die Fusion: Das Cat's Paw wird Filiale des Strumpfbands
+procedure rl_fusion begin
+   variable h := RL_NEW_RENO;
+   welt[RL_W_KITTY_WEG] := RL_KITTY_FUSION;
+   welt[RL_W_CATSPAW] := 2;
+   haus[rl_idx(h, RL_F_ZIMMER)]   := haus[rl_idx(h, RL_F_ZIMMER)] + 3;
+   haus[rl_idx(h, RL_F_PERSONAL)] := haus[rl_idx(h, RL_F_PERSONAL)] + 3;
+   haus[rl_idx(h, RL_F_QUALI)]    := rl_min(85, haus[rl_idx(h, RL_F_QUALI)] + 10);
+   haus[rl_idx(h, RL_F_FUEHRUNG)] := rl_max(haus[rl_idx(h, RL_F_FUEHRUNG)], RL_KITTY_FUEHRUNG);
+   haus[rl_idx(h, RL_F_TRIBUTMOD)] := haus[rl_idx(h, RL_F_TRIBUTMOD)] + 10;     // Kittys Anteil
+   call rl_entschieden(mstr(121));
+end
+
+procedure Node111 begin
+   call rl_zahlen(haus, RL_NEW_RENO, RL_KITTY_FUSION_PREIS);
+   call rl_fusion;
+end
+
+procedure Node112 begin
+   call rl_fusion;
+end
+
+// Druck: Kitty verkauft und geht als Feindin (volle Uebernahme, +3 leere Zimmer)
+procedure Node113 begin
+   call rl_zahlen(haus, RL_NEW_RENO, RL_KITTY_DRUCK_PREIS);
+   welt[RL_W_CATSPAW] := 2;
+   haus[rl_idx(RL_NEW_RENO, RL_F_ZIMMER)] := haus[rl_idx(RL_NEW_RENO, RL_F_ZIMMER)] + 3;
+   rl_karma(-10);
+   call rl_kitty_rivalin(welt, RL_KITTY_DRUCK);
+   call rl_entschieden(mstr(122));
+end
+
+procedure Node114 begin
+   welt[RL_W_CATSPAW] := 2;
+   rl_karma(-10);
+   call rl_kitty_rivalin(welt, RL_KITTY_SABOTAGE);
+   if (random(1, 100) > has_skill(dude_obj, SKILL_SNEAK)) then begin
+      call rl_haus_plus(haus, RL_NEW_RENO, RL_F_EINFLUSS, -15);
+      call rl_entschieden(mstr(123) + " " + mstr(124));
+   end else
+      call rl_entschieden(mstr(123));
+end
+
+procedure Node115 begin
+   item_caps_adjust(dude_obj, RL_KITTY_VERRAT_LOHN);
+   call rl_virgin_gebuehr(haus, welt, welt[RL_W_VIRGIN_GEBUEHR] - 100);
+   welt[RL_W_CATSPAW] := RL_CATSPAW_MORDINO;
+   rl_karma(-20);
+   call rl_kitty_rivalin(welt, RL_KITTY_VERRAT);
+   call rl_entschieden(mstr(125));
+end
+
+procedure Node999 begin
+end

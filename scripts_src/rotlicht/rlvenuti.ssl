@@ -1,0 +1,230 @@
+/*
+   rlvenuti.ssl - Carlo Venuti, Mordino-Capo der Virgin Street (New Reno)
+
+   Umsetzung 12, "Blut auf der Virgin Street" (Phase 3, Abschnitt 3.1).
+     Akt 1  die Nachbarschaftsgebuehr (200 $/Woche)
+     Akt 4  das Ultimatum: Sit-down, zuvorkommen, zahlen, Umarmung oder Kampf
+   Mit Mordino als Paten ist er "Betreuer" statt Gegner (die Umarmung). Sind
+   die Mordinos schon gefallen, fuehrt er einen Rest der Familie und will Rache.
+
+   Texte: text_src/english/dialog/rlvenuti.msg
+*/
+
+#define SCRIPT_REALNAME "rlvenuti"
+#define NAME                    SCRIPT_RLVENUTI
+#include "define.h"
+#include "../headers/rotlicht.h"
+#include "command.h"
+
+procedure start;
+procedure talk_p_proc;
+procedure map_enter_p_proc;
+procedure destroy_p_proc;
+procedure look_at_p_proc;
+procedure description_p_proc;
+procedure Node100;      // Akt 1
+procedure Node110;      // zahlen
+procedure Node111;      // halbieren
+procedure Node112;      // Big Jesus
+procedure Node113;      // Made Man
+procedure Node114;      // verweigern
+procedure Node200;      // Akt 4
+procedure Node201;      // Sit-down
+procedure Node202;      // zuvorkommen
+procedure Node203;      // zahlen
+procedure Node204;      // Umarmung
+procedure Node205;      // Kampf
+procedure Node999;
+procedure rl_akt1(variable gebuehr, variable text);
+procedure rl_made_man_andere;
+
+variable haus;
+variable welt;
+variable gehen := 0;
+variable kampf := 0;
+variable selbst_weg := 0;
+
+procedure start begin
+end
+
+procedure map_enter_p_proc begin
+   welt := rl_lade_welt;
+   if (not rl_virgin_venuti_da(welt)) then begin
+      selbst_weg := 1;
+      destroy_object(self_obj);
+   end
+end
+
+// Faellt Venuti vor der Nacht der langen Messer, faellt die Linie mit ihm
+procedure destroy_p_proc begin
+   if (selbst_weg) then return;
+   welt := rl_lade_welt;
+   haus := rl_lade_haeuser;
+   welt[RL_W_VIRGIN_TOTE] := welt[RL_W_VIRGIN_TOTE] bwor RL_VIRGIN_TOT_VENUTI;
+   call rl_haus_plus(haus, RL_NEW_RENO, RL_F_HITZE, 20);
+   call rl_virgin_ende(haus, welt, RL_VIRGIN_LEERER_STUHL);
+end
+
+procedure look_at_p_proc begin
+   script_overrides;
+   display_mstr(300);
+end
+
+procedure description_p_proc begin
+   script_overrides;
+   display_mstr(301);
+end
+
+procedure talk_p_proc begin
+   haus := rl_lade_haeuser;
+   welt := rl_lade_welt;
+   start_gdialog(NAME, self_obj, 4, -1, -1);
+   gSay_Start;
+      if (welt[RL_W_VIRGIN] == RL_VIRGIN_MESSER) then
+         call Node200;
+      else
+         call Node100;
+   gSay_End;
+   end_dialogue;
+   if (kampf) then begin
+      kampf := 0;
+      gfade_out(600);
+      set_obj_visibility(self_obj, 1);
+      selbst_weg := 1;
+      call rl_angriff_haus(haus, welt, RL_ANGRIFF_VIRGIN, RL_NEW_RENO, PID_GUN_THUG_MALE);
+      gfade_in(600);
+      destroy_object(self_obj);      // beendet das Skript: muss zuletzt stehen
+   end else if (gehen) then begin
+      gehen := 0;
+      gfade_out(600);
+      set_obj_visibility(self_obj, 1);
+      gfade_in(600);
+      selbst_weg := 1;
+      destroy_object(self_obj);
+   end
+end
+
+// Made Man einer anderen Familie als der Mordinos
+procedure rl_made_man_andere begin
+   return (rl_made_man(RL_SEGEN_WRIGHT) or rl_made_man(RL_SEGEN_SALVATORE) or rl_made_man(RL_SEGEN_BISHOP));
+end
+
+/* ------------------------------------------------------------------ */
+/* Akt 1: die Nachbarschaftsgebuehr                                    */
+/* ------------------------------------------------------------------ */
+procedure Node100 begin
+   if (welt[RL_W_NR_SEGEN] == RL_SEGEN_MORDINO) then
+      Reply(101);
+   else
+      Reply(100);
+   NOption(110, Node110, 004);
+   if (has_skill(dude_obj, SKILL_BARTER) >= 60) then
+      NOption(111, Node111, 004);
+   if (has_skill(dude_obj, SKILL_SPEECH) >= 80) then
+      GOption(112, Node112, 004);
+   if (rl_made_man_andere) then
+      NOption(113, Node113, 004);
+   BOption(114, Node114, 004);
+   NOption(115, Node999, 004);
+   NLowOption(116, Node999);
+end
+
+procedure rl_akt1(variable gebuehr, variable text) begin
+   call rl_virgin_gebuehr(haus, welt, gebuehr);
+   welt[RL_W_VIRGIN_FLAGS] := welt[RL_W_VIRGIN_FLAGS] bwor RL_VF_ENTSCHIEDEN;
+   welt[RL_W_VIRGIN_WOCHE] := rl_woche_jetzt;
+   gehen := 1;
+   Reply(text);
+   NOption(115, Node999, 004);
+end
+
+procedure Node110 begin
+   call rl_akt1(RL_VENUTI_GEBUEHR, mstr(120));
+end
+
+procedure Node111 begin
+   call rl_akt1(RL_VENUTI_GEBUEHR / 2, mstr(121));
+end
+
+procedure Node112 begin
+   welt[RL_W_VIRGIN_FLAGS] := welt[RL_W_VIRGIN_FLAGS] bwor RL_VF_GEDEMUETIGT;
+   call rl_haus_plus(haus, RL_NEW_RENO, RL_F_EINFLUSS, 5);
+   call rl_akt1(0, mstr(122));
+end
+
+procedure Node113 begin
+   call rl_haus_plus(haus, RL_NEW_RENO, RL_F_HITZE, 5);
+   call rl_akt1(0, mstr(123));
+end
+
+// Verweigern: H +10, Akt 3 beginnt sofort
+procedure Node114 begin
+   call rl_haus_plus(haus, RL_NEW_RENO, RL_F_HITZE, 10);
+   call rl_akt1(0, mstr(124));
+   call rl_virgin_weiter(welt, RL_VIRGIN_JET);
+   call rl_haus_plus(haus, RL_NEW_RENO, RL_F_MORAL, -10);
+end
+
+/* ------------------------------------------------------------------ */
+/* Akt 4: die Nacht der langen Messer                                  */
+/* ------------------------------------------------------------------ */
+procedure Node200 begin
+   variable mm := rl_made_man(RL_SEGEN_MORDINO) or rl_made_man_andere;
+   if (welt[RL_W_VIRGIN_FLAGS] bwand RL_VF_RACHE) then
+      Reply(210);
+   else if (welt[RL_W_VIRGIN_FLAGS] bwand RL_VF_GEDEMUETIGT) then
+      Reply(mstr(200) + " " + mstr(211));
+   else
+      Reply(200);
+   if ((not rl_mordino_weg) and ((has_skill(dude_obj, SKILL_SPEECH) >= 90) or ((dude_charisma >= 8) and mm))) then
+      GOption(220, Node201, 004);
+   if ((welt[RL_W_VIRGIN_FLAGS] bwand RL_VF_BEWEISE) and (has_skill(dude_obj, SKILL_SPEECH) >= 60) and not rl_wright_weg) then
+      NOption(221, Node202, 004);
+   if (rl_zahlbar(haus, RL_NEW_RENO, RL_VENUTI_SITDOWN_PREIS)) then
+      NOption(222, Node203, 004);
+   if ((welt[RL_W_NR_SEGEN] == RL_SEGEN_MORDINO) and not rl_mordino_weg) then
+      BOption(223, Node204, 004);
+   BOption(224, Node205, 004);
+   NOption(115, Node999, 004);
+   NLowOption(116, Node999);
+end
+
+procedure Node201 begin
+   call rl_virgin_ende(haus, welt, RL_VIRGIN_WAFFENSTILLSTAND);
+   gehen := 1;
+   Reply(230);
+   NOption(115, Node999, 004);
+end
+
+// Zuvorkommen: Die Wrights schlagen im Desperado zu, der Spieler bleibt im Hintergrund
+procedure Node202 begin
+   call rl_haus_plus(haus, RL_NEW_RENO, RL_F_EINFLUSS, 10);
+   call rl_virgin_ende(haus, welt, RL_VIRGIN_LEERER_STUHL);
+   gehen := 1;
+   Reply(231);
+   NOption(115, Node999, 004);
+end
+
+procedure Node203 begin
+   call rl_zahlen(haus, RL_NEW_RENO, RL_VENUTI_SITDOWN_PREIS);
+   call rl_virgin_ende(haus, welt, RL_VIRGIN_WAFFENSTILLSTAND);
+   gehen := 1;
+   Reply(232);
+   NOption(115, Node999, 004);
+end
+
+procedure Node204 begin
+   call rl_virgin_ende(haus, welt, RL_VIRGIN_UMARMUNG);
+   gehen := 1;
+   Reply(233);
+   NOption(115, Node999, 004);
+end
+
+procedure Node205 begin
+   kampf := 1;
+   Reply(234);
+   NOption(235, Node999, 004);
+end
+
+procedure Node999 begin
+end

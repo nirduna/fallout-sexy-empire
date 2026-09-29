@@ -25,6 +25,8 @@
         Rangers, "Die Reinen" in fuenf Akten, Lex Neun.
     14. San Francisco (Umsetzung 11, rl_sanfran.h): der Spitzel fliegt auf,
         die Razzia der Shi-Inspektoren, die Hubologen fliegen davon.
+    15. Blut auf der Virgin Street (Umsetzung 12, rl_virgin.h): die Akte mit
+        Venuti, Kittys Abwerbung, die Umarmung in neuen Haeusern.
 
    sfall laedt alle gl*.int beim Spielstart. Die Wochenlogik laeuft nur
    auf lokalen Karten; Reisezeit auf der Weltkarte wird beim naechsten
@@ -78,6 +80,8 @@ procedure rl_ncr_woche(variable woche);
 procedure rl_ncr_lizenz_kommt;
 procedure rl_reine_ende_meldung;
 procedure rl_sf_woche(variable woche);
+procedure rl_virgin_woche(variable woche);
+procedure rl_kitty_woche(variable woche);
 #ifdef RL_DEBUG
 procedure rl_taste;
 procedure rl_debug_spawn;
@@ -174,6 +178,8 @@ procedure rl_tick begin
       call rl_vc_woche(jetzt - wochen + 1);
       call rl_ncr_woche(jetzt - wochen + 1);
       call rl_sf_woche(jetzt - wochen + 1);
+      call rl_virgin_woche(jetzt - wochen + 1);
+      call rl_kitty_woche(jetzt - wochen + 1);
       tyrann := 0;
       ausbeutung := 0;
       h := 0;
@@ -233,16 +239,14 @@ procedure rl_welt_modifikatoren begin
    else m := 20;
    haus[rl_idx(RL_DEN, RL_F_STADTMOD)] := m + global_boom;
 
-   // New Reno: Cat's Paw als Konkurrenz
-   if (welt[RL_W_CATSPAW] == 0) then m := -15;
-   else if (welt[RL_W_CATSPAW] == 1) then m := -5;
-   else m := 0;
+   // New Reno: Cat's Paw als Konkurrenz (0 offen, 1 Buendnis, 2 geloest, 3 bei den Mordinos)
+   m := get_array([-15, -5, 0, -15], welt[RL_W_CATSPAW]);
    haus[rl_idx(RL_NEW_RENO, RL_F_STADTMOD)] := m + global_boom;
 
    // Redding: Jet-Index, Wanamingo-Mine, Malamute, Kittys Kralle
    if ((global_var(GVAR_REDDING_JET_LEVEL) == JET_ON_CURE) or (global_var(GVAR_REDDING_JET_LEVEL) == JET_CURED)) then
       m := 25;                            // Antidot im Umlauf
-   else if (rl_big_jesus_dead) then
+   else if (rl_big_jesus_dead or (welt[RL_W_VIRGIN] == RL_VIRGIN_LEERER_STUHL)) then
       m := 10;                            // Mordino-Lieferkette gekappt
    else
       m := -20;                           // Jet-Flut
@@ -310,7 +314,7 @@ end
 
 /* Ereigniswurf (Phase 4, Abschnitt 4.1) */
 procedure rl_ereignis_wurf(variable h) begin
-   variable chance, bedrohung, ereignis;
+   variable chance, bedrohung, ereignis, fuehrung;
 
    if (haus[rl_idx(h, RL_F_GESCHLOSSEN)] > 0) then return;     // geschlossen: niemand da
    bedrohung := (rl_stadt(h, RL_S_RISIKO) + haus[rl_idx(h, RL_F_RISIKO_MOD)]) * 20 + haus[rl_idx(h, RL_F_HITZE)];
@@ -337,8 +341,10 @@ procedure rl_ereignis_wurf(variable h) begin
       return;
    end
 
-   // Kleine Ereignisse loest die Madame mit ihrer Fuehrung
-   if (random(1, 100) <= haus[rl_idx(h, RL_F_FUEHRUNG)]) then begin
+   // Kleine Ereignisse loest die Madame mit ihrer Fuehrung; Kittys Warnungen helfen in New Reno
+   fuehrung := haus[rl_idx(h, RL_F_FUEHRUNG)];
+   if ((h == RL_NEW_RENO) and (welt[RL_W_KITTY_WEG] == RL_KITTY_BUENDNIS)) then fuehrung := fuehrung + 20;
+   if (random(1, 100) <= fuehrung) then begin
       if (ereignis == RL_EV_STOFF) then
          haus[rl_idx(h, RL_F_MORAL)] := rl_max(0, haus[rl_idx(h, RL_F_MORAL)] - 2);
       else if (ereignis == RL_EV_FLUCHT) then begin
@@ -388,6 +394,8 @@ procedure rl_personalwechsel(variable h) begin
       punkte := 4;
    if ((haus[rl_idx(h, RL_F_MORAL)] >= 75) and (methode != RL_ANWERBER_ZWINGEN)) then
       punkte := punkte + 1;
+   if ((h == RL_NEW_RENO) and (welt[RL_W_KITTY_WEG] == RL_KITTY_FUSION)) then
+      punkte := punkte * 2;                             // Kitty kennt jedes Maedchen in New Reno
    if (punkte == 0) then return;
 
    punkte := haus[rl_idx(h, RL_F_ANWERB_PUNKTE)] + punkte;
@@ -431,7 +439,8 @@ procedure rl_ereignis_waehlen(variable h) begin
    if (module bwand RL_MOD_JET_THEKE) then g[RL_EV_STOFF] := g[RL_EV_STOFF] * 2;
    // New Reno: Mordino-Pate oder Jet-Vertrag doppelt, Wrights "Keine Chems im Haus!" halb (Phase 1)
    if (h == RL_NEW_RENO) then begin
-      if ((welt[RL_W_NR_SEGEN] == RL_SEGEN_MORDINO) or welt[RL_W_JET_VERTRAG]) then
+      if ((welt[RL_W_NR_SEGEN] == RL_SEGEN_MORDINO) or welt[RL_W_JET_VERTRAG]
+          or ((welt[RL_W_VIRGIN] == RL_VIRGIN_JET) and ((welt[RL_W_VIRGIN_FLAGS] bwand RL_VF_DEALER_WEG) == 0))) then
          g[RL_EV_STOFF] := g[RL_EV_STOFF] * 2;
       else if (welt[RL_W_NR_SEGEN] == RL_SEGEN_WRIGHT) then
          g[RL_EV_STOFF] := g[RL_EV_STOFF] / 2;
@@ -993,6 +1002,99 @@ procedure rl_sf_woche(variable woche) begin
          call rl_haus_plus(haus, h, RL_F_HITZE, 10);
          display_msg(rl_haus_name(h) + ": " + rl_text(198));
       end
+   end
+end
+
+/* ------------------------------------------------------------------ */
+/* Blut auf der Virgin Street (Umsetzung 12, rl_virgin.h)              */
+/* ------------------------------------------------------------------ */
+procedure rl_virgin_woche(variable woche) begin
+   variable h := RL_NEW_RENO, akt := welt[RL_W_VIRGIN], f := welt[RL_W_VIRGIN_FLAGS];
+   if (not rl_nr_besitz(haus)) then return;
+
+   // Die Umarmung reicht bis in jedes neue Haus
+   if (akt == RL_VIRGIN_UMARMUNG) then call rl_virgin_umarmung(haus, welt);
+   // Nach dem leeren Stuhl: vier Wochen Machtvakuum, dann neue Tribute
+   if ((akt == RL_VIRGIN_LEERER_STUHL) and ((f bwand RL_VF_NEU_VERHANDELT) == 0)
+       and (woche >= welt[RL_W_VIRGIN_WOCHE] + 4)) then begin
+      welt[RL_W_VIRGIN_FLAGS] := f bwor RL_VF_NEU_VERHANDELT;
+      display_msg(rl_haus_name(h) + ": " + rl_text(207));
+   end
+   if (akt >= RL_VIRGIN_UMARMUNG) then return;
+
+   // Vanilla: Die Mordinos fallen, waehrend die Linie laeuft
+   if ((akt >= RL_VIRGIN_GEBUEHR) and rl_mordino_weg and ((f bwand RL_VF_RACHE) == 0)) then begin
+      call rl_virgin_ende(haus, welt, RL_VIRGIN_LEERER_STUHL);
+      display_msg(rl_haus_name(h) + ": " + rl_text(206));
+      return;
+   end
+
+   if (akt == RL_VIRGIN_OFFEN) then begin
+      if (welt[RL_W_VIRGIN_WOCHE] == 0) then
+         welt[RL_W_VIRGIN_WOCHE] := woche + RL_VIRGIN_ABSTAND;     // zwei Wochen nach der Uebernahme
+      else if (woche >= welt[RL_W_VIRGIN_WOCHE]) then begin
+         if (rl_mordino_weg) then begin
+            // Venuti fuehrt einen Rest der Familie und will Rache: ab Akt 3
+            welt[RL_W_VIRGIN_FLAGS] := f bwor RL_VF_RACHE bwor RL_VF_ENTSCHIEDEN;
+            call rl_virgin_weiter(welt, RL_VIRGIN_JET);
+            call rl_haus_plus(haus, h, RL_F_MORAL, -10);
+            display_msg(rl_haus_name(h) + ": " + rl_text(203));
+         end else begin
+            call rl_virgin_weiter(welt, RL_VIRGIN_GEBUEHR);
+            display_msg(rl_haus_name(h) + ": " + rl_text(200));
+         end
+      end
+   end else if (akt == RL_VIRGIN_GEBUEHR) then begin
+      if ((f bwand RL_VF_ENTSCHIEDEN) and (woche >= welt[RL_W_VIRGIN_WOCHE] + RL_VIRGIN_ABSTAND)) then begin
+         call rl_virgin_weiter(welt, RL_VIRGIN_KITTY);
+         display_msg(rl_haus_name(h) + ": " + rl_text(201));
+      end else if (((f bwand RL_VF_ENTSCHIEDEN) == 0) and (woche >= welt[RL_W_VIRGIN_WOCHE] + RL_VIRGIN_FRIST)) then begin
+         // Schweigen ist auch eine Antwort: Venuti nimmt es als Nein
+         welt[RL_W_VIRGIN_FLAGS] := f bwor RL_VF_ENTSCHIEDEN;
+         call rl_haus_plus(haus, h, RL_F_HITZE, 10);
+         call rl_virgin_weiter(welt, RL_VIRGIN_JET);
+         call rl_haus_plus(haus, h, RL_F_MORAL, -10);
+         display_msg(rl_haus_name(h) + ": " + rl_text(202));
+      end
+   end else if (akt == RL_VIRGIN_KITTY) then begin
+      if (((welt[RL_W_KITTY_WEG] != RL_KITTY_OFFEN) and (woche >= welt[RL_W_VIRGIN_WOCHE] + RL_VIRGIN_ABSTAND))
+          or (woche >= welt[RL_W_VIRGIN_WOCHE] + RL_VIRGIN_FRIST)) then begin
+         call rl_virgin_weiter(welt, RL_VIRGIN_JET);
+         call rl_haus_plus(haus, h, RL_F_MORAL, -10);
+         display_msg(rl_haus_name(h) + ": " + rl_text(203));
+      end
+   end else if (akt == RL_VIRGIN_JET) then begin
+      if (((f bwand RL_VF_DEALER_WEG) and (woche >= welt[RL_W_VIRGIN_WOCHE] + RL_VIRGIN_ABSTAND))
+          or (woche >= welt[RL_W_VIRGIN_WOCHE] + RL_VIRGIN_FRIST + RL_VIRGIN_ABSTAND)) then begin
+         call rl_virgin_weiter(welt, RL_VIRGIN_MESSER);
+         display_msg(rl_haus_name(h) + ": " + rl_text(204));
+      end
+   end else if (akt == RL_VIRGIN_MESSER) then begin
+      // Wer das Ultimatum liegen laesst, dem verwuesten sie das Haus (Module fallen 2 Wochen aus)
+      if ((haus[rl_idx(h, RL_F_ANGRIFF)] == RL_ANGRIFF_KEINER)
+          and (woche >= rl_max(welt[RL_W_VIRGIN_WOCHE], welt[RL_W_VIRGIN_NACHT]) + RL_VIRGIN_FRIST)) then begin
+         welt[RL_W_VIRGIN_NACHT] := woche;
+         haus[rl_idx(h, RL_F_GESCHLOSSEN)] := rl_max(haus[rl_idx(h, RL_F_GESCHLOSSEN)], 2);
+         call rl_haus_plus(haus, h, RL_F_MORAL, -10);
+         display_msg(rl_haus_name(h) + ": " + rl_text(205));
+      end
+   end
+end
+
+/* Kitty als Rivalin wirbt jeden Monat eine Person aus jedem Haus mit Moral < 60 ab
+   (Phase 4, 3.6); mit dem Titel "Anstaendiges Haus" nur jeden zweiten Monat. */
+procedure rl_kitty_woche(variable woche) begin
+   variable h := 0, abstand := RL_ABWERBUNG_WOCHEN;
+   if (not welt[RL_W_KITTY_RIVALIN]) then return;
+   if (global_var(GVAR_RL_TITEL_ANSTAND)) then abstand := abstand * 2;
+   if (woche < welt[RL_W_KITTY_ABWERBUNG] + abstand) then return;
+   welt[RL_W_KITTY_ABWERBUNG] := woche;
+   while (h < RL_ANZAHL_HAEUSER) do begin
+      if (haus[rl_idx(h, RL_F_BESITZ)] and (haus[rl_idx(h, RL_F_MORAL)] < 60)) then begin
+         if (rl_personal_verlust(haus, h, RL_VERLUST_ABGANG) >= 0) then
+            display_msg(rl_haus_name(h) + ": " + rl_text(208));
+      end
+      h := h + 1;
    end
 end
 

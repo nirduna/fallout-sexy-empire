@@ -47,6 +47,7 @@ procedure rl_figuren begin
    welt := rl_lade_welt;
    welt[RL_W_HAUS_HIER] := RL_HAUS + 1;    // fuer die Angreifer (rl_kampf.h)
    call rl_nr_figuren(haus, welt);
+   call rl_virgin_figuren(haus, welt);
    if ((welt[RL_W_NR_TOTE] bwand RL_NR_TOT_FIXER) and (not rl_nr_besitz(haus))
        and (welt[RL_W_NR_URKUNDE] != RL_URKUNDE_KEINE) and (welt[RL_W_NR_SEGEN] == RL_SEGEN_KEINER)
        and (welt[RL_W_NR_EROEFFNUNG] == RL_EROEFFNUNG_KEINE)) then begin

@@ -49,6 +49,23 @@
 {811}{}{The runners brought $}
 {812}{}{. Asch kept it in the safe. The combination was written inside his hat.}
 
+# Blood on Virgin Street, act 3: Jet in the blood
+{819}{}{About the Jet in the house.}
+{820}{}{Somebody is selling Jet to our people. Two of them already. It's not the girls buying on the street. It's somebody in here.}
+{821}{}{It's a new barback. He came recommended from the Desperado. He sells in the storeroom between shifts. What do we do with him?}
+{822}{}{(He goes through the front door without touching the steps.) He won't come back. The Desperado will send someone else. They always do.}
+{823}{}{(He talks for an hour: who supplies him, who gives the orders, what Venuti wants. He'll keep selling, and he'll tell us everything. It's proof, if we ever need it.)}
+{824}{}{(The barback leaves with two men you don't know. Nobody asks. Golgotha doesn't ask either.)}
+{825}{}{(Two days of sweat and screaming in the back rooms. The two of them are clean now. For how long, nobody knows.)}
+{826}{}{The dealer's gone. The girls he got hooked are still sick.}
+{830}{}{[Perception] I'll watch the storeroom.}
+{831}{}{[Sneak] I'll follow the new faces after their shift.}
+{832}{}{(The girls tell you themselves who it is. People talk when they're treated fairly.)}
+{833}{}{[Doctor] Get the girls clean.}
+{834}{}{[Unarmed] Throw him out.}
+{835}{}{[Speech] Turn him. He works for us now.}
+{836}{}{Make him disappear.}
+
 # @include _rl_manager.inc
 # @include _rl_module.inc
 # @include _rl_sonder.inc

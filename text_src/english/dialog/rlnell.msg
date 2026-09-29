@@ -59,6 +59,16 @@
 {865}{}{(Somebody saw you at the Malamute's back door. Sheriff Marion knows who poisoned the whiskey, and he isn't the kind of man who forgets.)}
 {866}{}{Done. Two more rooms, and the girls from upstairs, if they want to stay. Most of them do. They've seen worse bosses.}
 
+# Kitty's Claw (Phase 4, 3.6)
+{870}{}{About Kitty's Claw.}
+{874}{}{Kitty's Claw opened behind the Last Gasp. The Wrights stand at her door, and she pays our girls better than we do. She won't stop until one of us closes.}
+{875}{}{[Speech] Make peace with Kitty. Whatever it costs. ($2000)}
+{876}{}{Buy the Claw out from under her. Redding knows us better than her.}
+{877}{}{Close the Claw. Any way it takes.}
+{878}{}{(Kitty counts the money, pours two glasses and doesn't drink hers.) She says you're forgiven. She says it the way people say it in New Reno.}
+{879}{}{(The Claw's landlord is a Redding man, and Redding listens to us now. Kitty leaves for good. Her girls stay, and so do two of her rooms.)}
+{880}{}{(The Claw burns one night with nobody inside. Kitty leaves Redding. The Wrights don't forget whose men carried the gas.)}
+
 # @include _rl_manager.inc
 # @include _rl_module.inc
 # @include _rl_sonder.inc

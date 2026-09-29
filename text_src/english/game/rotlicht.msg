@@ -87,3 +87,14 @@
 # San Francisco (Umsetzung 11)
 {197}{}{Inspectors of the Shi came with lanterns and found the smugglers' room. The Seal is withdrawn, the tribute goes up, and the goods are gone.}
 {198}{}{The tanker crew found out who the Bilge reports to. Nobody from the tanker drinks here anymore.}
+
+# Blood on Virgin Street (Umsetzung 12)
+{200}{}{Carlo Venuti from the Desperado is sitting at the bar. He says he's here about the neighborhood.}
+{201}{}{A woman from the Cat's Paw is asking for you. Miss Kitty sent her.}
+{202}{}{Venuti waited, and nobody came. He took the silence as an answer.}
+{203}{}{Two of ours have pinpoint pupils and new friends. Somebody is selling Jet inside the Garter.}
+{204}{}{Venuti is back at the Garter, and he brought men who don't sit down.}
+{205}{}{Venuti's men came at night while nobody was there to stop them. The Garter is shut for two weeks.}
+{206}{}{The Mordinos have fallen. Nobody on Virgin Street is collecting for the Desperado anymore.}
+{207}{}{The families sat down without the Mordinos and divided Virgin Street again. The Garter's name was on the table. Nobody crossed it out.}
+{208}{}{One of ours went over to Kitty's Claw. Kitty pays well, and she never forgets.}

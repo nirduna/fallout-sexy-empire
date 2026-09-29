@@ -26,3 +26,5 @@ rlcalloway.int  ; Ruth Calloway, Liga fuer eine reine Republik (Rotlicht) # loca
 rlwen.int       ; Aufseher Wen, die Shi an den Docks (Rotlicht)         # local_vars=0
 rlbootsmann.int ; Bo Harlan, Bootsmann des Tankers (Rotlicht)           # local_vars=0
 rlkwan.int      ; Tante Kwan, Madame der Bilge (Rotlicht)               # local_vars=0
+rlvenuti.int    ; Carlo Venuti, Mordino-Capo der Virgin Street (Rotlicht) # local_vars=0
+rljade.int      ; Jade, Miss Kittys rechte Hand (Rotlicht)              # local_vars=0

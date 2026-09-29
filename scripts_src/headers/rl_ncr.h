@@ -159,6 +159,7 @@ procedure rl_reine_bonus(variable haus, variable welt) begin
    if (haus[rl_idx(RL_NCR, RL_F_EINFLUSS)] >= 60) then b := b + 10;             // Tandis Buero
    if ((module bwand RL_MOD_REGISTRATUR) and (module bwand RL_MOD_KRANKENSTUBE)) then b := b + 10;
    if (welt[RL_W_REINE_AKT1] == RL_AKT1_STREIKPOSTEN) then b := b - 10;       // die Liga hat Maertyrer
+   if (welt[RL_W_KITTY_RIVALIN]) then b := b - 10;                            // Kitty sagt gegen dich aus
    return b;
 end
 
