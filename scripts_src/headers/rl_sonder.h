@@ -18,7 +18,8 @@
 #define RL_SM_WAAGE                 (2)     // Redding: die gezinkte Goldwaage (Umsetzung 8)
 #define RL_SM_AKTE                  (3)     // Vault City: Die Akte (Umsetzung 9)
 #define RL_SM_REGISTRATUR           (4)     // NCR: Registratur (Umsetzung 10)
-#define RL_SM_ANZAHL                (5)
+#define RL_SM_SCHMUGGEL             (5)     // San Francisco: Schmuggelkammer (Umsetzung 11)
+#define RL_SM_ANZAHL                (6)
 #define RL_MSG_SONDER_NAME          (430)
 #define RL_MSG_SONDER_EFFEKT        (530)
 
@@ -28,15 +29,15 @@ procedure rl_sonder_flag(variable sm);
 procedure rl_sonder_fertig(variable haus, variable h, variable sm);
 
 procedure rl_sonder_kosten(variable sm) begin
-   return get_array([600, 800, 150, 1000, 500], sm);
+   return get_array([600, 800, 150, 1000, 500, 800], sm);
 end
 
 procedure rl_sonder_wochen(variable sm) begin
-   return get_array([1, 2, 1, 1, 1], sm);
+   return get_array([1, 2, 1, 1, 1, 1], sm);
 end
 
 procedure rl_sonder_flag(variable sm) begin
-   return get_array([RL_MOD_ZUFLUCHT, RL_MOD_JET_THEKE, RL_MOD_WAAGE_GEZINKT, RL_MOD_AKTE, RL_MOD_REGISTRATUR], sm);
+   return get_array([RL_MOD_ZUFLUCHT, RL_MOD_JET_THEKE, RL_MOD_WAAGE_GEZINKT, RL_MOD_AKTE, RL_MOD_REGISTRATUR, RL_MOD_SCHMUGGEL], sm);
 end
 
 /* Fertigstellung: Flag setzen, eine Ausbaustufe mehr Unterhalt.
@@ -48,6 +49,11 @@ procedure rl_sonder_fertig(variable haus, variable h, variable sm) begin
    if (sm == RL_SM_JET_THEKE) then
       haus[rl_idx(h, RL_F_NEBEN)] := haus[rl_idx(h, RL_F_NEBEN)] + 6;
    // Gezinkte Waage: Umsatz +15 %, H +10. Karma und Entdeckung im Wochentakt
+   // Schmuggelkammer: Nebenumsatz +3 $, H +10. Die Shi werden misstrauisch (Razzien)
+   if (sm == RL_SM_SCHMUGGEL) then begin
+      haus[rl_idx(h, RL_F_NEBEN)] := haus[rl_idx(h, RL_F_NEBEN)] + 3;
+      haus[rl_idx(h, RL_F_HITZE)] := rl_min(100, haus[rl_idx(h, RL_F_HITZE)] + 10);
+   end
    // Die Akte: H +10. Einfluss und Entdeckung im Wochentakt
    if (sm == RL_SM_AKTE) then
       haus[rl_idx(h, RL_F_HITZE)] := rl_min(100, haus[rl_idx(h, RL_F_HITZE)] + 10);

@@ -83,3 +83,7 @@
 {193}{}{The decency law failed in the Council. The League still hands out leaflets, but fewer people take them.}
 {195}{}{The Rangers raided the Trough and freed everyone Vortis sold you. The license is gone, and the Rangers will not forget your name.}
 {196}{}{The Council heard the decency law without us. Nobody spoke for the Trough.}
+
+# San Francisco (Umsetzung 11)
+{197}{}{Inspectors of the Shi came with lanterns and found the smugglers' room. The Seal is withdrawn, the tribute goes up, and the goods are gone.}
+{198}{}{The tanker crew found out who the Bilge reports to. Nobody from the tanker drinks here anymore.}

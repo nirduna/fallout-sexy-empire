@@ -2274,6 +2274,157 @@ def test_erkundung_ncr(u):
     print(f'      {gesamt} Dialogzustaende in der NCR erkundet')
 
 
+# --------------------------------------------------------------------------
+# Umsetzung 11: San Francisco, Die Duldung, Schmuggelkammer, Hubologen
+
+SF = 5
+
+
+def bilge(u, sp=None):
+    """Die Bilge betreten (Kartenskript RLSFR01); liefert (sp, w)."""
+    k = u.k
+    sp = sp or u.neues_spiel()
+    if not sp.finde(k['SCRIPT_RLSFR01']):
+        sp.erzeuge(0, -1, 0, k['SCRIPT_RLSFR01'], 'Kartenskript RLSFR01')
+    sp.betrete_karte(u.cfg['RL_MAP_INDEX'] + SF)
+    sp.temp_freigeben()
+    return sp, Welt(sp, k)
+
+
+def _sf_offen(u, weg='Fifteen percent. Agreed', sp=None):
+    k = u.k
+    sp, w = bilge(u, sp)
+    rede(sp, figur(sp, k, 'RLWEN'), [weg, None])
+    pruefe(w.haus(SF, 'RL_F_BESITZ') == 1, 'Bilge nicht uebernommen')
+    return sp, w
+
+
+def test_sf_duldung(u):
+    k = u.k
+    sp, w = bilge(u)
+    figur(sp, k, 'RLWEN')
+    figur(sp, k, 'RLBOOTSMANN')
+    keine_figur(sp, k, 'RLKWAN')
+    rede(sp, figur(sp, k, 'RLWEN'), ['Fifteen percent. Agreed', None])
+    pruefe(w.welt('RL_W_SF_DULDUNG') == k['RL_DULDUNG_TRIBUT'] and w.haus(SF, 'RL_F_TRIBUTMOD') == 5, '15 %')
+    pruefe(w.haus(SF, 'RL_F_EINFLUSS') == 20 and w.haus(SF, 'RL_F_FUEHRUNG') == 50, 'Einfluss, Fuehrung')
+    kwan = figur(sp, k, 'RLKWAN')
+    v = rede(sp, kwan, ['how the house'])
+    pruefe('tea' in texte(v) and 'Last week we had' in texte(v), 'Kwan')
+    # Augen der Shi: 10 %, Siegel sofort, bis die Tanker-Leute es merken
+    sp, w = _sf_offen(u, "Shi's eyes")
+    pruefe(w.haus(SF, 'RL_F_TRIBUTMOD') == 0 and w.welt('RL_W_SHI_GEFALLEN') == 1, 'Spitzel')
+    sp.zufall_folge = [1]
+    sp.globale[0].rufe_mit('rl_sf_woche', 999)
+    pruefe(w.welt('RL_W_SF_SPITZEL_AUF') == 1 and any('tanker crew found out' in m for m in sp.meldungen), 'aufgeflogen')
+    ruhige_woche(sp)
+    pruefe(w.haus(SF, 'RL_F_STADTMOD') == -20, f'Tanker weg: {w.haus(SF, "RL_F_STADTMOD")}')
+    v = rede(sp, figur(sp, k, 'RLBOOTSMANN'), [])
+    pruefe('Shi rat' in texte(v), 'Bootsmann feindlich')
+    # Barter: 10 %, das Siegel erst nach einem Gefallen
+    sp, w = bilge(u)
+    sp.dude.skills[k['SKILL_BARTER']] = 60
+    rede(sp, figur(sp, k, 'RLWEN'), ['[Barter]', None])
+    pruefe(w.welt('RL_W_SF_DULDUNG') == k['RL_DULDUNG_BARTER'] and w.welt('RL_W_SHI_GEFALLEN') == 0, 'Barter')
+    sp.dude.skills[k['SKILL_SNEAK']] = 60
+    rede(sp, figur(sp, k, 'RLWEN'), ['something the Shi need', '[Sneak]', None])
+    pruefe(w.welt('RL_W_SHI_GEFALLEN') == 1, 'Gefallen')
+    kwan = figur(sp, k, 'RLKWAN')
+    rede(sp, kwan, ['how the house', None])
+    sp.dude.kronkorken = 5000
+    v = rede(sp, kwan, ['build', 'only get in San Francisco'])
+    pruefe(any('Seal of the Shi' in o for o in _optionen_bei(v, 'only get in San Francisco')), 'Siegel verfuegbar')
+    pruefe(not any("Smugglers' Room" in o for o in _optionen_bei(v, 'only get in San Francisco')), 'Kammer ohne Lager')
+    # Tanker: kein Tribut, H +15, die Kammer sofort; spaeter doch zu Wen
+    sp, w = bilge(u)
+    sp.dude.skills[k['SKILL_SPEECH']] = 60
+    rede(sp, figur(sp, k, 'RLBOOTSMANN'), ['[Speech]', None])
+    pruefe(w.welt('RL_W_SF_DULDUNG') == k['RL_DULDUNG_TANKER'] and w.haus(SF, 'RL_F_TRIBUTMOD') == -10
+           and w.haus(SF, 'RL_F_HITZE') == 15 and w.welt('RL_W_SF_LAGER') == 1, 'Tanker')
+    figur(sp, k, 'RLKWAN')
+    rede(sp, figur(sp, k, 'RLWEN'), ['start over', None])
+    pruefe(w.welt('RL_W_SF_DULDUNG') == k['RL_DULDUNG_TRIBUT'] and w.haus(SF, 'RL_F_TRIBUTMOD') == 5, 'zurueck zu Wen')
+    allgemein(sp, 'duldung')
+
+
+def test_sf_schmuggelkammer(u):
+    k = u.k
+    sp, w = _sf_offen(u)
+    rede(sp, figur(sp, k, 'RLBOOTSMANN'), ['store things', None])
+    pruefe(w.welt('RL_W_SF_LAGER') == 1, 'Lager')
+    kwan = figur(sp, k, 'RLKWAN')
+    rede(sp, kwan, ['how the house', None])
+    sp.dude.kronkorken = 5000
+    rede(sp, kwan, ['build', 'only get in San Francisco', "Smugglers' Room", 'Build it', None])
+    ruhige_woche(sp)
+    pruefe(w.haus(SF, 'RL_F_MODULE') & k['RL_MOD_SCHMUGGEL'] and w.haus(SF, 'RL_F_NEBEN') == 3, 'Kammer fertig')
+    # Das Siegel dazu, dann finden die Inspektoren die Kammer
+    w.setze_haus(SF, 'RL_F_GEKAUFT', 1 << k['RL_M_SF_SHI_SIEGEL'])
+    w.setze_haus(SF, 'RL_F_TRIBUTMOD', 5 - 5)
+    w.setze_haus(SF, 'RL_F_SICHERHEIT', 55)
+    stufen = w.haus(SF, 'RL_F_STUFEN')
+    sp.globale[0].rufe_mit('rl_sf_razzia', sp.gespeichert['RL_HAUS'], sp.gespeichert['RL_WELT'])
+    pruefe(not (w.haus(SF, 'RL_F_MODULE') & k['RL_MOD_SCHMUGGEL']) and w.haus(SF, 'RL_F_NEBEN') == 0, 'beschlagnahmt')
+    pruefe(w.haus(SF, 'RL_F_TRIBUTMOD') == 10 and w.haus(SF, 'RL_F_SICHERHEIT') == 45
+           and not (w.haus(SF, 'RL_F_GEKAUFT') & (1 << k['RL_M_SF_SHI_SIEGEL'])), 'Siegel entzogen, Tribut +5')
+    pruefe(w.haus(SF, 'RL_F_STUFEN') == stufen - 2 and w.welt('RL_W_SHI_GEFALLEN') == 0, 'Stufen, Gefallen')
+    allgemein(sp, 'schmuggel')
+
+
+def test_sf_hubologen(u):
+    k = u.k
+    for weg, skill, wert in (('[Science]', 'SKILL_SCIENCE', 'RL_HUBOLOGEN_ENTLARVT'),
+                             ('[Speech]', 'SKILL_SPEECH', 'RL_HUBOLOGEN_UNTERWANDERT'),
+                             ('[Barter]', 'SKILL_BARTER', 'RL_HUBOLOGEN_ABSPRACHE')):
+        sp, w = _sf_offen(u)
+        kwan = figur(sp, k, 'RLKWAN')
+        rede(sp, kwan, ['how the house', None])
+        sp.dude.skills[k[skill]] = 70
+        karma = sp.gvars.get(k['GVAR_PLAYER_REPUTATION'], 0)
+        rede(sp, kwan, ['Hubologists', weg, None])
+        pruefe(w.welt('RL_W_HUBOLOGEN') == k[wert], weg)
+        ruhige_woche(sp)
+        soll = {'RL_HUBOLOGEN_ENTLARVT': 0, 'RL_HUBOLOGEN_UNTERWANDERT': 10, 'RL_HUBOLOGEN_ABSPRACHE': 0}[wert]
+        pruefe(w.haus(SF, 'RL_F_STADTMOD') == soll, f'{weg}: Stadtmod {w.haus(SF, "RL_F_STADTMOD")}')
+        if wert == 'RL_HUBOLOGEN_ABSPRACHE':
+            pruefe(sp.gvars[k['GVAR_PLAYER_REPUTATION']] == karma - 20, 'K -20')
+            w.setze_haus(SF, 'RL_F_ZIMMER', 5)
+            rede(sp, kwan, ["debtor's note", None])
+            pruefe(w.haus(SF, 'RL_F_ZWANG') == 1, 'Schuldner')
+    # Vanilla: Die Hubologen fliegen davon
+    sp, w = _sf_offen(u)
+    sp.gvars[k['GVAR_SAN_FRAN_FLAGS']] = k['bit_16']
+    ruhige_woche(sp)
+    pruefe(w.welt('RL_W_HUBOLOGEN') == k['RL_HUBOLOGEN_ENTLARVT'] and w.haus(SF, 'RL_F_STADTMOD') == 0, 'Vanilla')
+    allgemein(sp, 'hubologen')
+
+
+def test_erkundung_sanfran(u):
+    k = u.k
+    gesamt = 0
+    for skill in (0, 70):
+        sp, w = bilge(u)
+        for s in ('SKILL_BARTER', 'SKILL_SPEECH'):
+            sp.dude.skills[k[s]] = skill
+        gesamt += erkunde(sp, figur(sp, k, 'RLWEN'), f'Wen {skill}')[1]
+        gesamt += erkunde(sp, figur(sp, k, 'RLBOOTSMANN'), f'Bootsmann {skill}')[1]
+    sp, w = _sf_offen(u, '[Barter]' if False else 'Fifteen percent. Agreed')
+    for skill in (0, 70):
+        for s in ('SKILL_BARTER', 'SKILL_SPEECH', 'SKILL_SCIENCE', 'SKILL_SNEAK'):
+            sp.dude.skills[k[s]] = skill
+        sp.dude.stats[k['STAT_pe']] = 7 if skill else 5
+        gesamt += erkunde(sp, figur(sp, k, 'RLWEN'), f'Wen danach {skill}')[1]
+        gesamt += erkunde(sp, figur(sp, k, 'RLBOOTSMANN'), f'Bootsmann danach {skill}')[1]
+        gesamt += erkunde(sp, figur(sp, k, 'RLKWAN'), f'Kwan {skill}')[1]
+    w.setze_welt('RL_W_SF_KENNT', 1)
+    w.setze_welt('RL_W_HUBOLOGEN', k['RL_HUBOLOGEN_ABSPRACHE'])
+    w.setze_haus(SF, 'RL_F_ZIMMER', 5)
+    gesamt += erkunde(sp, figur(sp, k, 'RLKWAN'), 'Kwan Absprache')[1]
+    w.setze_welt('RL_W_SF_DULDUNG', k['RL_DULDUNG_TANKER'])
+    gesamt += erkunde(sp, figur(sp, k, 'RLWEN'), 'Wen nach dem Tanker')[1]
+    print(f'      {gesamt} Dialogzustaende in San Francisco erkundet')
+
+
 TESTS = [test_wirtschaft_paritaet, test_erkundung, test_eingang, test_prolog_wege, test_diebstahl_erwischt, test_ketten_annehmen,
          test_ketten_ablehnen, test_ketten_kein_geld, test_kolbe_stirbt, test_kolbe_kommt_zurueck,
          test_wochen, test_anwerbung_werben, test_anwerbung_zwingen, test_pferch_flucht_und_nachschub,
@@ -2288,7 +2439,8 @@ TESTS = [test_wirtschaft_paritaet, test_erkundung, test_eingang, test_prolog_weg
          test_vc_uebernahme, test_vc_schweigegeld_und_wache, test_vc_razzia, test_vc_razzia_angekuendigt,
          test_vc_akte_und_lynette, test_vc_pacht_und_sorensen, test_erkundung_vaultcity,
          test_ncr_lizenz_wege, test_ncr_auflage, test_ncr_vortis, test_reine_musterhaus, test_reine_verbot,
-         test_reine_diskreditierung, test_reine_calloway_mara_gedraengt, test_erkundung_ncr]
+         test_reine_diskreditierung, test_reine_calloway_mara_gedraengt, test_erkundung_ncr,
+         test_sf_duldung, test_sf_schmuggelkammer, test_sf_hubologen, test_erkundung_sanfran]
 
 
 def main():

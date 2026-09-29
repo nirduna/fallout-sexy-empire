@@ -1,0 +1,104 @@
+/*
+   rlbootsmann.ssl - Bo Harlan, Bootsmann des Tankers (San Francisco, Die Bilge)
+
+   Umsetzung 11: Die Tanker-Vagabunden als Rueckendeckung (Phase 3, 2.6):
+   Speech 60, kein Tribut und keine Duldung der Shi, H +15, die Schmuggelkammer
+   sofort. Wer mit den Shi einig ist, kann den Schmugglern trotzdem das Lager
+   anbieten. Wer fuer die Shi spitzelt und auffliegt, hat ihn zum Feind.
+
+   Texte: text_src/english/dialog/rlbootsmann.msg
+*/
+
+#define SCRIPT_REALNAME "rlbootsmann"
+#define NAME                    SCRIPT_RLBOOTSMANN
+#include "define.h"
+#include "../headers/rotlicht.h"
+#include "command.h"
+
+procedure start;
+procedure talk_p_proc;
+procedure map_enter_p_proc;
+procedure destroy_p_proc;
+procedure look_at_p_proc;
+procedure description_p_proc;
+procedure Node100;
+procedure Node110;      // Rueckendeckung
+procedure Node130;      // das Lager
+procedure Node999;
+
+variable haus;
+variable welt;
+variable neu := 0;
+variable selbst_weg := 0;
+
+procedure start begin
+end
+
+procedure map_enter_p_proc begin
+end
+
+procedure destroy_p_proc begin
+   if (selbst_weg) then return;
+   welt := rl_lade_welt;
+   welt[RL_W_SF_TOTE] := welt[RL_W_SF_TOTE] bwor RL_SF_TOT_BOOTSMANN;
+end
+
+procedure look_at_p_proc begin
+   script_overrides;
+   display_mstr(300);
+end
+
+procedure description_p_proc begin
+   script_overrides;
+   display_mstr(301);
+end
+
+procedure talk_p_proc begin
+   haus := rl_lade_haeuser;
+   welt := rl_lade_welt;
+   start_gdialog(NAME, self_obj, 4, -1, -1);
+   gSay_Start;
+      call Node100;
+   gSay_End;
+   end_dialogue;
+   if (neu) then begin
+      neu := 0;
+      call rl_sf_figuren(haus, welt);
+   end
+end
+
+procedure Node100 begin
+   variable d := welt[RL_W_SF_DULDUNG];
+   if (welt[RL_W_SF_SPITZEL_AUF]) then begin
+      Reply(120);
+      NOption(104, Node999, 004);
+      NLowOption(105, Node999);
+      return;
+   end
+   if (d == RL_DULDUNG_KEINE) then
+      Reply(100);
+   else
+      Reply(102);
+   if ((d == RL_DULDUNG_KEINE) and (has_skill(dude_obj, SKILL_SPEECH) >= 60)) then
+      GOption(101, Node110, 004);
+   if ((d != RL_DULDUNG_KEINE) and (welt[RL_W_SF_LAGER] == 0)) then
+      BOption(103, Node130, 004);
+   NOption(104, Node999, 004);
+   NLowOption(105, Node999);
+end
+
+procedure Node110 begin
+   call rl_sf_duldung(haus, welt, RL_DULDUNG_TANKER);
+   neu := 1;
+   Reply(110);
+   NOption(104, Node999, 004);
+end
+
+procedure Node130 begin
+   welt[RL_W_SF_LAGER] := 1;
+   Reply(130);
+   NOption(104, Node999, 004);
+end
+
+procedure Node999 begin
+end

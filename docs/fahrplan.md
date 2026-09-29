@@ -1,7 +1,7 @@
 # Fahrplan: der Rest der Umsetzung
 
 **Arbeitstitel:** *Rotlicht über dem Ödland* – Addon-Modifikation für Fallout 2
-**Stand:** Umsetzung 1–10 sind fertig, die Gosse ist im Spiel getestet. Das [Prüfwerkzeug](pruefwerkzeug.md) steht.
+**Stand:** Umsetzung 1–11 sind fertig, die Gosse ist im Spiel getestet. Das [Prüfwerkzeug](pruefwerkzeug.md) steht.
 **Auftrag:** Alles Übrige aus Phase 1–6 umsetzen, prüfen und abschließen, ohne weitere Rückfragen. Wo eine Entscheidung nötig ist, gilt meine Empfehlung. Jede steht in der Doku des jeweiligen Schritts.
 
 ---
@@ -40,7 +40,7 @@ Diese Regeln gelten für alle folgenden Schritte. Sie halten das Addon verträgl
 | 8 ✔ | **Redding: Die Schlacke** ([Umsetzung 8](umsetzung-8-redding.md)) | Karte, Madame, „Ascortis Lizenz“ mit vier Wegen, Goldwaage (ehrlich oder gezinkt), Entzugsstube, Malamute Saloon (vier Wege) |
 | 9 ✔ | **Vault City: Die Kloake** ([Umsetzung 9](umsetzung-9-vault-city.md)) | Karte, Hanne Voss, „Ein Keller im Courtyard“, Schweigegeld je Hausklasse, Wartungstunnel, **Die Akte**, Razzia mit Dienstboten-Folge, Abigail Kessler |
 | 10 ✔ | **NCR: Die Tränke** ([Umsetzung 10](umsetzung-10-ncr.md)) | Karte, Madame, „Etablissement Nr. 9“ (vier Wege, Krankenstube als Auflage), Karawanenhof, Registratur, **Vortis' Angebot**. Questline **„Die Reinen“** mit Ruth Calloway in fünf Akten |
-| 11 | **San Francisco: Die Bilge** | Karte, Madame, „Die Duldung“ mit Aufseher Wen (drei Wege), Anlegesteg, Schmuggelkammer, Siegel der Shi. Hubologen: entlarven, unterwandern oder Absprache |
+| 11 ✔ | **San Francisco: Die Bilge** ([Umsetzung 11](umsetzung-11-san-francisco.md)) | Karte, Madame, „Die Duldung“ mit Aufseher Wen (drei Wege), Anlegesteg, Schmuggelkammer, Siegel der Shi. Hubologen: entlarven, unterwandern oder Absprache |
 | 12 | **„Blut auf der Virgin Street“** | Carlo Venuti in fünf Akten, Miss Kittys Angebot (fünf Wege für das Cat's Paw), Kitty als Partnerin oder Rivalin, „Kittys Kralle“ |
 | 13 | **Talente** | Vesper (Gecko), Talus (Broken Hills), Julian Rook (Golden Globes), dazu Loyalität, Vorwarnung vor dem Tod und Tyrannen-Varianten |
 | 14 | **Jobs und Läuferroute** | Bestechung je Stadt, Schutzgeld, Sabotage, Gefälligkeiten. „Die Läuferroute“ mit Marcus |

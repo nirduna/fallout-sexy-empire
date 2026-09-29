@@ -53,6 +53,9 @@
 #define SCRIPT_RLGRIEVE             (RL_SCRIPT_BASE + 22)  // Inspektorin Grieve, Lizenzamt der NCR
 #define SCRIPT_RLDORA               (RL_SCRIPT_BASE + 23)  // Dora Quist, Madame der Traenke
 #define SCRIPT_RLCALLOWAY           (RL_SCRIPT_BASE + 24)  // Ruth Calloway, Liga fuer eine reine Republik
+#define SCRIPT_RLWEN                (RL_SCRIPT_BASE + 25)  // Aufseher Wen, die Shi an den Docks (San Francisco)
+#define SCRIPT_RLBOOTSMANN          (RL_SCRIPT_BASE + 26)  // Bo Harlan, Bootsmann des Tankers
+#define SCRIPT_RLKWAN               (RL_SCRIPT_BASE + 27)  // Tante Kwan, Madame der Bilge
 
 /* ------------------------------------------------------------------ */
 /* Echte GVARs (Phase 6). Nur dort, wo die Engine sie verlangt:        */
@@ -166,6 +169,7 @@
 #define RL_MOD_ZUFLUCHT             (128)   // Die Zuflucht: versteckte Kammer (Den, Ketten Akt 2)
 #define RL_MOD_WAAGE_GEZINKT        (256)   // Redding: die gezinkte Goldwaage (Umsetzung 8)
 #define RL_MOD_REGISTRATUR          (512)   // NCR: saubere Papiere, halbiert die Kampagnen (Umsetzung 10)
+#define RL_MOD_SCHMUGGEL            (1024)  // San Francisco: die Schmuggelkammer (Umsetzung 11)
 
 // Welt-Felder (aeltere Spielstaende mit weniger Feldern werden beim Laden erweitert)
 #define RL_WELT_FELDER              (160)
@@ -276,6 +280,12 @@
 #define RL_W_NCR_TOTE               (102)   // Bits RL_NCR_TOT_*
 #define RL_W_NCR_KENNT              (103)   // 1 = Dora kennt den Spieler, 2 = Calloway hat erzaehlt
 #define RL_W_NCR_LEGAL              (104)   // zuletzt gemeldeter Stand: 0 legal, sonst illegal (Meldungen)
+// San Francisco (Umsetzung 11, rl_sanfran.h); Hubologen in RL_W_HUBOLOGEN, Siegel in RL_W_SHI_GEFALLEN
+#define RL_W_SF_DULDUNG             (105)   // RL_DULDUNG_*
+#define RL_W_SF_SPITZEL_AUF         (106)   // 1 = die Tanker-Leute wissen, dass die Bilge fuer die Shi spitzelt
+#define RL_W_SF_LAGER               (107)   // 1 = die Tanker-Schmuggler duerfen lagern (Schmuggelkammer)
+#define RL_W_SF_TOTE                (108)   // Bits RL_SF_TOT_*
+#define RL_W_SF_KENNT               (109)   // 1 = Kwan kennt den Spieler
 
 #define RL_PROLOG_OFFEN             (0)
 #define RL_PROLOG_LAEUFT            (1)
@@ -805,6 +815,7 @@ end
 #include "rl_redding.h"
 #include "rl_vaultcity.h"
 #include "rl_ncr.h"
+#include "rl_sanfran.h"
 #include "rl_kampf.h"
 
 #endif

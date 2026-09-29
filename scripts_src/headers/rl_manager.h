@@ -638,6 +638,8 @@ procedure rlm_sonder_frei(variable sm) begin
       return (h == RL_VAULT_CITY);
    if (sm == RL_SM_REGISTRATUR) then
       return (h == RL_NCR);
+   if (sm == RL_SM_SCHMUGGEL) then
+      return ((h == RL_SAN_FRAN) and welt[RL_W_SF_LAGER]);
    return 0;
 end
 

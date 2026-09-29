@@ -10,3 +10,5 @@
 {533}{}{A locked drawer and a ledger with every citizen who comes down the stairs, the date, the hour and what he asked for. Influence in Vault City +2 a week, heat +10. If the Garde ever finds it, they come the same night.}
 {434}{}{The Registry}
 {534}{}{A registration desk and a filing cabinet with clean papers and examination dates for everyone who works here. Halves the effect of decency campaigns and counts as proof of order before the Council. Upkeep +$25/week.}
+{435}{}{The Smugglers' Room}
+{535}{}{A room behind the old ferry's bilge pumps where the tanker smugglers store what the Shi aren't supposed to see. +$3 side income per customer, heat +10. The Shi will get suspicious, and their inspectors will come looking.}

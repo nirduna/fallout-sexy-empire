@@ -30,8 +30,9 @@ Konzept und Skripte für eine Addon-Modifikation für **Fallout 2** (sfall 4.x).
 | 8 | Redding: „Ascortis Lizenz“ (vier Wege), Madame Nell, ehrliche oder gezinkte Waage mit Revolte, Entzugsstube, Malamute Saloon | umgesetzt, im Prüfwerkzeug getestet, Test im Spiel offen: [docs/umsetzung-8-redding.md](docs/umsetzung-8-redding.md) |
 | 9 | Vault City: „Ein Keller im Courtyard“, Hanne Voss und Sorensen, Schweigegeld, Razzia mit Dienstboten-Folge, Die Akte, Lynette | umgesetzt, im Prüfwerkzeug getestet, Test im Spiel offen: [docs/umsetzung-9-vault-city.md](docs/umsetzung-9-vault-city.md) |
 | 10 | NCR: „Etablissement Nr. 9“ (vier Wege, Auflage), Madame Dora, Vortis' Angebot, „Die Reinen“ mit Ruth Calloway in fünf Akten, Registratur | umgesetzt, im Prüfwerkzeug getestet, Test im Spiel offen: [docs/umsetzung-10-ncr.md](docs/umsetzung-10-ncr.md) |
+| 11 | San Francisco: „Die Duldung“ (Wen, Tanker), Madame Kwan, Schmuggelkammer und Siegel, Razzia der Shi, Hubologen | umgesetzt, im Prüfwerkzeug getestet, Test im Spiel offen: [docs/umsetzung-11-san-francisco.md](docs/umsetzung-11-san-francisco.md) |
 
-Die übrigen Schritte 11–16 stehen im [Fahrplan](docs/fahrplan.md).
+Die übrigen Schritte 12–16 stehen im [Fahrplan](docs/fahrplan.md).
 
 ## Werkzeuge
 

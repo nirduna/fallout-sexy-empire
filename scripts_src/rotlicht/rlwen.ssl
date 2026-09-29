@@ -1,0 +1,150 @@
+/*
+   rlwen.ssl - Aufseher Wen, Hafenamt der Shi (San Francisco, Die Bilge)
+
+   Umsetzung 11, "Die Duldung" (Phase 3, Abschnitt 2.6). Wen verwaltet fuer
+   die Shi die Docks und sitzt in der Wartehalle der Bilge. Sein Angebot:
+   15 % Tribut. Dazu die Augen der Shi (10 %, Siegel) und Barter 60 (10 %).
+   Wer 10 % ohne Spitzeldienste hat, bekommt das Siegel nach einem Gefallen
+   (PE 7 oder Sneak 60). Hat sich der Spieler fuer den Tanker entschieden,
+   kann er zu Wens 15 % zurueck.
+
+   Texte: text_src/english/dialog/rlwen.msg
+*/
+
+#define SCRIPT_REALNAME "rlwen"
+#define NAME                    SCRIPT_RLWEN
+#include "define.h"
+#include "../headers/rotlicht.h"
+#include "command.h"
+
+procedure start;
+procedure talk_p_proc;
+procedure map_enter_p_proc;
+procedure destroy_p_proc;
+procedure look_at_p_proc;
+procedure description_p_proc;
+procedure Node100;
+procedure Node110;      // 15 %
+procedure Node111;      // Augen der Shi
+procedure Node112;      // Barter
+procedure Node120;      // nach dem Tanker
+procedure Node121;      // doch 15 %
+procedure Node130;      // danach
+procedure Node140;      // ein Gefallen
+procedure Node141;      // erledigt
+procedure Node999;
+procedure rl_geduldet(variable weg, variable text);
+
+variable haus;
+variable welt;
+variable neu := 0;          // nach dem Dialog: Kwan kommt
+variable selbst_weg := 0;
+
+procedure start begin
+end
+
+procedure map_enter_p_proc begin
+end
+
+procedure destroy_p_proc begin
+   if (selbst_weg) then return;
+   welt := rl_lade_welt;
+   welt[RL_W_SF_TOTE] := welt[RL_W_SF_TOTE] bwor RL_SF_TOT_WEN;
+end
+
+procedure look_at_p_proc begin
+   script_overrides;
+   display_mstr(300);
+end
+
+procedure description_p_proc begin
+   script_overrides;
+   display_mstr(301);
+end
+
+procedure talk_p_proc begin
+   haus := rl_lade_haeuser;
+   welt := rl_lade_welt;
+   start_gdialog(NAME, self_obj, 4, -1, -1);
+   gSay_Start;
+      if (welt[RL_W_SF_DULDUNG] == RL_DULDUNG_KEINE) then call Node100;
+      else if (welt[RL_W_SF_DULDUNG] == RL_DULDUNG_TANKER) then call Node120;
+      else call Node130;
+   gSay_End;
+   end_dialogue;
+   if (neu) then begin
+      neu := 0;
+      call rl_sf_figuren(haus, welt);
+   end
+end
+
+procedure Node100 begin
+   Reply(100);
+   NOption(101, Node110, 004);
+   NOption(102, Node111, 004);
+   if (has_skill(dude_obj, SKILL_BARTER) >= 60) then
+      NOption(103, Node112, 004);
+   NOption(104, Node999, 004);
+   NLowOption(105, Node999);
+end
+
+procedure rl_geduldet(variable weg, variable text) begin
+   call rl_sf_duldung(haus, welt, weg);
+   neu := 1;
+   Reply(text + " " + mstr(190));
+   NOption(191, Node999, 004);
+end
+
+procedure Node110 begin
+   call rl_geduldet(RL_DULDUNG_TRIBUT, mstr(110));
+end
+
+procedure Node111 begin
+   call rl_geduldet(RL_DULDUNG_SPITZEL, mstr(111));
+end
+
+procedure Node112 begin
+   call rl_geduldet(RL_DULDUNG_BARTER, mstr(112));
+end
+
+procedure Node120 begin
+   Reply(120);
+   NOption(121, Node121, 004);
+   NOption(104, Node999, 004);
+   NLowOption(105, Node999);
+end
+
+// Vom Tanker zu den Shi: 15 % statt keinem Tribut, der Bootsmann vergisst das nicht
+procedure Node121 begin
+   welt[RL_W_SF_DULDUNG] := RL_DULDUNG_TRIBUT;
+   haus[rl_idx(RL_SAN_FRAN, RL_F_TRIBUTMOD)] := haus[rl_idx(RL_SAN_FRAN, RL_F_TRIBUTMOD)] + 15;
+   call rl_haus_plus(haus, RL_SAN_FRAN, RL_F_HITZE, 10);
+   Reply(122);
+   NOption(104, Node999, 004);
+end
+
+procedure Node130 begin
+   Reply(130);
+   if (welt[RL_W_SHI_GEFALLEN] == 0) then
+      NOption(131, Node140, 004);
+   NOption(104, Node999, 004);
+   NLowOption(105, Node999);
+end
+
+procedure Node140 begin
+   Reply(140);
+   if (dude_perception >= 7) then
+      NOption(142, Node141, 004);
+   if (has_skill(dude_obj, SKILL_SNEAK) >= 60) then
+      NOption(143, Node141, 004);
+   NOption(144, Node130, 004);
+end
+
+procedure Node141 begin
+   welt[RL_W_SHI_GEFALLEN] := 1;
+   Reply(145);
+   NOption(104, Node999, 004);
+end
+
+procedure Node999 begin
+end

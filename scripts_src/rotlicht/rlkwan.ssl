@@ -1,0 +1,138 @@
+/*
+   rlkwan.ssl - Tante Kwan, Madame der Bilge (San Francisco)
+
+   Umsetzung 11: Kwan hat den Teestand im alten Faehrterminal gefuehrt, als
+   noch Faehren fuhren. Fuehrung 50. Das gemeinsame Manager-Menue und die
+   Hubologen (Phase 3, 4.3): entlarven (Science 70, E +5), unterwandern
+   (Speech 60, Kunden +10 %), Absprache (Barter 60, K -20). Nach der Absprache
+   liefert der Kult Schuldner: 100 $ je Schuldschein, Zwangspersonal
+   (Phase 4, 2.3).
+
+   Texte: text_src/english/dialog/rlkwan.msg (ihre Saetze) und
+   _rl_manager.inc (die neutralen Texte des Manager-Menues)
+*/
+
+#define SCRIPT_REALNAME "rlkwan"
+#define NAME                    SCRIPT_RLKWAN
+#include "define.h"
+#include "../headers/rotlicht.h"
+#include "command.h"
+
+procedure start;
+procedure talk_p_proc;
+procedure map_enter_p_proc;
+procedure destroy_p_proc;
+procedure look_at_p_proc;
+procedure description_p_proc;
+procedure Node800;
+procedure Node850;      // die Hubologen
+procedure Node852;      // entlarven
+procedure Node853;      // unterwandern
+procedure Node854;      // Absprache
+procedure Node860;      // ein Schuldschein
+procedure Node999;
+
+variable haus;
+variable welt;
+variable h := RL_SAN_FRAN;
+variable selbst_weg := 0;
+
+#define RLM_EXTRA_OPTIONEN   if (welt[RL_W_HUBOLOGEN] == RL_HUBOLOGEN_OFFEN) then NOption(850, Node850, 004);   \
+                             if ((welt[RL_W_HUBOLOGEN] == RL_HUBOLOGEN_ABSPRACHE)                               \
+                                 and (haus[rl_idx(h, RL_F_PERSONAL)] < haus[rl_idx(h, RL_F_ZIMMER)])            \
+                                 and rl_zahlbar(haus, h, RL_SCHULDSCHEIN_PREIS)) then                           \
+                                BOption(860, Node860, 004);
+
+#include "../headers/rl_manager.h"
+
+procedure start begin
+end
+
+procedure map_enter_p_proc begin
+   haus := rl_lade_haeuser;
+   if (not rl_sf_besitz(haus)) then begin
+      selbst_weg := 1;
+      destroy_object(self_obj);
+   end
+end
+
+procedure destroy_p_proc begin
+   if (selbst_weg) then return;
+   welt := rl_lade_welt;
+   haus := rl_lade_haeuser;
+   welt[RL_W_SF_TOTE] := welt[RL_W_SF_TOTE] bwor RL_SF_TOT_KWAN;
+   haus[rl_idx(RL_SAN_FRAN, RL_F_FUEHRUNG)] := RL_OHNE_KWAN_FUEHRUNG;
+end
+
+procedure look_at_p_proc begin
+   script_overrides;
+   display_mstr(200);
+end
+
+procedure description_p_proc begin
+   script_overrides;
+   display_mstr(201);
+end
+
+procedure talk_p_proc begin
+   haus := rl_lade_haeuser;
+   welt := rl_lade_welt;
+   start_gdialog(NAME, self_obj, 4, -1, -1);
+   gSay_Start;
+      if (welt[RL_W_SF_KENNT] == 0) then
+         call Node800;
+      else
+         call RLM_Start;
+   gSay_End;
+   end_dialogue;
+   RLM_NACH_DIALOG
+end
+
+procedure Node800 begin
+   welt[RL_W_SF_KENNT] := 1;
+   Reply(800);
+   NOption(801, RLM_Start, 004);
+   NOption(115, RLM_Ende, 004);
+   NLowOption(116, RLM_Kasse);
+end
+
+procedure Node850 begin
+   Reply(851);
+   if (has_skill(dude_obj, SKILL_SCIENCE) >= 70) then
+      GOption(855, Node852, 004);
+   if (has_skill(dude_obj, SKILL_SPEECH) >= 60) then
+      NOption(856, Node853, 004);
+   if (has_skill(dude_obj, SKILL_BARTER) >= 60) then
+      BOption(857, Node854, 004);
+   NOption(123, RLM_Start, 004);
+end
+
+procedure Node852 begin
+   welt[RL_W_HUBOLOGEN] := RL_HUBOLOGEN_ENTLARVT;
+   call rl_haus_plus(haus, h, RL_F_EINFLUSS, 5);
+   Reply(852);
+   NOption(123, RLM_Start, 004);
+end
+
+procedure Node853 begin
+   welt[RL_W_HUBOLOGEN] := RL_HUBOLOGEN_UNTERWANDERT;
+   Reply(853);
+   NOption(123, RLM_Start, 004);
+end
+
+procedure Node854 begin
+   welt[RL_W_HUBOLOGEN] := RL_HUBOLOGEN_ABSPRACHE;
+   rl_karma(-20);
+   Reply(854);
+   NOption(123, RLM_Start, 004);
+end
+
+procedure Node860 begin
+   call rl_zahlen(haus, h, RL_SCHULDSCHEIN_PREIS);
+   call rl_zwang_dazu(haus, h, 1);
+   Reply(861);
+   NOption(123, RLM_Start, 004);
+end
+
+procedure Node999 begin
+end

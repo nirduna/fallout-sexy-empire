@@ -23,6 +23,8 @@
         die Akte, angekuendigte und sofortige Razzien der Garde.
     13. NCR (Umsetzung 10, rl_ncr.h): Lizenz und Auflage, Vortis' Leute und die
         Rangers, "Die Reinen" in fuenf Akten, Lex Neun.
+    14. San Francisco (Umsetzung 11, rl_sanfran.h): der Spitzel fliegt auf,
+        die Razzia der Shi-Inspektoren, die Hubologen fliegen davon.
 
    sfall laedt alle gl*.int beim Spielstart. Die Wochenlogik laeuft nur
    auf lokalen Karten; Reisezeit auf der Weltkarte wird beim naechsten
@@ -75,6 +77,7 @@ procedure rl_vc_razzia_meldung;
 procedure rl_ncr_woche(variable woche);
 procedure rl_ncr_lizenz_kommt;
 procedure rl_reine_ende_meldung;
+procedure rl_sf_woche(variable woche);
 #ifdef RL_DEBUG
 procedure rl_taste;
 procedure rl_debug_spawn;
@@ -170,6 +173,7 @@ procedure rl_tick begin
       call rl_red_woche(jetzt - wochen + 1);
       call rl_vc_woche(jetzt - wochen + 1);
       call rl_ncr_woche(jetzt - wochen + 1);
+      call rl_sf_woche(jetzt - wochen + 1);
       tyrann := 0;
       ausbeutung := 0;
       h := 0;
@@ -265,8 +269,12 @@ procedure rl_welt_modifikatoren begin
    if (rl_woche_jetzt < welt[RL_W_REINE_BRAND_WOCHE]) then m := m - 40;   // abgebrannt
    haus[rl_idx(RL_NCR, RL_F_STADTMOD)] := m + global_boom;
 
-   // San Francisco: Hubologen
-   m := get_array([-10, 0, 10], welt[RL_W_HUBOLOGEN]);
+   // San Francisco: Hubologen (0 offen, 1 entlarvt, 2 unterwandert, 3 Absprache);
+   // wissen die Tanker-Leute vom Spitzel, bleiben sie weg
+   if ((welt[RL_W_HUBOLOGEN] == RL_HUBOLOGEN_OFFEN) and rl_hubologen_weg) then
+      welt[RL_W_HUBOLOGEN] := RL_HUBOLOGEN_ENTLARVT;
+   m := get_array([-10, 0, 10, 0], welt[RL_W_HUBOLOGEN]);
+   if (welt[RL_W_SF_SPITZEL_AUF]) then m := m - 10;
    haus[rl_idx(RL_SAN_FRAN, RL_F_STADTMOD)] := m + global_boom;
 
    // Laeuferroute: Marcus' Vertrauen folgt aus seiner Vanilla-Quest
@@ -315,6 +323,13 @@ procedure rl_ereignis_wurf(variable h) begin
 
    ereignis := rl_ereignis_waehlen(h);
    if (ereignis == RL_EV_KEINS) then return;
+
+   // San Francisco: Die Inspektoren der Shi suchen die Schmuggelkammer (Phase 4, 4.2)
+   if ((h == RL_SAN_FRAN) and (ereignis == RL_EV_RAZZIA) and (haus[rl_idx(h, RL_F_MODULE)] bwand RL_MOD_SCHMUGGEL)) then begin
+      call rl_sf_razzia(haus, welt);
+      display_msg(rl_haus_name(h) + ": " + rl_text(197));
+      return;
+   end
 
    // Vault City: Die Garde kommt nicht zur Madame, sie kommt ins Haus (Phase 4, 4.2)
    if ((h == RL_VAULT_CITY) and (ereignis == RL_EV_RAZZIA)) then begin
@@ -433,6 +448,8 @@ procedure rl_ereignis_waehlen(variable h) begin
          g[RL_EV_RAZZIA] := g[RL_EV_RAZZIA] / 2;
       if (welt[RL_W_VC_LYNETTE]) then g[RL_EV_RAZZIA] := 0;          // Lynette haelt die Garde zurueck
    end
+   // Die Shi sind misstrauisch, solange es die Schmuggelkammer gibt
+   if ((h == RL_SAN_FRAN) and (module bwand RL_MOD_SCHMUGGEL)) then g[RL_EV_RAZZIA] := g[RL_EV_RAZZIA] + 10;
    // Gewalttaetiger Freier
    g[RL_EV_FREIER] := 5;
    if (haus[rl_idx(h, RL_F_SICHERHEIT)] < (rl_stadt(h, RL_S_RISIKO) + haus[rl_idx(h, RL_F_RISIKO_MOD)]) * 20) then g[RL_EV_FREIER] := 15;
@@ -960,6 +977,23 @@ procedure rl_reine_ende_meldung begin
    else if (e == RL_REINE_DISKREDITIERUNG) then n := 189;
    else if (e == RL_REINE_VERBOT) then n := 192;
    display_msg(rl_haus_name(RL_NCR) + ": " + rl_text(n));
+end
+
+/* ------------------------------------------------------------------ */
+/* San Francisco (Umsetzung 11, rl_sanfran.h)                          */
+/* ------------------------------------------------------------------ */
+procedure rl_sf_woche(variable woche) begin
+   variable h := RL_SAN_FRAN, c;
+   if (not rl_sf_besitz(haus)) then return;
+   // Augen der Shi: Irgendwann merken es die Tanker-Leute
+   if ((welt[RL_W_SF_DULDUNG] == RL_DULDUNG_SPITZEL) and (welt[RL_W_SF_SPITZEL_AUF] == 0)) then begin
+      c := rl_max(2, 15 - has_skill(dude_obj, SKILL_SNEAK) / 10);
+      if (random(1, 100) <= c) then begin
+         welt[RL_W_SF_SPITZEL_AUF] := 1;
+         call rl_haus_plus(haus, h, RL_F_HITZE, 10);
+         display_msg(rl_haus_name(h) + ": " + rl_text(198));
+      end
+   end
 end
 
 #ifdef RL_DEBUG

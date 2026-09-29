@@ -23,3 +23,6 @@ rlsorens.int    ; Amtsleiter Sorensen, Vault City (Rotlicht)            # local_
 rlgrieve.int    ; Inspektorin Grieve, Lizenzamt der NCR (Rotlicht)      # local_vars=0
 rldora.int      ; Dora Quist, Madame der Traenke (Rotlicht)             # local_vars=0
 rlcalloway.int  ; Ruth Calloway, Liga fuer eine reine Republik (Rotlicht) # local_vars=0
+rlwen.int       ; Aufseher Wen, die Shi an den Docks (Rotlicht)         # local_vars=0
+rlbootsmann.int ; Bo Harlan, Bootsmann des Tankers (Rotlicht)           # local_vars=0
+rlkwan.int      ; Tante Kwan, Madame der Bilge (Rotlicht)               # local_vars=0
