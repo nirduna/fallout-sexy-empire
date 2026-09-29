@@ -147,6 +147,7 @@
 #define RL_F_PREISMOD               (39)    // Aufschlag auf den Preis in % (gezinkte Waage)
 #define RL_F_GESCHLOSSEN            (40)    // Wochen, die das Haus noch geschlossen ist (Revolte, Seuche)
 #define RL_F_RISIKO_MOD             (41)    // Abweichung vom Grundrisiko der Stadt (NCR ohne Lizenz: +3)
+#define RL_F_VIP_MOD                (42)    // zusaetzliche VIP-Kundschaft je Woche (Julian Rook)
 
 // Anwerber (Phase 4, Abschnitt 2.2). Eine Person je RL_ANWERB_PUNKTE Punkte:
 // Werben 2/Woche (Anstaendiges Haus 4), Zwingen 4/Woche, Zulauf ab Moral 75 +1.
@@ -297,6 +298,21 @@
 #define RL_W_KITTY_ABWERBUNG        (115)   // Woche der letzten Abwerbung
 #define RL_W_UMARMUNG_HAEUSER       (116)   // Bitfeld: Haeuser mit Jet-Theke und +20 % aus der Umarmung
 #define RL_W_VIRGIN_NACHT           (117)   // Woche, in der Venutis Leute das Haus zuletzt verwuestet haben
+// Talente (Umsetzung 13, rl_talente.h); RL_W_VESPER = 1, solange sie singt (Endslide)
+#define RL_W_VESPER_STAND           (118)   // RL_TS_*
+#define RL_W_VESPER_LOYAL           (119)
+#define RL_W_VESPER_FRAGE           (120)   // 1 = ihre Frage nach dem Haus ist beantwortet
+#define RL_W_ABIGAIL                (121)   // RL_TS_*
+#define RL_W_ABIGAIL_LOYAL          (122)
+#define RL_W_ABIGAIL_WEG            (123)   // RL_ABIGAIL_*
+#define RL_W_TALUS                  (124)   // RL_TS_*
+#define RL_W_TALUS_LOYAL            (125)
+#define RL_W_TALUS_HAUS             (126)   // Haus + 1
+#define RL_W_TALUS_WEG              (127)   // RL_TALUS_*
+#define RL_W_JULIAN                 (128)   // RL_TS_*: AUFTRAG = angeworben, noch am Jet; DA = clean
+#define RL_W_JULIAN_LOYAL           (129)
+#define RL_W_JULIAN_WEG             (130)   // RL_JULIAN_*
+#define RL_W_TALENTE_AKTIV          (131)   // Bits: welche Talent-Wirkungen angewendet sind
 
 #define RL_PROLOG_OFFEN             (0)
 #define RL_PROLOG_LAEUFT            (1)
@@ -700,7 +716,7 @@ procedure rl_rechne_woche(variable haus, variable h, variable stadt) begin
 
    // VIP-Trakt: eigene Kundschaft zum dreifachen Preis ab Moral 65 (Phase 2)
    if ((module bwand RL_MOD_VIP) and (moral >= 65) and (haus[rl_idx(h, RL_F_GESCHLOSSEN)] == 0)) then begin
-      vip_kunden := get_array([0, 10, 0, 2, 6, 5, 0], stadt);
+      vip_kunden := get_array([0, 10, 0, 2, 6, 5, 0], stadt) + haus[rl_idx(h, RL_F_VIP_MOD)];
       vip_umsatz := vip_kunden * basispreis * 3;
       if (module bwand RL_MOD_KONTOR) then schwund := 4; else schwund := 10;
       gewinn := gewinn + vip_umsatz * (100 - anteil - tribut - schwund) / 100
@@ -828,6 +844,7 @@ end
 #include "rl_ncr.h"
 #include "rl_sanfran.h"
 #include "rl_virgin.h"
+#include "rl_talente.h"
 #include "rl_kampf.h"
 
 #endif

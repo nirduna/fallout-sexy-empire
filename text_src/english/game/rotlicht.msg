@@ -98,3 +98,20 @@
 {206}{}{The Mordinos have fallen. Nobody on Virgin Street is collecting for the Desperado anymore.}
 {207}{}{The families sat down without the Mordinos and divided Virgin Street again. The Garter's name was on the table. Nobody crossed it out.}
 {208}{}{One of ours went over to Kitty's Claw. Kitty pays well, and she never forgets.}
+
+# Talents (Umsetzung 13)
+{210}{}{In Gecko an old ghoul closes the lid of a battered piano and packs a single suitcase. Vesper is on her way to the Silver Garter.}
+{211}{}{Vesper sang tonight. Nobody in the room said a word until she stopped.}
+{212}{}{Vesper stands in the hall and looks at the empty corner where the stage used to be. She'll sing when there is a stage again.}
+{213}{}{Vesper is gone. She said she has heard enough people cry behind locked doors for one lifetime.}
+{214}{}{Marcus opened the cell himself and shook the mutant's hand. Talus is on his way to you.}
+{215}{}{The cell in Broken Hills is empty. Talus is on his way to you. Marcus knows who opened it, and the road through Broken Hills is closed to your runners.}
+{216}{}{Talus is still in Marcus' cell. Marcus won't open it until somebody finds out what really happened to the missing people.}
+{217}{}{A super mutant stands at the door now. Nobody has tried to start a fight since.}
+{218}{}{Talus saw the bolt on the outside of the cellar door. He put down his club, walked to Broken Hills and told Marcus everything.}
+{219}{}{Julian relapsed. The infirmary kept him alive. He won't look anyone in the eye.}
+{220}{}{Julian died in the back room. Nobody came with a needle or a doctor. They found him in the morning.}
+{221}{}{The new infirmary pulled Julian through. He came back. Some of him didn't.}
+{222}{}{Abigail went to the Garde. She knew every name and every stair, and she told them all.}
+{223}{}{Julian is gone. He left a note: "Thanks for the rooms. Not for the rest."}
+{224}{}{Julian relapsed. He is lying in a back room, barely breathing. Without a doctor he won't last the week.}

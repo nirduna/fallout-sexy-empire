@@ -2595,6 +2595,147 @@ def test_erkundung_virgin(u):
     print(f'      {gesamt} Dialogzustaende der Virgin Street erkundet')
 
 
+# --------------------------------------------------------------------------
+# Umsetzung 13: Talente
+
+def test_talent_vesper(u):
+    k = u.k
+    sp, e, ko, w = prolog(u, 'bezahlt')
+    sp, w = _nr_uebernommen(u, 'Salvatore', sp)
+    roz = figur(sp, k, 'RLROZ')
+    rede(sp, roz, ['how the house', None])
+    sp.dude.skills[k['SKILL_SCIENCE']] = 60
+    rede(sp, roz, ['People worth knowing', 'ghoul in Gecko', '[Science]', None])
+    pruefe(w.welt('RL_W_VESPER_STAND') == k['RL_TS_AUFTRAG'], 'Auftrag')
+    sp.betrete_karte(k['MAP_GECKO_SETTLEMENT'])
+    pruefe(w.welt('RL_W_VESPER_STAND') == k['RL_TS_UNTERWEGS'] and any('Vesper is on her way' in m for m in sp.meldungen), 'Gecko')
+    ruhige_woche(sp)
+    pruefe(w.welt('RL_W_VESPER_STAND') == k['RL_TS_WARTET'], 'wartet auf die Buehne')
+    quali, neben = w.haus(NR, 'RL_F_QUALI'), w.haus(NR, 'RL_F_NEBEN')
+    w.setze_haus(NR, 'RL_F_GEKAUFT', w.haus(NR, 'RL_F_GEKAUFT') | (1 << k['RL_M_BAR_2']))
+    ruhige_woche(sp)
+    pruefe(w.welt('RL_W_VESPER_STAND') == k['RL_TS_DA'] and w.welt('RL_W_VESPER') == 1, 'singt')
+    pruefe(w.haus(NR, 'RL_F_NEBEN') == neben + 2 and w.haus(NR, 'RL_F_QUALI') >= quali, 'Wirkung')
+    rede(sp, roz, ['People worth knowing', 'what became of her hotel', "hotel with music", None])
+    pruefe(w.welt('RL_W_VESPER_LOYAL') == 60 and w.welt('RL_W_VESPER_FRAGE') == 1, 'gelogen')
+    # Zwangspersonal irgendwo: sie geht
+    w.setze_haus(0, 'RL_F_ZWANG', 1)
+    ruhige_woche(sp)
+    pruefe(w.welt('RL_W_VESPER_STAND') == k['RL_TS_GEGANGEN'] and w.welt('RL_W_VESPER') == 0
+           and w.haus(NR, 'RL_F_NEBEN') == neben, 'gegangen, Wirkung weg')
+    allgemein(sp, 'vesper')
+
+
+def test_talent_abigail(u):
+    k = u.k
+    sp, w = _vc_uebernommen(u)
+    w.setze_haus(VC, 'RL_F_EINFLUSS', 60)
+    loehne = w.haus(VC, 'RL_F_LOEHNE')
+    rede(sp, figur(sp, k, 'RLHANNE'), ['People worth knowing', 'Abigail', 'citizenship back', None])
+    pruefe(w.welt('RL_W_ABIGAIL') == k['RL_TS_DA'] and w.welt('RL_W_ABIGAIL_LOYAL') == 80, 'Buergerin')
+    pruefe(w.haus(VC, 'RL_F_MODULE') & k['RL_MOD_KRANKENSTUBE'] and w.haus(VC, 'RL_F_LOEHNE') == loehne + 120, 'Doc')
+    # Erpresst: sie verraet
+    sp, w = _vc_uebernommen(u)
+    w.setze_haus(VC, 'RL_F_PERSONAL', 2)
+    rede(sp, figur(sp, k, 'RLHANNE'), ['People worth knowing', 'Abigail', 'Remind her', None])
+    pruefe(w.welt('RL_W_ABIGAIL_LOYAL') == 20, 'erpresst')
+    sp.zufall_folge = [1]
+    sp.globale[0].rufe_mit('rl_talente_woche', 999)
+    pruefe(w.welt('RL_W_ABIGAIL') == k['RL_TS_GEGANGEN'] and w.welt('RL_W_VC_GEFASST') == 1
+           and not (w.haus(VC, 'RL_F_MODULE') & k['RL_MOD_KRANKENSTUBE']), 'Verrat')
+    allgemein(sp, 'abigail')
+
+
+def test_talent_talus(u):
+    k = u.k
+    sp, w = _red_uebernommen(u)
+    nell = figur(sp, k, 'RLNELL')
+    rede(sp, nell, ['how the house', None])
+    rede(sp, nell, ['People worth knowing', 'super mutant', 'what really happened', None])
+    pruefe(w.welt('RL_W_TALUS') == k['RL_TS_AUFTRAG'] and w.welt('RL_W_TALUS_HAUS') == RED + 1, 'Auftrag')
+    sp.betrete_karte(k['MAP_BROKEN_HILLS1'])
+    pruefe(w.welt('RL_W_TALUS') == k['RL_TS_AUFTRAG'] and any('still in Marcus' in m for m in sp.meldungen), 'noch in der Zelle')
+    sp.gvars[k['GVAR_BH_MISSING']] = k['MISSING_FINISHED_CASH']
+    sp.betrete_karte(k['MAP_BROKEN_HILLS2'])
+    pruefe(w.welt('RL_W_TALUS') == k['RL_TS_UNTERWEGS'], 'frei')
+    sich, loehne = w.haus(RED, 'RL_F_SICHERHEIT'), w.haus(RED, 'RL_F_LOEHNE')
+    ruhige_woche(sp)
+    pruefe(w.welt('RL_W_TALUS') == k['RL_TS_DA'] and w.haus(RED, 'RL_F_SICHERHEIT') == sich + 45
+           and w.haus(RED, 'RL_F_LOEHNE') == loehne + 50, 'Talus in der Schlacke')
+    sp.dude.stats[k['STAT_iq']] = 7
+    rede(sp, nell, ['People worth knowing', 'Teach Talus', None])
+    pruefe(w.welt('RL_W_TALUS_LOYAL') == 100, 'lesen')
+    w.setze_haus(RED, 'RL_F_ZWANG', 1)
+    ruhige_woche(sp)
+    pruefe(w.welt('RL_W_TALUS') == k['RL_TS_GEGANGEN'] and w.welt('RL_W_MARCUS') == k['RL_MARCUS_GESPERRT']
+           and w.haus(RED, 'RL_F_SICHERHEIT') == sich, 'gegangen, Marcus weiss es')
+    # Ausbruch
+    sp, w = _red_uebernommen(u)
+    nell = figur(sp, k, 'RLNELL')
+    rede(sp, nell, ['how the house', None])
+    sp.dude.skills[k['SKILL_LOCKPICK']] = 80
+    rede(sp, nell, ['People worth knowing', 'super mutant', 'break him out', None])
+    sp.betrete_karte(k['MAP_BROKEN_HILLS1'])
+    pruefe(w.welt('RL_W_TALUS') == k['RL_TS_UNTERWEGS'] and w.welt('RL_W_MARCUS') == k['RL_MARCUS_GESPERRT'], 'Ausbruch')
+    # Nicht in Vault City
+    sp, w = _vc_uebernommen(u)
+    v = rede(sp, figur(sp, k, 'RLHANNE'), ['People worth knowing'])
+    pruefe(not any('super mutant' in o for o in _optionen_bei(v, 'People worth knowing')), 'Talus nicht in Vault City')
+    allgemein(sp, 'talus')
+
+
+def test_talent_julian(u):
+    k = u.k
+    sp, w = _nr_uebernommen(u, 'Salvatore')
+    roz = figur(sp, k, 'RLROZ')
+    rede(sp, roz, ['how the house', None])
+    sp.dude.skills[k['SKILL_BARTER']] = 60
+    geld = sp.dude.kronkorken
+    rede(sp, roz, ['People worth knowing', 'Julian Rook', '[Barter]', None])
+    pruefe(w.welt('RL_W_JULIAN') == k['RL_TS_AUFTRAG'] and sp.dude.kronkorken == geld - 800, 'Vertrag')
+    w.setze_haus(NR, 'RL_F_MODULE', k['RL_MOD_VIP'] | k['RL_MOD_KRANKENSTUBE'])
+    ruf = w.haus(NR, 'RL_F_RUF')
+    ruhige_woche(sp)
+    pruefe(w.haus(NR, 'RL_F_VIP_MOD') == 3, 'VIP +3')
+    sp.dude.skills[k['SKILL_DOCTOR']] = 60
+    rede(sp, roz, ['People worth knowing', 'still on Jet', '[Doctor]', None])
+    pruefe(w.welt('RL_W_JULIAN') == k['RL_TS_DA'], 'clean')
+    # Rueckfall mit Doc: Loyalitaet -10
+    loyal = w.welt('RL_W_JULIAN_LOYAL')
+    sp.zufall_folge = [100, 1]                  # erster Wurf: Abigail (SSL wertet 'and' ganz aus)
+    sp.globale[0].rufe_mit('rl_talente_woche', 999)
+    pruefe(w.welt('RL_W_JULIAN_LOYAL') == loyal - 10 and any('infirmary kept him' in m for m in sp.meldungen), 'Rueckfall')
+    # Ohne Doc: eine Woche im Sterben (Phase 4, Leitlinie 5); die Madame bietet die Rettung an
+    w.setze_haus(NR, 'RL_F_MODULE', k['RL_MOD_VIP'])
+    sp.zufall_folge = [100, 1]
+    sp.globale[0].rufe_mit('rl_talente_woche', 999)
+    pruefe(w.welt('RL_W_JULIAN') == k['RL_TS_KRITISCH'] and any('barely breathing' in m for m in sp.meldungen)
+           and w.haus(NR, 'RL_F_VIP_MOD') == 3, 'im Sterben')
+    loyal = w.welt('RL_W_JULIAN_LOYAL')
+    rede(sp, roz, ['People worth knowing', 'dying in the back room', '[Doctor]', None])
+    pruefe(w.welt('RL_W_JULIAN') == k['RL_TS_DA'] and w.welt('RL_W_JULIAN_LOYAL') == loyal - 20, 'gerettet')
+    # Noch einmal, und diesmal kommt niemand: eine Woche spaeter ist er tot
+    sp.zufall_folge = [100, 1]
+    sp.globale[0].rufe_mit('rl_talente_woche', 999)
+    pruefe(w.welt('RL_W_JULIAN') == k['RL_TS_KRITISCH'], 'wieder im Sterben')
+    sp.globale[0].rufe_mit('rl_talente_woche', 999)
+    pruefe(w.welt('RL_W_JULIAN') == k['RL_TS_TOT'] and w.haus(NR, 'RL_F_VIP_MOD') == 0, 'tot')
+    # Mit einer Krankenstube, die in der Woche fertig wird, kommt er durch
+    w.setze_welt('RL_W_JULIAN', k['RL_TS_KRITISCH'])
+    w.setze_haus(NR, 'RL_F_MODULE', k['RL_MOD_VIP'] | k['RL_MOD_KRANKENSTUBE'])
+    sp.globale[0].rufe_mit('rl_talente_woche', 999)
+    pruefe(w.welt('RL_W_JULIAN') == k['RL_TS_DA'] and any('pulled Julian through' in m for m in sp.meldungen), 'Krankenstube')
+    # Tyrannen-Variante
+    sp, w = _nr_uebernommen(u, 'Salvatore')
+    roz = figur(sp, k, 'RLROZ')
+    rede(sp, roz, ['how the house', None])
+    karma = sp.gvars.get(k['GVAR_PLAYER_REPUTATION'], 0)
+    rede(sp, roz, ['People worth knowing', 'Julian Rook', 'Take over his contract', None])
+    pruefe(w.welt('RL_W_JULIAN') == k['RL_TS_DA'] and w.welt('RL_W_JULIAN_LOYAL') == 30
+           and sp.gvars[k['GVAR_PLAYER_REPUTATION']] == karma - 10, 'Tyrann')
+    allgemein(sp, 'julian')
+
+
 TESTS = [test_wirtschaft_paritaet, test_erkundung, test_eingang, test_prolog_wege, test_diebstahl_erwischt, test_ketten_annehmen,
          test_ketten_ablehnen, test_ketten_kein_geld, test_kolbe_stirbt, test_kolbe_kommt_zurueck,
          test_wochen, test_anwerbung_werben, test_anwerbung_zwingen, test_pferch_flucht_und_nachschub,
@@ -2612,7 +2753,7 @@ TESTS = [test_wirtschaft_paritaet, test_erkundung, test_eingang, test_prolog_weg
          test_reine_diskreditierung, test_reine_calloway_mara_gedraengt, test_erkundung_ncr,
          test_sf_duldung, test_sf_schmuggelkammer, test_sf_hubologen, test_erkundung_sanfran,
          test_virgin_gebuehr_und_kitty, test_virgin_dealer_und_nacht, test_virgin_umarmung_und_vanilla,
-         test_erkundung_virgin]
+         test_erkundung_virgin, test_talent_vesper, test_talent_abigail, test_talent_talus, test_talent_julian]
 
 
 def main():

@@ -11,6 +11,7 @@
      174-177  Metzgers Vergeltung (Krise), 188 ihr Text
      600-619  Die Route nach Sueden (Ketten, Akt 3, Umsetzung 5)
      620-639  Die anderen Staedte (nur in der Gosse, Umsetzung 6)
+     950-999  Talente (Umsetzung 13, _rl_talente.inc, bei allen Madames gleich)
 
    Das einbindende Skript stellt bereit:
      variable haus, welt, h   (Haus-Array, Welt-Array, Hausnummer)
@@ -98,6 +99,32 @@ procedure RLM_RoutePerception;
 procedure RLM_RouteStart;
 procedure RLM_VergeltungKampf;
 procedure RLM_VergeltungRangers;
+procedure rlm_talente_da;
+procedure RLM_Talente;
+procedure RLM_Vesper;
+procedure RLM_VesperAuftrag;
+procedure RLM_VesperFrage;
+procedure RLM_VesperEhrlich;
+procedure RLM_VesperLuege;
+procedure RLM_Julian;
+procedure RLM_JulianBarter;
+procedure RLM_JulianGambling;
+procedure RLM_JulianStar;
+procedure RLM_JulianTyrann;
+procedure RLM_JulianEntzug;
+procedure RLM_JulianClean;
+procedure RLM_JulianRetten;
+procedure RLM_JulianGerettet;
+procedure RLM_Abigail;
+procedure RLM_AbigailBuergerin;
+procedure RLM_AbigailAkte;
+procedure RLM_AbigailErpressen;
+procedure RLM_Talus;
+procedure RLM_TalusWahrheit;
+procedure RLM_TalusAusbruch;
+procedure RLM_TalusLesen;
+procedure rlm_julian_frei(variable weg, variable text);
+procedure rlm_abigail_da(variable weg, variable loyal, variable text);
 
 /* ------------------------------------------------------------------ */
 /* Hauptmenue                                                          */
@@ -124,6 +151,8 @@ procedure RLM_Start begin
        and (((welt[RL_W_KETTEN] >= RL_KETTEN_KETTE) and (welt[RL_W_KETTEN] <= RL_KETTEN_STURM))
             or (welt[RL_W_KETTEN] == RL_KETTEN_STILLER_KRIEG))) then
       NOption(600, RLM_Route, 004);
+   if (rlm_talente_da) then
+      NOption(950, RLM_Talente, 004);
 #ifdef RLM_EXTRA_OPTIONEN
    RLM_EXTRA_OPTIONEN
 #endif
@@ -328,6 +357,217 @@ end
 procedure RLM_RouteStart begin
    call rl_auftrag_starten(welt, RL_AUFTRAG_SUEDEN, rl_transport_chance(welt));
    Reply(611);
+   NOption(123, RLM_Start, 004);
+end
+
+/* ------------------------------------------------------------------ */
+/* Talente (Umsetzung 13, Phase 4 Abschnitt 3, rl_talente.h)           */
+/* ------------------------------------------------------------------ */
+procedure rlm_talente_da begin
+   if (welt[RL_W_JULIAN] == RL_TS_KRITISCH) then return 1;
+   if (h == RL_NEW_RENO) then begin
+      if (welt[RL_W_VESPER_STAND] == RL_TS_OFFEN) then return 1;
+      if ((welt[RL_W_VESPER_STAND] == RL_TS_DA) and (welt[RL_W_VESPER_FRAGE] == 0)) then return 1;
+      if ((welt[RL_W_JULIAN] == RL_TS_OFFEN) or (welt[RL_W_JULIAN] == RL_TS_AUFTRAG)) then return 1;
+   end
+   if ((h == RL_VAULT_CITY) and (welt[RL_W_ABIGAIL] == RL_TS_OFFEN)) then return 1;
+   if ((h != RL_VAULT_CITY) and (welt[RL_W_TALUS] == RL_TS_OFFEN)) then return 1;
+   if ((welt[RL_W_TALUS] == RL_TS_DA) and (welt[RL_W_TALUS_LOYAL] < 100) and (dude_iq >= 7)) then return 1;
+   return 0;
+end
+
+procedure RLM_Talente begin
+   Reply(951);
+   if (welt[RL_W_JULIAN] == RL_TS_KRITISCH) then NOption(996, RLM_JulianRetten, 004);
+   if (h == RL_NEW_RENO) then begin
+      if (welt[RL_W_VESPER_STAND] == RL_TS_OFFEN) then NOption(952, RLM_Vesper, 004);
+      if ((welt[RL_W_VESPER_STAND] == RL_TS_DA) and (welt[RL_W_VESPER_FRAGE] == 0)) then NOption(953, RLM_VesperFrage, 004);
+      if (welt[RL_W_JULIAN] == RL_TS_OFFEN) then NOption(954, RLM_Julian, 004);
+      if (welt[RL_W_JULIAN] == RL_TS_AUFTRAG) then NOption(955, RLM_JulianEntzug, 004);
+   end
+   if ((h == RL_VAULT_CITY) and (welt[RL_W_ABIGAIL] == RL_TS_OFFEN)) then NOption(956, RLM_Abigail, 004);
+   if ((h != RL_VAULT_CITY) and (welt[RL_W_TALUS] == RL_TS_OFFEN)) then NOption(957, RLM_Talus, 004);
+   if ((welt[RL_W_TALUS] == RL_TS_DA) and (welt[RL_W_TALUS_LOYAL] < 100) and (dude_iq >= 7)) then
+      GOption(958, RLM_TalusLesen, 004);
+   NOption(959, RLM_Start, 004);
+end
+
+// Vesper: Geleitschutz, Umweg oder Passierschein
+procedure RLM_Vesper begin
+   Reply(960);
+   if (rl_kampfwert >= 60) then NOption(961, RLM_VesperAuftrag, 004);
+   if (has_skill(dude_obj, SKILL_OUTDOORSMAN) >= 60) then NOption(962, RLM_VesperAuftrag, 004);
+   if (has_skill(dude_obj, SKILL_SCIENCE) >= 60) then NOption(963, RLM_VesperAuftrag, 004);
+   NOption(959, RLM_Talente, 004);
+end
+
+procedure RLM_VesperAuftrag begin
+   welt[RL_W_VESPER_STAND] := RL_TS_AUFTRAG;
+   welt[RL_W_VESPER_LOYAL] := 80;
+   Reply(964);
+   NOption(123, RLM_Start, 004);
+end
+
+procedure RLM_VesperFrage begin
+   Reply(965);
+   if (has_skill(dude_obj, SKILL_SPEECH) >= 40) then GOption(966, RLM_VesperEhrlich, 004);
+   BOption(967, RLM_VesperLuege, 004);
+end
+
+procedure RLM_VesperEhrlich begin
+   welt[RL_W_VESPER_FRAGE] := 1;
+   Reply(968);
+   NOption(123, RLM_Start, 004);
+end
+
+// Die Luege fliegt auf, sobald sie die Zimmer sieht (Loyalitaet -20)
+procedure RLM_VesperLuege begin
+   welt[RL_W_VESPER_FRAGE] := 1;
+   welt[RL_W_VESPER_LOYAL] := welt[RL_W_VESPER_LOYAL] - 20;
+   Reply(969);
+   NOption(123, RLM_Start, 004);
+end
+
+// Julian Rook: den Vertrag loesen
+procedure RLM_Julian begin
+   Reply(970);
+   if ((has_skill(dude_obj, SKILL_BARTER) >= 60) and rlm_bezahlbar(RL_JULIAN_PREIS)) then
+      NOption(971, RLM_JulianBarter, 004);
+   if (has_skill(dude_obj, SKILL_GAMBLING) >= 70) then NOption(972, RLM_JulianGambling, 004);
+   if (global_var(GVAR_NEW_RENO_PORN_STAR) and (has_skill(dude_obj, SKILL_SPEECH) >= 50)) then
+      GOption(973, RLM_JulianStar, 004);
+   BOption(974, RLM_JulianTyrann, 004);
+   NOption(959, RLM_Talente, 004);
+end
+
+procedure rlm_julian_frei(variable weg, variable text) begin
+   welt[RL_W_JULIAN_WEG] := weg;
+   welt[RL_W_JULIAN] := RL_TS_AUFTRAG;
+   welt[RL_W_JULIAN_LOYAL] := 70;
+   Reply(text);
+   NOption(123, RLM_Start, 004);
+end
+
+procedure RLM_JulianBarter begin
+   call rlm_bezahlen(RL_JULIAN_PREIS);
+   call rlm_julian_frei(RL_JULIAN_BARTER, mstr(975));
+end
+
+procedure RLM_JulianGambling begin
+   call rlm_julian_frei(RL_JULIAN_GAMBLING, mstr(975));
+end
+
+procedure RLM_JulianStar begin
+   call rlm_julian_frei(RL_JULIAN_PORNOSTAR, mstr(975));
+end
+
+// Tyrannen-Variante: Vertrag und Stoff uebernommen. Er bleibt am Jet, Loyalitaet 30
+procedure RLM_JulianTyrann begin
+   rl_karma(-10);
+   welt[RL_W_JULIAN_WEG] := RL_JULIAN_TYRANN;
+   welt[RL_W_JULIAN] := RL_TS_DA;
+   welt[RL_W_JULIAN_LOYAL] := 30;
+   Reply(976);
+   NOption(123, RLM_Start, 004);
+end
+
+// Vom Jet holen: Doctor 60, Myrons Antidot oder die Entzugsstube in Redding
+procedure RLM_JulianEntzug begin
+   Reply(977);
+   if (has_skill(dude_obj, SKILL_DOCTOR) >= 60) then GOption(978, RLM_JulianClean, 004);
+   if (obj_is_carrying_obj_pid(dude_obj, PID_JET_ANTIDOTE)) then GOption(979, RLM_JulianClean, 004);
+   if (haus[rl_idx(RL_REDDING, RL_F_BESITZ)] and rl_red_entzug(haus)) then GOption(980, RLM_JulianClean, 004);
+   NOption(959, RLM_Talente, 004);
+end
+
+procedure RLM_JulianClean begin
+   welt[RL_W_JULIAN] := RL_TS_DA;
+   welt[RL_W_JULIAN_LOYAL] := rl_min(100, welt[RL_W_JULIAN_LOYAL] + 10);
+   Reply(981);
+   NOption(123, RLM_Start, 004);
+end
+
+// Julian liegt im Sterben: eine Woche Zeit (Phase 4, Leitlinie 5)
+procedure RLM_JulianRetten begin
+   Reply(997);
+   if (has_skill(dude_obj, SKILL_DOCTOR) >= 60) then GOption(998, RLM_JulianGerettet, 004);
+   if (obj_is_carrying_obj_pid(dude_obj, PID_JET_ANTIDOTE)) then GOption(979, RLM_JulianGerettet, 004);
+   NOption(959, RLM_Talente, 004);
+end
+
+procedure RLM_JulianGerettet begin
+   welt[RL_W_JULIAN] := RL_TS_DA;
+   welt[RL_W_JULIAN_LOYAL] := welt[RL_W_JULIAN_LOYAL] - 20;
+   Reply(999);
+   NOption(123, RLM_Start, 004);
+end
+
+// Abigail Kessler: Buergerschaft, Akte vernichten oder erpressen
+procedure RLM_Abigail begin
+   Reply(982);
+   if (haus[rl_idx(RL_VAULT_CITY, RL_F_EINFLUSS)] >= 60) then
+      GOption(983, RLM_AbigailBuergerin, 004);
+   else if (has_skill(dude_obj, SKILL_SPEECH) >= 70) then
+      GOption(984, RLM_AbigailBuergerin, 004);
+   if ((has_skill(dude_obj, SKILL_SNEAK) >= 60) and (has_skill(dude_obj, SKILL_LOCKPICK) >= 60)) then
+      NOption(985, RLM_AbigailAkte, 004);
+   BOption(986, RLM_AbigailErpressen, 004);
+   NOption(959, RLM_Talente, 004);
+end
+
+procedure rlm_abigail_da(variable weg, variable loyal, variable text) begin
+   welt[RL_W_ABIGAIL] := RL_TS_DA;
+   welt[RL_W_ABIGAIL_WEG] := weg;
+   welt[RL_W_ABIGAIL_LOYAL] := loyal;
+   call rl_talent_anwenden(haus, welt, RL_TALENT_ABIGAIL, 1);
+   Reply(text);
+   NOption(123, RLM_Start, 004);
+end
+
+procedure RLM_AbigailBuergerin begin
+   call rlm_abigail_da(RL_ABIGAIL_BUERGERIN, 80, mstr(987));
+end
+
+procedure RLM_AbigailAkte begin
+   call rl_haus_plus(haus, RL_VAULT_CITY, RL_F_HITZE, 10);
+   call rlm_abigail_da(RL_ABIGAIL_AKTE, 70, mstr(988));
+end
+
+procedure RLM_AbigailErpressen begin
+   rl_karma(-10);
+   call rlm_abigail_da(RL_ABIGAIL_ERPRESST, 20, mstr(989));
+end
+
+// Talus: die Wahrheit finden (Vanilla) oder ausbrechen lassen. Er kommt in dieses Haus.
+procedure RLM_Talus begin
+   Reply(990);
+   NOption(991, RLM_TalusWahrheit, 004);
+   if ((has_skill(dude_obj, SKILL_LOCKPICK) >= 80) or (rl_kampfwert >= 80)) then
+      BOption(992, RLM_TalusAusbruch, 004);
+   NOption(959, RLM_Talente, 004);
+end
+
+procedure RLM_TalusWahrheit begin
+   welt[RL_W_TALUS] := RL_TS_AUFTRAG;
+   welt[RL_W_TALUS_WEG] := RL_TALUS_WAHRHEIT;
+   welt[RL_W_TALUS_HAUS] := h + 1;
+   welt[RL_W_TALUS_LOYAL] := 90;
+   Reply(993);
+   NOption(123, RLM_Start, 004);
+end
+
+procedure RLM_TalusAusbruch begin
+   welt[RL_W_TALUS] := RL_TS_AUFTRAG;
+   welt[RL_W_TALUS_WEG] := RL_TALUS_AUSBRUCH;
+   welt[RL_W_TALUS_HAUS] := h + 1;
+   welt[RL_W_TALUS_LOYAL] := 60;
+   Reply(994);
+   NOption(123, RLM_Start, 004);
+end
+
+procedure RLM_TalusLesen begin
+   welt[RL_W_TALUS_LOYAL] := 100;
+   Reply(995);
    NOption(123, RLM_Start, 004);
 end
 

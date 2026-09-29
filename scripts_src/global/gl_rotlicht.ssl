@@ -27,6 +27,8 @@
         die Razzia der Shi-Inspektoren, die Hubologen fliegen davon.
     15. Blut auf der Virgin Street (Umsetzung 12, rl_virgin.h): die Akte mit
         Venuti, Kittys Abwerbung, die Umarmung in neuen Haeusern.
+    16. Talente (Umsetzung 13, rl_talente.h): Reisen nach Gecko und Broken
+        Hills, Ankunft, Loyalitaet, Rueckfall, Verrat, Abschied.
 
    sfall laedt alle gl*.int beim Spielstart. Die Wochenlogik laeuft nur
    auf lokalen Karten; Reisezeit auf der Weltkarte wird beim naechsten
@@ -82,6 +84,9 @@ procedure rl_reine_ende_meldung;
 procedure rl_sf_woche(variable woche);
 procedure rl_virgin_woche(variable woche);
 procedure rl_kitty_woche(variable woche);
+procedure rl_talente_woche(variable woche);
+procedure rl_talente_reise;
+procedure rl_talent_weg(variable wer, variable text);
 #ifdef RL_DEBUG
 procedure rl_taste;
 procedure rl_debug_spawn;
@@ -113,6 +118,7 @@ procedure map_enter_p_proc begin
    if (cur_map_index == MAP_DEN_BUSINESS) then call rl_gosse_eingang;
    call rl_eingaenge;
    if (cur_map_index == MAP_NCR_WESTIN_RANCH) then call rl_nr_brief;
+   call rl_talente_reise;
 end
 
 /* Die Gosse: Die Vanilla-Karte Den Business 2 bleibt unveraendert. Die
@@ -180,6 +186,7 @@ procedure rl_tick begin
       call rl_sf_woche(jetzt - wochen + 1);
       call rl_virgin_woche(jetzt - wochen + 1);
       call rl_kitty_woche(jetzt - wochen + 1);
+      call rl_talente_woche(jetzt - wochen + 1);
       tyrann := 0;
       ausbeutung := 0;
       h := 0;
@@ -335,6 +342,9 @@ procedure rl_ereignis_wurf(variable h) begin
       return;
    end
 
+   // Talus erledigt gewalttaetige Freier selbst (Phase 4, 3.3)
+   if ((ereignis == RL_EV_FREIER) and (h == rl_talus_haus(welt))) then return;
+
    // Vault City: Die Garde kommt nicht zur Madame, sie kommt ins Haus (Phase 4, 4.2)
    if ((h == RL_VAULT_CITY) and (ereignis == RL_EV_RAZZIA)) then begin
       call rl_vc_razzia_kommt;
@@ -446,6 +456,9 @@ procedure rl_ereignis_waehlen(variable h) begin
          g[RL_EV_STOFF] := g[RL_EV_STOFF] / 2;
    end
    if ((h == RL_REDDING) and rl_red_entzug(haus)) then g[RL_EV_STOFF] := g[RL_EV_STOFF] / 2;   // Entzugsstube
+   if ((h == RL_VAULT_CITY) and (welt[RL_W_ABIGAIL] == RL_TS_DA)) then g[RL_EV_STOFF] := g[RL_EV_STOFF] / 2;   // Abigail
+   if ((welt[RL_W_JULIAN_WEG] == RL_JULIAN_TYRANN) and (welt[RL_W_JULIAN] == RL_TS_DA) and (module bwand RL_MOD_VIP)) then
+      g[RL_EV_STOFF] := g[RL_EV_STOFF] * 2;                                     // Julian am Jet
    if (moral < 40) then g[RL_EV_STOFF] := g[RL_EV_STOFF] * 3 / 2;
    // Razzia
    g[RL_EV_RAZZIA] := 5 + (rl_stadt(h, RL_S_RISIKO) + haus[rl_idx(h, RL_F_RISIKO_MOD)]) * 3 + haus[rl_idx(h, RL_F_HITZE)] / 2;
@@ -455,6 +468,7 @@ procedure rl_ereignis_waehlen(variable h) begin
          g[RL_EV_RAZZIA] := g[RL_EV_RAZZIA] * 3 / 2;
       else if (welt[RL_W_LIGA] == RL_LIGA_ZERSCHLAGEN) then
          g[RL_EV_RAZZIA] := g[RL_EV_RAZZIA] / 2;
+      if (welt[RL_W_ABIGAIL] == RL_TS_DA) then g[RL_EV_RAZZIA] := g[RL_EV_RAZZIA] * 3 / 4;   // sie kennt die Schichtplaene
       if (welt[RL_W_VC_LYNETTE]) then g[RL_EV_RAZZIA] := 0;          // Lynette haelt die Garde zurueck
    end
    // Die Shi sind misstrauisch, solange es die Schmuggelkammer gibt
@@ -1095,6 +1109,129 @@ procedure rl_kitty_woche(variable woche) begin
             display_msg(rl_haus_name(h) + ": " + rl_text(208));
       end
       h := h + 1;
+   end
+end
+
+/* ------------------------------------------------------------------ */
+/* Talente (Umsetzung 13, rl_talente.h)                                */
+/* ------------------------------------------------------------------ */
+
+// Reiseziele: Vesper wartet in Gecko, Talus sitzt in Broken Hills
+procedure rl_talente_reise begin
+   variable k := cur_map_index;
+   if (welt == 0) then welt := rl_lade_welt;
+   if ((welt[RL_W_VESPER_STAND] == RL_TS_AUFTRAG) and (k >= MAP_GECKO_SETTLEMENT) and (k <= MAP_GECKO_ACCESS_TUNNELS)) then begin
+      welt[RL_W_VESPER_STAND] := RL_TS_UNTERWEGS;
+      display_msg(rl_text(210));
+   end
+   if ((welt[RL_W_TALUS] == RL_TS_AUFTRAG) and ((k == MAP_BROKEN_HILLS1) or (k == MAP_BROKEN_HILLS2))) then begin
+      if (welt[RL_W_TALUS_WEG] == RL_TALUS_AUSBRUCH) then begin
+         welt[RL_W_TALUS] := RL_TS_UNTERWEGS;
+         welt[RL_W_MARCUS] := RL_MARCUS_GESPERRT;
+         display_msg(rl_text(215));
+      end else if (global_var(GVAR_BH_MISSING) >= MISSING_FINISHED_CASH) then begin
+         welt[RL_W_TALUS] := RL_TS_UNTERWEGS;
+         display_msg(rl_text(214));
+      end else
+         display_msg(rl_text(216));
+   end
+end
+
+procedure rl_talent_weg(variable wer, variable text) begin
+   call rl_talent_anwenden(haus, welt, wer, -1);
+   display_msg(rl_text(text));
+end
+
+procedure rl_talente_woche(variable woche) begin
+   variable h, jet := 0, doc := 0, c;
+
+   // Vesper: kommt an, singt ab Bar II, geht bei Zwangspersonal oder ohne Loyalitaet
+   if ((welt[RL_W_VESPER_STAND] == RL_TS_UNTERWEGS) or (welt[RL_W_VESPER_STAND] == RL_TS_WARTET)) then begin
+      if (rl_nr_besitz(haus) and rl_bar2_steht(haus)) then begin
+         welt[RL_W_VESPER_STAND] := RL_TS_DA;
+         welt[RL_W_VESPER] := 1;
+         call rl_talent_anwenden(haus, welt, RL_TALENT_VESPER, 1);
+         display_msg(rl_haus_name(RL_NEW_RENO) + ": " + rl_text(211));
+      end else if (welt[RL_W_VESPER_STAND] == RL_TS_UNTERWEGS) then begin
+         welt[RL_W_VESPER_STAND] := RL_TS_WARTET;
+         display_msg(rl_haus_name(RL_NEW_RENO) + ": " + rl_text(212));
+      end
+   end else if (welt[RL_W_VESPER_STAND] == RL_TS_DA) then begin
+      if (rl_zwang_irgendwo(haus) or (welt[RL_W_VESPER_LOYAL] < RL_LOYAL_GRENZE)) then begin
+         welt[RL_W_VESPER_STAND] := RL_TS_GEGANGEN;
+         welt[RL_W_VESPER] := 0;
+         call rl_talent_weg(RL_TALENT_VESPER, 213);
+      end
+   end
+
+   // Abigail: Erpresst verraet sie irgendwann (5 % je Woche)
+   if ((welt[RL_W_ABIGAIL] == RL_TS_DA) and (welt[RL_W_ABIGAIL_WEG] == RL_ABIGAIL_ERPRESST)
+       and (random(1, 100) <= 5)) then begin
+      welt[RL_W_ABIGAIL] := RL_TS_GEGANGEN;
+      call rl_talent_weg(RL_TALENT_ABIGAIL, 222);
+      if (rl_vc_besitz(haus)) then begin
+         call rl_vc_razzia(haus, welt);
+         call rl_vc_razzia_meldung;
+      end
+   end
+
+   // Talus: kommt an; geht, sobald in seinem Haus jemand hinter einem Riegel sitzt
+   if (welt[RL_W_TALUS] == RL_TS_UNTERWEGS) then begin
+      h := welt[RL_W_TALUS_HAUS] - 1;
+      if ((h >= 0) and haus[rl_idx(h, RL_F_BESITZ)]) then begin
+         welt[RL_W_TALUS] := RL_TS_DA;
+         call rl_talent_anwenden(haus, welt, RL_TALENT_TALUS, 1);
+         display_msg(rl_haus_name(h) + ": " + rl_text(217));
+      end
+   end else if (welt[RL_W_TALUS] == RL_TS_DA) then begin
+      h := welt[RL_W_TALUS_HAUS] - 1;
+      if ((haus[rl_idx(h, RL_F_MODULE)] bwand RL_MOD_RIEGEL_AUSSEN) or (haus[rl_idx(h, RL_F_ZWANG)] > 0)) then begin
+         welt[RL_W_TALUS] := RL_TS_GEGANGEN;
+         welt[RL_W_MARCUS] := RL_MARCUS_GESPERRT;
+         call rl_talent_weg(RL_TALENT_TALUS, 218);
+      end
+   end
+
+   // Julian: VIP-Kundschaft in jedem Haus mit VIP-Trakt, Ruf +1; der Rueckfall
+   h := 0;
+   while (h < RL_ANZAHL_HAEUSER) do begin
+      if (rl_julian_aktiv(welt)) then haus[rl_idx(h, RL_F_VIP_MOD)] := RL_JULIAN_VIP;
+      else haus[rl_idx(h, RL_F_VIP_MOD)] := 0;
+      if (haus[rl_idx(h, RL_F_BESITZ)]) then begin
+         if (haus[rl_idx(h, RL_F_MODULE)] bwand RL_MOD_JET_THEKE) then jet := 1;
+         if (haus[rl_idx(h, RL_F_MODULE)] bwand RL_MOD_KRANKENSTUBE) then doc := 1;
+         if (rl_julian_aktiv(welt) and (haus[rl_idx(h, RL_F_MODULE)] bwand RL_MOD_VIP)) then
+            call rl_haus_plus(haus, h, RL_F_RUF, 1);
+      end
+      h := h + 1;
+   end
+   // Eine Woche im Sterben: Hat ihn niemand gerettet und steht keine Krankenstube, stirbt er
+   if (welt[RL_W_JULIAN] == RL_TS_KRITISCH) then begin
+      if (doc) then begin
+         welt[RL_W_JULIAN] := RL_TS_DA;
+         welt[RL_W_JULIAN_LOYAL] := welt[RL_W_JULIAN_LOYAL] - 20;
+         display_msg(rl_text(221));
+      end else begin
+         welt[RL_W_JULIAN] := RL_TS_TOT;
+         display_msg(rl_text(220));
+      end
+   end else if (rl_julian_aktiv(welt) and (welt[RL_W_JULIAN_WEG] != RL_JULIAN_TYRANN)) then begin
+      c := 3;
+      if (jet) then c := 10;
+      if (welt[RL_W_JULIAN] == RL_TS_AUFTRAG) then c := c * 2;      // noch nicht vom Jet
+      if (random(1, 100) <= c) then begin
+         if (doc) then begin
+            welt[RL_W_JULIAN_LOYAL] := welt[RL_W_JULIAN_LOYAL] - 10;
+            display_msg(rl_text(219));
+         end else begin
+            welt[RL_W_JULIAN] := RL_TS_KRITISCH;
+            display_msg(rl_text(224));
+         end
+      end
+      if (rl_julian_aktiv(welt) and (welt[RL_W_JULIAN_LOYAL] < RL_LOYAL_GRENZE)) then begin
+         welt[RL_W_JULIAN] := RL_TS_GEGANGEN;
+         display_msg(rl_text(223));
+      end
    end
 end
 

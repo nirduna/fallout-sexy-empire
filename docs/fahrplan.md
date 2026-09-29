@@ -1,7 +1,7 @@
 # Fahrplan: der Rest der Umsetzung
 
 **Arbeitstitel:** *Rotlicht über dem Ödland* – Addon-Modifikation für Fallout 2
-**Stand:** Umsetzung 1–12 sind fertig, die Gosse ist im Spiel getestet. Das [Prüfwerkzeug](pruefwerkzeug.md) steht.
+**Stand:** Umsetzung 1–13 sind fertig, die Gosse ist im Spiel getestet. Das [Prüfwerkzeug](pruefwerkzeug.md) steht.
 **Auftrag:** Alles Übrige aus Phase 1–6 umsetzen, prüfen und abschließen, ohne weitere Rückfragen. Wo eine Entscheidung nötig ist, gilt meine Empfehlung. Jede steht in der Doku des jeweiligen Schritts.
 
 ---
@@ -42,7 +42,7 @@ Diese Regeln gelten für alle folgenden Schritte. Sie halten das Addon verträgl
 | 10 ✔ | **NCR: Die Tränke** ([Umsetzung 10](umsetzung-10-ncr.md)) | Karte, Madame, „Etablissement Nr. 9“ (vier Wege, Krankenstube als Auflage), Karawanenhof, Registratur, **Vortis' Angebot**. Questline **„Die Reinen“** mit Ruth Calloway in fünf Akten |
 | 11 ✔ | **San Francisco: Die Bilge** ([Umsetzung 11](umsetzung-11-san-francisco.md)) | Karte, Madame, „Die Duldung“ mit Aufseher Wen (drei Wege), Anlegesteg, Schmuggelkammer, Siegel der Shi. Hubologen: entlarven, unterwandern oder Absprache |
 | 12 ✔ | **„Blut auf der Virgin Street“** ([Umsetzung 12](umsetzung-12-virgin-street.md)) | Carlo Venuti in fünf Akten, Miss Kittys Angebot (fünf Wege für das Cat's Paw), Kitty als Partnerin oder Rivalin, „Kittys Kralle“ |
-| 13 | **Talente** | Vesper (Gecko), Talus (Broken Hills), Julian Rook (Golden Globes), dazu Loyalität, Vorwarnung vor dem Tod und Tyrannen-Varianten |
+| 13 ✔ | **Talente** ([Umsetzung 13](umsetzung-13-talente.md)) | Vesper (Gecko), Abigail Kessler (Vault City), Talus (Broken Hills), Julian Rook (Golden Globes), dazu Loyalität, Vorwarnung vor dem Tod und Tyrannen-Varianten |
 | 14 | **Jobs und Läuferroute** | Bestechung je Stadt, Schutzgeld, Sabotage, Gefälligkeiten. „Die Läuferroute“ mit Marcus |
 | 15 | **Ereignisse vollständig** | alle Lösungswege aus Phase 4 (4.2, 4.3) bei allen Madames, Razzien je Stadt, Tod im Haus |
 | 16 | **Abschluss** | Enden und Nachsätze aller Linien im Epilog, Titel-Wirkungen, Gesamtprüfung, Pakete für RPU 2.3.34 und 2.4.34, Gesamtdoku |

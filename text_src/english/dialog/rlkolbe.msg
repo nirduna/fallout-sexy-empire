@@ -219,3 +219,4 @@
 
 # @include _rl_module.inc
 # @include _rl_sonder.inc
+# @include _rl_talente.inc
