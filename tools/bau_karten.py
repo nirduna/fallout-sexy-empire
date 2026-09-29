@@ -65,6 +65,13 @@ RLDEN01 = dict(
              hex=17270, rot=1, daten=[0, 0, 0, 7, 0, 13, 1, -1, 68, 0, 0]),
     ],
     kartenskript="SCRIPT_RLDEN01",
+    # Figuren, die das Kartenskript zur Laufzeit setzt (Umsetzung 5, "Ketten" Akt 2-5)
+    laufzeit={
+        "MARA": 18466,        # hinter dem alten Kessel, weg von der Treppe
+        "DEKE": 17466,        # Deke oder Jess, mitten im Raum
+        "ANGREIFER1": 16866,  # kommen die Treppe herunter
+        "ANGREIFER2": 17264,
+    },
 )
 
 
@@ -106,6 +113,8 @@ def header():
         f"#define RL_GOSSE_EINGANG_HEX        ({RLDEN01['eingang_hex']})",
         f"#define RL_GOSSE_ESSIE_HEX          ({RLDEN01['figuren'][0]['hex']})",
         f"#define RL_GOSSE_KOLBE_HEX          ({RLDEN01['figuren'][1]['hex']})",
+    ] + [f"#define RL_GOSSE_{name}_HEX{' ' * (15 - len(name))}({hexfeld})"
+         for name, hexfeld in RLDEN01["laufzeit"].items()] + [
         "",
         "#endif",
         "",
@@ -235,8 +244,12 @@ def pruefe(k, db):
         p = o["kopf"]["pid"]
         if fomap.pid_typ(p) in (fomap.T_WALL, fomap.T_SCENERY) and p not in NICHT_BLOCKIEREND:
             belegt.setdefault(o["kopf"]["tile"], hex(p))
-    for name, t in [("Startpunkt", RLDEN01["eingang_hex"])] + [(f["name"], f["hex"]) for f in RLDEN01["figuren"]]:
+    pruef = ([("Startpunkt", RLDEN01["eingang_hex"])] + [(f["name"], f["hex"]) for f in RLDEN01["figuren"]]
+             + list(RLDEN01["laufzeit"].items()))
+    for name, t in pruef:
         assert t not in belegt, f"{name} steht auf Hex {t}, dort ist schon {belegt[t]}"
+    felder = [t for _, t in pruef]
+    assert len(felder) == len(set(felder)), "zwei Positionen auf einem Feld"
 
 
 def bauen(a):

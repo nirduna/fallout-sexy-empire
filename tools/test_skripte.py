@@ -70,7 +70,7 @@ class Umgebung:
                  'RL_GVAR_BASE': str(self.cfg['RL_GVAR_BASE']),
                  'RL_MAP_INDEX': str(self.cfg['RL_MAP_INDEX'])}
         hdr = os.path.join(WURZEL, 'scripts_src', 'headers')
-        for f in ('rotlicht.h', 'rl_karten.h', 'rl_katalog.h'):
+        for f in ['rotlicht.h'] + sorted(n for n in os.listdir(hdr) if n.startswith('rl_') and n.endswith('.h')):
             self.k.lade(os.path.join(hdr, f), extra)
         for f in ('global.h', 'maps.h', 'critrpid.h', 'define.h', 'den.h'):
             p = os.path.join(fo2, 'headers', f)
@@ -122,11 +122,29 @@ class Welt:
 
 
 def figuren(sp, k):
-    """Essie und Kolbe wie auf der Karte RLDEN01 (bau_karten.py)."""
+    """Essie, Kolbe und das Kartenskript wie auf der Karte RLDEN01 (bau_karten.py)."""
     sp.karte = k['RL_MAP_INDEX']
     essie = sp.erzeuge(0x1000042, k['RL_GOSSE_ESSIE_HEX'], 0, k['SCRIPT_RLESSIE'], 'Essie')
     kolbe = sp.erzeuge(0x100001E, k['RL_GOSSE_KOLBE_HEX'], 0, k['SCRIPT_RLKOLBE'], 'Kolbe')
+    sp.erzeuge(0, -1, 0, k['SCRIPT_RLDEN01'], 'Kartenskript')
     return essie, kolbe
+
+
+def gosse(sp, k):
+    """Die Gosse betreten: Kartenskript und Figuren reagieren (map_enter_p_proc)."""
+    sp.betrete_karte(k['RL_MAP_INDEX'])
+    sp.temp_freigeben()
+
+
+def figur(sp, k, name):
+    """Die (eine) lebende Figur mit dem Skript SCRIPT_<NAME>."""
+    fs = sp.finde(k['SCRIPT_' + name])
+    pruefe(len(fs) == 1, f'{name}: {len(fs)} Figuren statt einer')
+    return fs[0]
+
+
+def keine_figur(sp, k, name):
+    pruefe(not sp.finde(k['SCRIPT_' + name]), f'{name} ist noch da')
 
 
 def woche(sp, n=1):
@@ -544,6 +562,7 @@ def _gosse_bereit(u):
     rede(sp, e, ['Go on', 'Later'])
     w.setze_haus(0, 'RL_F_ZIMMER', 5)
     w.setze_haus(0, 'RL_F_KASSE', 1000)
+    w.setze_welt('RL_W_MARA_GESEHEN', 1)      # Akt 2 soll die Anwerbe-Tests nicht unterbrechen
     sp.zeit = 0
     sp.tick()
     sp.zufall_fest = 'max'           # keine Ereignisse, neue Leute mit Hoechstwerten
@@ -622,9 +641,347 @@ def test_pferch_flucht_und_nachschub(u):
     allgemein(sp, 'pferch')
 
 
+# --------------------------------------------------------------------------
+# Umsetzung 5: "Ketten", Akt 2-5
+
+def _akt2(u, annehmen=False):
+    """Prolog bezahlt, Akt 1 entschieden, eine Woche spaeter: Mara im Keller."""
+    k = u.k
+    sp, e, ko, w = prolog(u, 'bezahlt')
+    rede(sp, e, ['Go on', 'Later'])
+    if annehmen:
+        rede(sp, ko, ['Deal. Bring them', None])
+    else:
+        rede(sp, ko, ['No. Not in my house', None])
+    rede(sp, e, ['Go on', 'Later'])
+    sp.zeit = 0
+    sp.tick()
+    sp.zufall_fest = 'min'           # Proben gelingen, keine Zufallsereignisse
+    woche(sp)
+    pruefe(w.welt('RL_W_MARA_WEG') == k['RL_MARA_KELLER'], 'Mara nicht im Keller')
+    pruefe(any('Essie wants to see you' in m for m in sp.meldungen), f'Meldung fehlt: {sp.meldungen}')
+    gosse(sp, k)
+    mara = figur(sp, k, 'RLMARA')
+    pruefe(mara.tile == k['RL_GOSSE_MARA_HEX'], 'Mara am falschen Platz')
+    if annehmen:
+        keine_figur(sp, k, 'RLKOLBE')      # im Tyrannen-Zweig kommt Kolbe erst mit Akt 3 zurueck
+        ko = None
+    return sp, e, ko, mara, w
+
+
+def test_akt2_verstecken_bis_madame(u):
+    """Fluchtzweig komplett: verstecken, Zuflucht, drei Transporte, Tyler abkaufen,
+    Sturm, Metzger stirbt, die Gilde faellt, Mara wird Madame."""
+    k = u.k
+    sp, e, ko, mara, w = _akt2(u)
+    karma = sp.gvars.get(k['GVAR_PLAYER_REPUTATION'], 0)
+    v = rede(sp, e, ['What do you want me to do', "I'll talk to her"])
+    pruefe('girl in the cellar' in v[0][0], 'Essie zeigt Mara nicht')
+    rede(sp, mara, ['Who are you', 'You can stay', None])
+    pruefe(w.welt('RL_W_MARA_WEG') == k['RL_MARA_VERSTECKT'], 'nicht versteckt')
+    pruefe(sp.gvars[k['GVAR_PLAYER_REPUTATION']] == karma + 10, 'Karma +10')
+    pruefe(w.welt('RL_W_KETTEN') == k['RL_KETTEN_KETTE'], 'Akt 3')
+    pruefe(w.welt('RL_W_RANGERS') == k['RL_RANGERS_KONTAKT'], 'Maras Wissen')
+    # Essie warnt und fuehrt direkt zum Ausbau; die Zuflucht bauen
+    w.setze_haus(0, 'RL_F_KASSE', 1000)
+    v = rede(sp, e, ['Build the hidden room', 'Something you only get here', 'The Hidden Room', 'Build it'])
+    pruefe('asking about a runaway' in v[0][0], 'Warnung fehlt')
+    pruefe(w.haus(0, 'RL_F_BAU_ID') == 51, f'Bau {w.haus(0, "RL_F_BAU_ID")}')
+    sp.meldungen.clear()
+    woche(sp)
+    pruefe(w.haus(0, 'RL_F_MODULE') & k['RL_MOD_ZUFLUCHT'], 'Zuflucht nicht fertig')
+    pruefe(w.welt('RL_W_MARA_WEG') == k['RL_MARA_VERSTECKT'], 'Mara trotz Zuflucht gefunden')
+    pruefe(any('never found the door' in m for m in sp.meldungen), f'Meldungen {sp.meldungen}')
+    # drei Transporte ueber das Manager-Menue
+    sp.dude.skills[k['SKILL_SNEAK']] = 70
+    for n in range(3):
+        rede(sp, e, ['The route south', 'take them myself'])
+        pruefe(w.welt('RL_W_AUFTRAG') == k['RL_AUFTRAG_SUEDEN'], 'kein Auftrag')
+        v = rede(sp, e, ['The route south', 'Back'])
+        pruefe("on the road" in texte(v), 'laufender Auftrag nicht gemeldet')
+        woche(sp)
+        pruefe(w.welt('RL_W_TRANSPORTE') == n + 1, f'Transporte {w.welt("RL_W_TRANSPORTE")}')
+    pruefe(w.welt('RL_W_KETTEN') == k['RL_KETTEN_TYLER'], 'Akt 4')
+    pruefe(any("Tyler's boys" in m for m in sp.meldungen), 'Tyler-Meldung fehlt')
+    gosse(sp, k)
+    deke = figur(sp, k, 'RLDEKE')
+    sp.dude.skills[k['SKILL_BARTER']] = 60
+    geld = sp.dude.kronkorken + max(0, w.haus(0, 'RL_F_KASSE'))
+    rede(sp, deke, ['[Barter]', None])
+    pruefe(deke.zerstoert and w.welt('RL_W_TYLER') == k['RL_TYLER_GEKAUFT'], 'Tyler nicht abgekauft')
+    pruefe(sp.dude.kronkorken + max(0, w.haus(0, 'RL_F_KASSE')) == geld - 400, 'Preis 400')
+    pruefe(w.welt('RL_W_KETTEN') == k['RL_KETTEN_WAHL'], 'Akt 5')
+    v = rede(sp, e, ['Tonight', None])
+    pruefe(w.welt('RL_W_KETTEN') == k['RL_KETTEN_STURM'], 'Sturm')
+    # Metzger stirbt (Vanilla: GVAR_DEN_FLAG_1, bit 1)
+    karma = sp.gvars.get(k['GVAR_PLAYER_REPUTATION'], 0)
+    sp.gvars[k['GVAR_DEN_FLAG_1']] = sp.gvars.get(k['GVAR_DEN_FLAG_1'], 0) | 1
+    sp.tick()
+    pruefe(w.welt('RL_W_KETTEN') == k['RL_KETTEN_GILDE_FAELLT'], 'Die Gilde faellt nicht')
+    pruefe(sp.gvars[k['GVAR_PLAYER_REPUTATION']] == karma + 50, 'Karma +50')
+    pruefe(w.welt('RL_W_RANGERS') == k['RL_RANGERS_VERBUENDET'], 'Rangers')
+    pruefe(w.welt('RL_W_MARA_WEG') == k['RL_MARA_ZURUECK'], 'Mara kehrt nicht zurueck')
+    sp.dude.skills[k['SKILL_SPEECH']] = 50
+    v = rede(sp, mara, ['Why did you come back', '[Speech] Run the Gutter', None])
+    pruefe(w.welt('RL_W_MARA') == 1 and w.welt('RL_W_MARA_WEG') == k['RL_MARA_MADAME'], 'keine Madame')
+    pruefe(w.haus(0, 'RL_F_FUEHRUNG') >= 70, 'Fuehrung')
+    v = rede(sp, mara, ["Let's talk prices", 'Back' if False else 'Leave it'])
+    pruefe('Everyone in the house can leave' in v[0][0], f'Mara-Menue: {v[0][0]}')
+    sp.tick()
+    pruefe(sp.gvars.get(k['GVAR_RL_NACHSATZ']) == k['RL_NACHSATZ_UEBERLEBENDE'], 'Nachsatz Die Ueberlebende')
+    # Mara geht, sobald irgendwo jemand gezwungen wurde (freies Zimmer noetig)
+    w.setze_haus(0, 'RL_F_ZIMMER', w.haus(0, 'RL_F_PERSONAL') + 1)
+    rede(sp, e, ['about our people', "doesn't ask"])
+    sp.meldungen.clear()
+    woche(sp)
+    woche(sp)
+    pruefe(w.welt('RL_W_MARA_WEG') == k['RL_MARA_GEGANGEN'] and w.welt('RL_W_MARA') == 0, 'Mara bleibt trotz Zwang')
+    pruefe(any('You know why' in m for m in sp.meldungen), f'Meldungen {sp.meldungen}')
+    gosse(sp, k)
+    keine_figur(sp, k, 'RLMARA')
+    allgemein(sp, 'akt2 verstecken bis madame')
+
+
+def test_suche_ohne_zuflucht(u):
+    k = u.k
+    sp, e, ko, mara, w = _akt2(u)
+    rede(sp, mara, ['You can stay', None])
+    woche(sp)
+    pruefe(w.welt('RL_W_MARA_WEG') == k['RL_MARA_VERSCHLEPPT'], 'Mara nicht gefunden')
+    pruefe(w.welt('RL_W_METZGER') == k['RL_METZGER_FEIND'], 'Metzger nicht Feind')
+    pruefe(any('found Mara' in m for m in sp.meldungen), 'Meldung')
+    gosse(sp, k)
+    keine_figur(sp, k, 'RLMARA')
+    allgemein(sp, 'suche')
+
+
+def test_akt2_retten_stiller_krieg(u):
+    k = u.k
+    sp, e, ko, mara, w = _akt2(u)
+    sp.dude.skills[k['SKILL_OUTDOORSMAN']] = 60
+    rede(sp, mara, ['[Outdoorsman]', None])
+    pruefe(mara.zerstoert and w.welt('RL_W_MARA_WEG') == k['RL_MARA_SICHER'], 'nicht gerettet')
+    # Ohne Perception 7 kennt man das Versteck der Rangers durch Mara
+    pruefe(w.welt('RL_W_RANGERS') == k['RL_RANGERS_KONTAKT'], 'Rangers-Kontakt')
+    # direkt zu Akt 5 springen und den stillen Krieg waehlen
+    w.setze_welt('RL_W_KETTEN', k['RL_KETTEN_WAHL'])
+    v = rede(sp, e, ['Not yet', None])
+    pruefe(w.welt('RL_W_KETTEN') == k['RL_KETTEN_STILLER_KRIEG'], 'stiller Krieg')
+    sp.meldungen.clear()
+    woche(sp, 2)
+    pruefe(w.welt('RL_W_MARA_WEG') == k['RL_MARA_ZURUECK'], 'Mara nicht zurueck')
+    pruefe(any('Someone is waiting' in m for m in sp.meldungen), 'Meldung Rueckkehr')
+    gosse(sp, k)
+    mara = figur(sp, k, 'RLMARA')
+    # Vergeltung nach 6 Wochen: Krise in der Gosse, die Rangers helfen
+    woche(sp, 4)
+    pruefe(w.haus(0, 'RL_F_KRISE') == k['RL_EV_VERGELTUNG'], f'Krise {w.haus(0, "RL_F_KRISE")}')
+    v = rede(sp, e, ["You said there's a problem", 'Rangers'])
+    pruefe(w.haus(0, 'RL_F_KRISE') == 0, 'Krise nicht geloest')
+    # Mara draengen: sie geht zu Calloway
+    rede(sp, mara, ['Why did you come back', 'You owe me', None])
+    pruefe(w.welt('RL_W_MARA_WEG') == k['RL_MARA_CALLOWAY'] and mara.zerstoert, 'Calloway')
+    # Metzger stirbt spaeter doch: aus dem stillen Krieg wird "Die Gilde faellt"
+    sp.gvars[k['GVAR_DEN_FLAG_1']] = 1
+    sp.tick()
+    pruefe(w.welt('RL_W_KETTEN') == k['RL_KETTEN_GILDE_FAELLT'], 'Gilde faellt nach stillem Krieg')
+    allgemein(sp, 'retten')
+
+
+def test_akt2_ausliefern_essie_geht(u):
+    k = u.k
+    sp, e, ko, mara, w = _akt2(u)
+    geld = sp.dude.kronkorken
+    rede(sp, mara, ['(Hand her over', None])
+    pruefe(mara.zerstoert and w.welt('RL_W_MARA_WEG') == k['RL_MARA_AUSGELIEFERT'], 'nicht ausgeliefert')
+    pruefe(sp.dude.kronkorken == geld + 500, '500 $')
+    pruefe(w.welt('RL_W_ESSIE') == k['RL_ESSIE_GEKUENDIGT'], 'Essie kuendigt nicht')
+    pruefe(w.welt('RL_W_KETTEN_ZWEIG') == k['RL_KETTEN_ZWEIG_TYRANN'], 'Tyrannen-Zweig')
+    v = rede(sp, e, [None])
+    pruefe('My bag is packed' in v[0][0] and e.zerstoert, 'Essies Abschied')
+    gosse(sp, k)
+    ko = figur(sp, k, 'RLKOLBE')
+    v = rede(sp, ko, ["Let's talk about the house", 'Later'])
+    pruefe('Metzger has work' in v[0][0], f'Kolbe: {v[0][0]}')
+    pruefe(any('Metzger sends his regards. The house is running' in a for a, _, _ in v), 'Kolbe fuehrt nicht')
+    allgemein(sp, 'ausliefern')
+
+
+def test_tyrann_bis_metzgers_mann(u):
+    k = u.k
+    sp, e, ko, mara, w = _akt2(u, annehmen=True)
+    # Pferch: verstecken geht nicht, Essie (gebrochen) bleibt beim Ausliefern
+    v = rede(sp, mara, ['(Hand her over', None])
+    pruefe(not any('You can stay' in o for _, opts, _ in v for o in opts), 'Verstecken trotz Pferch')
+    pruefe(w.welt('RL_W_ESSIE') == k['RL_ESSIE_DA'], 'Essie ging im Tyrannen-Zweig')
+    gosse(sp, k)
+    ko = figur(sp, k, 'RLKOLBE')
+    sp.dude.skills[k['SKILL_SPEECH']] = 80
+    for n in range(3):
+        v = rede(sp, ko, ['Vault City' if n % 2 == 0 else 'Vortis', None])
+        pruefe(w.welt('RL_W_AUFTRAG') in (2, 3), 'kein Auftrag')
+        kasse = w.haus(0, 'RL_F_KASSE')
+        sp.meldungen.clear()
+        woche(sp)
+        pruefe(w.welt('RL_W_LIEFERUNGEN') == n + 1, 'Lieferung')
+        pruefe(any('The shipment arrived' in m for m in sp.meldungen), f'Meldung {sp.meldungen}')
+    pruefe(w.welt('RL_W_KETTEN') == k['RL_KETTEN_TYLER'], 'Akt 4 (Lara)')
+    gosse(sp, k)
+    jess = figur(sp, k, 'RLJESS')
+    zwang = w.haus(0, 'RL_F_ZWANG')
+    personal = w.haus(0, 'RL_F_PERSONAL')
+    rede(sp, jess, ['Take them', None])
+    pruefe(jess.zerstoert and w.haus(0, 'RL_F_ZWANG') == 0 and w.haus(0, 'RL_F_PERSONAL') == personal - zwang, 'Pferch leer')
+    pruefe(w.welt('RL_W_KETTEN') == k['RL_KETTEN_WAHL'], 'Akt 5')
+    rede(sp, ko, ['Tell him yes', None])
+    pruefe(w.welt('RL_W_KETTEN') == k['RL_KETTEN_METZGERS_MANN'], 'Metzgers Mann')
+    pruefe(sp.gvars.get(k['GVAR_REPUTATION_SLAVER']) == 1, 'Slaver-Titel')
+    kasse = w.haus(0, 'RL_F_KASSE')
+    sp.tick()
+    pruefe(sp.gvars.get(k['GVAR_RL_TITEL_SEELE']) == 1, 'Seelenverkaeufer')
+    gosse(sp, k)
+    figur(sp, k, 'RLKOLBE')
+    allgemein(sp, 'metzgers mann')
+
+
+def test_neuer_metzger(u):
+    k = u.k
+    sp, e, ko, mara, w = _akt2(u, annehmen=True)
+    rede(sp, mara, ['(Hand her over', None])
+    w.setze_welt('RL_W_KETTEN', k['RL_KETTEN_WAHL'])
+    gosse(sp, k)
+    ko = figur(sp, k, 'RLKOLBE')
+    rede(sp, ko, ['accident', None])
+    pruefe(w.welt('RL_W_METZGER_VERRAT') == 1, 'Verrat')
+    v = rede(sp, ko, [None])
+    pruefe('still breathing' in v[0][0], 'Erinnerung')
+    karma = sp.gvars.get(k['GVAR_PLAYER_REPUTATION'], 0)
+    sp.gvars[k['GVAR_DEN_FLAG_1']] = 1
+    sp.meldungen.clear()
+    sp.tick()
+    pruefe(w.welt('RL_W_KETTEN') == k['RL_KETTEN_NEUER_METZGER'], 'Der neue Metzger')
+    pruefe(sp.gvars[k['GVAR_PLAYER_REPUTATION']] == karma - 100, 'Karma -100')
+    pruefe(any('The Guild is yours' in m for m in sp.meldungen), 'Meldung')
+    woche(sp)
+    pruefe(w.haus(0, 'RL_F_STADTMOD') == 70, f'Den-Modifikator {w.haus(0, "RL_F_STADTMOD")}')
+    pruefe(sp.gvars.get(k['GVAR_RL_NACHSATZ']) == k['RL_NACHSATZ_KETTEN'], 'Nachsatz Ketten')
+    allgemein(sp, 'neuer metzger')
+
+
+def test_kampf_deke_und_jess(u):
+    k = u.k
+    # Fluchtzweig: Kampf gegen Deke und zwei von Tylers Leuten
+    sp, e, ko, mara, w = _akt2(u)
+    rede(sp, mara, ['You can stay', None])
+    w.setze_welt('RL_W_KETTEN', k['RL_KETTEN_TYLER'])
+    gosse(sp, k)
+    deke = figur(sp, k, 'RLDEKE')
+    rede(sp, deke, ['Get out of my house', None])
+    angreifer = sp.finde(k['SCRIPT_RLANGREIFER'])
+    pruefe(len(angreifer) == 2 and w.welt('RL_W_ANGREIFER') == 3, 'Angreifer fehlen')
+    pruefe(len(sp.angriffe) >= 3, f'Angriffe {sp.angriffe}')
+    # Karte verlassen und wiederkommen: Sie greifen wieder an, Deke bleibt
+    gosse(sp, k)
+    figur(sp, k, 'RLDEKE')
+    for o in [deke] + angreifer:
+        sp.zerstoere(o)             # im Kampf gefallen: destroy_p_proc
+    pruefe(w.welt('RL_W_TYLER') == k['RL_TYLER_BESIEGT'] and w.welt('RL_W_KETTEN') == k['RL_KETTEN_WAHL'], 'Kampf nicht beendet')
+    pruefe(w.welt('RL_W_ANGRIFF') == 0, 'Angriff offen')
+    # Tyrannen-Zweig: Laras Leute
+    sp, e, ko, mara, w = _akt2(u, annehmen=True)
+    rede(sp, mara, ['(Hand her over', None])
+    w.setze_welt('RL_W_KETTEN', k['RL_KETTEN_TYLER'])
+    gosse(sp, k)
+    jess = figur(sp, k, 'RLJESS')
+    karma = sp.gvars.get(k['GVAR_PLAYER_REPUTATION'], 0)
+    rede(sp, jess, ['Over my dead body', None])
+    for o in [jess] + sp.finde(k['SCRIPT_RLANGREIFER']):
+        sp.zerstoere(o)
+    pruefe(w.welt('RL_W_LARA') == k['RL_LARA_ABGEWEHRT'] and w.welt('RL_W_KETTEN') == k['RL_KETTEN_WAHL'], 'Lara abgewehrt')
+    pruefe(sp.gvars[k['GVAR_PLAYER_REPUTATION']] == karma - 10, 'Karma -10')
+    allgemein(sp, 'kaempfe')
+
+
+def test_tyler_tot_vanilla(u):
+    k = u.k
+    sp, e, ko, mara, w = _akt2(u)
+    rede(sp, mara, ['You can stay', None])
+    w.setze_welt('RL_W_KETTEN', k['RL_KETTEN_TYLER'])
+    sp.gvars[k['GVAR_DEN_FLAG_2']] = sp.gvars.get(k['GVAR_DEN_FLAG_2'], 0) | k['bit_32']
+    sp.tick()
+    pruefe(w.welt('RL_W_TYLER') == k['RL_TYLER_TOT'] and w.welt('RL_W_KETTEN') == k['RL_KETTEN_WAHL'], 'Tyler tot')
+    gosse(sp, k)
+    keine_figur(sp, k, 'RLDEKE')
+    allgemein(sp, 'tyler tot')
+
+
+def test_alter_spielstand(u):
+    """Spielstand aus Umsetzung 4: Welt-Array mit 32 Feldern wird erweitert."""
+    k = u.k
+    sp = u.neues_spiel()
+    alt = intvm.Liste(32)
+    alt.werte[k['RL_W_PROLOG']] = k['RL_PROLOG_FERTIG']
+    alt.werte[k['RL_W_KETTEN']] = k['RL_KETTEN_KELLER']
+    alt.werte[k['RL_W_METZGER_NEIN']] = 1
+    aid = sp.naechstes_array
+    sp.naechstes_array += 1
+    sp.arrays[aid] = alt
+    sp.gespeichert['RL_WELT'] = aid
+    sp.globale = []
+    sp.lade_global('gl_rotlicht')
+    w = Welt(sp, k)
+    pruefe(len(w.w) == k['RL_WELT_FELDER'], f'Welt hat {len(w.w)} Felder')
+    pruefe(w.welt('RL_W_KETTEN') == k['RL_KETTEN_KELLER'] and w.welt('RL_W_METZGER_NEIN') == 1, 'Werte verloren')
+    pruefe(aid not in sp.arrays, 'altes Array nicht freigegeben')
+    allgemein(sp, 'alter spielstand')
+
+
+def test_erkundung_ketten(u):
+    """Alle Dialogpfade der neuen Figuren in den Zustaenden von Akt 2-5."""
+    k = u.k
+    gesamt = 0
+    sp, e, ko, mara, w = _akt2(u)
+    gesamt += erkunde(sp, mara, 'Mara im Keller')[1]
+    gesamt += erkunde(sp, e, 'Essie Akt 2')[1]
+    rede(sp, mara, ['You can stay', None])
+    gesamt += erkunde(sp, mara, 'Mara versteckt')[1]
+    gesamt += erkunde(sp, e, 'Essie Suche')[1]
+    w.setze_welt('RL_W_KETTEN', k['RL_KETTEN_TYLER'])
+    gosse(sp, k)
+    for bar, spr in ((0, 0), (60, 60), (60, 80)):
+        sp.dude.skills[k['SKILL_BARTER']] = bar
+        sp.dude.skills[k['SKILL_SPEECH']] = spr
+        gesamt += erkunde(sp, figur(sp, k, 'RLDEKE'), f'Deke {bar}/{spr}')[1]
+    w.setze_welt('RL_W_KETTEN', k['RL_KETTEN_WAHL'])
+    gesamt += erkunde(sp, e, 'Essie Akt 5')[1]
+    w.setze_welt('RL_W_MARA_WEG', k['RL_MARA_ZURUECK'])
+    w.setze_welt('RL_W_KETTEN', k['RL_KETTEN_GILDE_FAELLT'])
+    for spr in (0, 50):
+        sp.dude.skills[k['SKILL_SPEECH']] = spr
+        gesamt += erkunde(sp, mara, f'Mara zurueck {spr}')[1]
+    w.setze_welt('RL_W_MARA_WEG', k['RL_MARA_MADAME'])
+    w.setze_welt('RL_W_MARA', 1)
+    gesamt += erkunde(sp, mara, 'Mara Madame')[1]
+    sp, e, ko, mara, w = _akt2(u, annehmen=True)
+    gesamt += erkunde(sp, mara, 'Mara im Pferch-Haus')[1]
+    rede(sp, mara, ['(Hand her over', None])
+    gosse(sp, k)
+    ko = figur(sp, k, 'RLKOLBE')
+    for akt in ('RL_KETTEN_KETTE', 'RL_KETTEN_TYLER', 'RL_KETTEN_WAHL', 'RL_KETTEN_METZGERS_MANN', 'RL_KETTEN_NEUER_METZGER'):
+        w.setze_welt('RL_W_KETTEN', k[akt])
+        gesamt += erkunde(sp, ko, f'Kolbe {akt}')[1]
+    w.setze_welt('RL_W_KETTEN', k['RL_KETTEN_TYLER'])
+    gosse(sp, k)
+    gesamt += erkunde(sp, figur(sp, k, 'RLJESS'), 'Jess')[1]
+    print(f'      {gesamt} Dialogzustaende der Akte 2-5 erkundet')
+
+
 TESTS = [test_wirtschaft_paritaet, test_erkundung, test_eingang, test_prolog_wege, test_diebstahl_erwischt, test_ketten_annehmen,
          test_ketten_ablehnen, test_ketten_kein_geld, test_kolbe_stirbt, test_kolbe_kommt_zurueck,
-         test_wochen, test_anwerbung_werben, test_anwerbung_zwingen, test_pferch_flucht_und_nachschub]
+         test_wochen, test_anwerbung_werben, test_anwerbung_zwingen, test_pferch_flucht_und_nachschub,
+         test_akt2_verstecken_bis_madame, test_suche_ohne_zuflucht, test_akt2_retten_stiller_krieg,
+         test_akt2_ausliefern_essie_geht, test_tyrann_bis_metzgers_mann, test_neuer_metzger,
+         test_kampf_deke_und_jess, test_tyler_tot_vanilla, test_alter_spielstand, test_erkundung_ketten]
 
 
 def main():

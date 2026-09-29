@@ -1,0 +1,261 @@
+/*
+   rlmara.ssl - Mara, die Frau aus dem Keller (The Den)
+
+   Umsetzung 5:
+     - Ketten, Akt 2 (Phase 3, 3.2): Sie ist aus einer Karawane der Gilde
+       entkommen und versteckt sich in der Gosse. Der Spieler entscheidet:
+       verstecken, in Sicherheit bringen (Sneak oder Outdoorsman 60) oder an
+       Metzger ausliefern.
+     - Versteckt: erzaehlt von den Rangers (Kontakt fuer die Route nach Sueden).
+     - Nach dem Ende im Fluchtzweig kehrt sie zurueck (Phase 4, 3.5) und wird
+       Madame der Gosse, wenn der Spieler sie fragt (Speech 50 oder CH 6) und
+       nirgends Zwangspersonal haelt. Wer sie draengt, verliert sie an Calloway.
+     - Als Madame: das gemeinsame Manager-Menue (rl_manager.h).
+
+   Texte: text_src/english/dialog/rlmara.msg
+     100-199, 460-498, 600-611  Manager-Menue (ihre Stimme)
+     200-201                    Ansehen
+     800-859                    Geschichte
+*/
+
+#define SCRIPT_REALNAME "rlmara"
+#include "define.h"
+#include "../headers/rotlicht.h"
+
+#define NAME                    SCRIPT_RLMARA
+#include "command.h"
+
+procedure start;
+procedure talk_p_proc;
+procedure map_enter_p_proc;
+procedure destroy_p_proc;
+procedure look_at_p_proc;
+procedure description_p_proc;
+
+procedure Node800;      // Akt 2: im Keller
+procedure Node801;      // wer bist du?
+procedure Node810;      // die Wahl
+procedure Node820;      // verstecken
+procedure Node830;      // in Sicherheit bringen
+procedure Node840;      // ausliefern
+procedure Node850;      // versteckt
+procedure Node851;      // sicher hier?
+procedure Node852;      // die Rangers
+procedure Node860;      // zurueck: Anwerbung
+procedure Node861;      // warum?
+procedure Node862;      // Madame
+procedure Node863;      // gedraengt
+procedure Node864;      // Check nicht geschafft
+procedure Node999;
+
+variable haus;
+variable welt;
+variable h := RL_DEN;
+variable gehen := 0;        // nach dem Dialog verlassen (gerettet, ausgeliefert, gedraengt)
+variable selbst_weg := 0;   // destroy_p_proc: nur gehen, nicht sterben
+
+#include "../headers/rl_manager.h"
+
+procedure start begin
+end
+
+procedure map_enter_p_proc begin
+   welt := rl_lade_welt;
+   if (not rl_mara_da(welt)) then begin
+      selbst_weg := 1;
+      destroy_object(self_obj);
+   end
+end
+
+// Stirbt Mara, ist sie tot. Geht sie nur, bleibt ihr Weg, wie er ist.
+procedure destroy_p_proc begin
+   if (selbst_weg) then return;
+   welt := rl_lade_welt;
+   haus := rl_lade_haeuser;
+   if (welt[RL_W_MARA_WEG] == RL_MARA_MADAME) then begin
+      welt[RL_W_MARA] := 0;
+      haus[rl_idx(RL_DEN, RL_F_MORALBONUS)] := rl_max(0, haus[rl_idx(RL_DEN, RL_F_MORALBONUS)] - 1);
+   end
+   if ((welt[RL_W_MARA_WEG] == RL_MARA_KELLER) and (welt[RL_W_KETTEN] == RL_KETTEN_KELLER)) then
+      call rl_ketten_akt3(welt);
+   welt[RL_W_MARA_WEG] := RL_MARA_TOT;
+end
+
+procedure look_at_p_proc begin
+   script_overrides;
+   display_mstr(200);
+end
+
+procedure description_p_proc begin
+   script_overrides;
+   display_mstr(201);
+end
+
+procedure talk_p_proc begin
+   variable w;
+   haus := rl_lade_haeuser;
+   welt := rl_lade_welt;
+   w := welt[RL_W_MARA_WEG];
+   start_gdialog(NAME, self_obj, 4, -1, -1);
+   gSay_Start;
+      if (w == RL_MARA_KELLER) then
+         call Node800;
+      else if (w == RL_MARA_VERSTECKT) then
+         call Node850;
+      else if (w == RL_MARA_ZURUECK) then
+         call Node860;
+      else if (w == RL_MARA_MADAME) then
+         call RLM_Start;
+      else
+         call Node850;
+   gSay_End;
+   end_dialogue;
+   RLM_NACH_DIALOG
+   if (gehen) then begin
+      gehen := 0;
+      gfade_out(600);
+      selbst_weg := 1;
+      destroy_object(self_obj);
+      gfade_in(600);
+   end
+end
+
+/* ------------------------------------------------------------------ */
+/* Akt 2: Die im Keller                                                */
+/* ------------------------------------------------------------------ */
+procedure Node800 begin
+   if (welt[RL_W_ESSIE] != RL_ESSIE_DA) then
+      Reply(mstr(800) + " " + mstr(803));
+   else
+      Reply(800);
+   NOption(801, Node801, 004);
+   call Node810;
+end
+
+procedure Node801 begin
+   Reply(802);
+   call Node810;
+end
+
+// Die Wahl. Verstecken nur mit Essie und ohne Pferch im Keller.
+procedure Node810 begin
+   if ((welt[RL_W_ESSIE] == RL_ESSIE_DA)
+       and ((haus[rl_idx(RL_DEN, RL_F_MODULE)] bwand RL_MOD_RIEGEL_AUSSEN) == 0)) then begin
+      GOption(811, Node820, 004);
+      NLowOption(816, Node820);
+   end
+   if (has_skill(dude_obj, SKILL_SNEAK) >= 60) then
+      GOption(812, Node830, 004);
+   if (has_skill(dude_obj, SKILL_OUTDOORSMAN) >= 60) then
+      GOption(813, Node830, 004);
+   BOption(814, Node840, 004);
+   NOption(815, Node999, 004);
+   NLowOption(817, Node999);
+end
+
+procedure Node820 begin
+   call rl_mara_verstecken(welt);
+   Reply(820);
+   NOption(821, Node999, 004);
+   NLowOption(821, Node999);
+end
+
+procedure Node830 begin
+   call rl_mara_retten(welt);
+   gehen := 1;
+   Reply(830);
+   NOption(831, Node999, 004);
+   NLowOption(831, Node999);
+end
+
+procedure Node840 begin
+   call rl_mara_ausliefern(haus, welt);
+   gehen := 1;
+   Reply(840);
+   NOption(841, Node999, 004);
+   NLowOption(841, Node999);
+end
+
+/* ------------------------------------------------------------------ */
+/* Versteckt in der Gosse                                              */
+/* ------------------------------------------------------------------ */
+procedure Node850 begin
+   Reply(850);
+   NOption(851, Node851, 004);
+   NOption(853, Node852, 004);
+   NOption(855, Node999, 004);
+   NLowOption(855, Node999);
+end
+
+procedure Node851 begin
+   if (haus[rl_idx(RL_DEN, RL_F_MODULE)] bwand RL_MOD_ZUFLUCHT) then
+      Reply(852);
+   else
+      Reply(857);
+   NOption(853, Node852, 004);
+   NOption(855, Node999, 004);
+   NLowOption(855, Node999);
+end
+
+procedure Node852 begin
+   welt[RL_W_RANGERS] := rl_max(welt[RL_W_RANGERS], RL_RANGERS_KONTAKT);
+   Reply(854);
+   NOption(851, Node851, 004);
+   NOption(855, Node999, 004);
+   NLowOption(855, Node999);
+end
+
+/* ------------------------------------------------------------------ */
+/* Zurueck: Madame der Gosse (Phase 4, Abschnitt 3.5)                  */
+/* ------------------------------------------------------------------ */
+procedure Node860 begin
+   Reply(860);
+   NOption(861, Node861, 004);
+   NOption(869, Node999, 004);
+   NLowOption(869, Node999);
+end
+
+procedure Node861 begin
+   if (rl_zwang_irgendwo(haus)) then begin
+      Reply(mstr(862) + " " + mstr(863));
+      NOption(869, Node999, 004);
+      NLowOption(869, Node999);
+      return;
+   end
+   Reply(862);
+   if ((has_skill(dude_obj, SKILL_SPEECH) >= 50) or (dude_charisma >= 6) or global_var(GVAR_RL_TITEL_ANSTAND)) then
+      GOption(864, Node862, 004);
+   else
+      NOption(867, Node864, 004);
+   BOption(865, Node863, 004);
+   NOption(869, Node999, 004);
+   NLowOption(869, Node999);
+end
+
+procedure Node862 begin
+   welt[RL_W_MARA_WEG] := RL_MARA_MADAME;
+   welt[RL_W_MARA] := 1;
+   haus[rl_idx(RL_DEN, RL_F_FUEHRUNG)] := rl_max(haus[rl_idx(RL_DEN, RL_F_FUEHRUNG)], RL_MARA_FUEHRUNG);
+   haus[rl_idx(RL_DEN, RL_F_MORALBONUS)] := haus[rl_idx(RL_DEN, RL_F_MORALBONUS)] + 1;
+   Reply(866);
+   NOption(123, RLM_Start, 004);
+   NOption(869, Node999, 004);
+   NLowOption(869, Node999);
+end
+
+procedure Node863 begin
+   welt[RL_W_MARA_WEG] := RL_MARA_CALLOWAY;
+   gehen := 1;
+   Reply(870);
+   NOption(871, Node999, 004);
+   NLowOption(871, Node999);
+end
+
+procedure Node864 begin
+   Reply(868);
+   NOption(869, Node999, 004);
+   NLowOption(869, Node999);
+end
+
+procedure Node999 begin
+end

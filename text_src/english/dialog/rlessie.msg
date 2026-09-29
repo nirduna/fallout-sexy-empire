@@ -77,6 +77,13 @@
 {185}{}{Something's going around. Two are already down.}
 {186}{}{Money's missing from the till. Not much. Not yet.}
 {187}{}{Two are gone. Just gone.}
+{188}{}{Metzger's men were here last night. They broke two doors and one of our girls' arms, and they left a message: next time they bring chains.}
+
+# Metzger's retaliation (quiet war)
+{174}{}{I'll deal with Metzger's men myself.}
+{175}{}{Send word to the Rangers. They owe us.}
+{176}{}{The next time Metzger's men came, you were waiting. Two of them won't be coming back. The Den will talk about it for a week.}
+{177}{}{The Rangers put two men on the roof for a week. Metzger's boys took one look and went back to the Guild.}
 
 {192}{}{[Debug] Take over the Gutter.}
 {193}{}{[Debug] The Gutter is yours now. House class 1, three rooms, three people.}
@@ -152,4 +159,36 @@
 {497}{}{ a head)}
 {498}{}{Kolbe brings one the same night. Nobody in the house says a word.}
 
+# The route south (chains, act 3, escape branch)
+{600}{}{The route south.}
+{601}{}{Somebody has to know where to take them. The Rangers are hiding somewhere in the NCR, but nobody in the Den knows where, and the ones who did are in the pens.}
+{602}{}{[Perception] I've seen their marks. I know where to look.}
+{603}{}{We can't hide anyone until there's a room in this house that nobody knows about. Build the hidden room first.}
+{604}{}{They're on the road. We'll know by next week. Don't ask me to pray, I stopped doing that at the Cat's Paw.}
+{605}{}{There are people waiting in the hidden room. So far we've gotten }
+{606}{}{ group(s) through. Who takes them south this time?}
+{607}{}{I'll take them myself. [}
+{608}{}{% chance]}
+{609}{}{Back.}
+{610}{}{An old garage in Downtown, then. Nobody would look there. That's why they chose it. I'll tell the ones who come to us.}
+{611}{}{They leave tonight, through the back, one at a time. If this goes wrong, Metzger won't just come for them.}
+
+# Chains, acts 2-5 (Umsetzung 5)
+{800}{}{Before you say anything. There's a girl in the cellar, behind the old boiler. Mara. She got out of one of Metzger's caravans three nights ago and ran the one direction nobody would look: toward the Guild. I gave her water and a blanket. That's all I've done, and it's already enough to hang me.}
+{801}{}{What do you want me to do?}
+{802}{}{Talk to her. Then decide, because Metzger's men are counting heads, and they'll keep counting until they come up one short. Whatever you decide, I'll have to live with it. So will she. Or she won't.}
+{803}{}{I'll talk to her.}
+{810}{}{My bag is packed. I watched them take her out, and I watched you count the money. Forty years in this trade and I never sold one of my own. I'm not starting now. Kolbe can have the keys. He's wanted them long enough.}
+{811}{}{Goodbye, Essie.}
+{820}{}{Metzger's men are asking about a runaway. Door to door. The cellar won't hide her from men who know what they're looking for. We need a room nobody knows about, or she has to leave the Den tonight.}
+{821}{}{Build the hidden room.}
+{830}{}{Lara sent word. Her people are ready. The Rangers you've been sending runaways to are asking the same question: when. Metzger doesn't know how many knives are pointed at his back. Not yet.}
+{831}{}{Tonight. Tell them we go in.}
+{832}{}{Not yet. We keep the route running.}
+{833}{}{I need to think about it.}
+{834}{}{Then it's done. Lara's people will be waiting near the Guild at dusk, with a Ranger squad behind them. They'll keep his guards busy. Metzger himself is yours. Don't come back until he's dead.}
+{835}{}{Lara's people are waiting near the Guild. They won't wait forever, and neither will Metzger once he smells it. He's yours.}
+{836}{}{Then we keep taking them out one at a time, and Metzger keeps hunting us one at a time. That's a war too. Just a quiet one. He'll hit back, you know. Sooner or later he always does.}
+
 # @include _rl_module.inc
+# @include _rl_sonder.inc

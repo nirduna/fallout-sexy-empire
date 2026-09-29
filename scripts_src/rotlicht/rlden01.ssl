@@ -7,6 +7,9 @@
    Umsetzung 4:
      - Steht Metzgers Angebot (Ketten, Akt 1) noch aus und hat Kolbe die Gosse
        schon verlassen (Spielstand aus einer frueheren Fassung), kommt er zurueck.
+   Umsetzung 5:
+     - Figuren nach dem Stand von "Ketten": Kolbe (rl_kolbe_bleibt), Mara
+       (rl_mara_da), Deke (Akt 4, Fluchtzweig), Jess (Akt 4, Tyrannen-Zweig).
    Spaeter (Phase 2): Ausbauten nach RL_F_MODULE und RL_F_KLASSE sichtbar
    schalten.
 
@@ -26,28 +29,40 @@
 procedure start;
 procedure map_enter_p_proc;
 procedure map_update_p_proc;
-procedure rl_kolbe_da;
+procedure rl_figur_da(variable skript);
+procedure rl_figur(variable pid, variable hex, variable skript);
 
 procedure start begin
 end
 
 procedure map_enter_p_proc begin
-   variable welt, obj;
+   variable welt;
    if (map_first_run) then
       display_mstr(100);
    Basement_Lighting;
 
    welt := rl_lade_welt;
-   if ((welt[RL_W_PROLOG] == RL_PROLOG_FERTIG) and (welt[RL_W_KETTEN] == RL_KETTEN_ANGEBOT)
-       and (not rl_kolbe_da)) then begin
-      obj := create_object_sid(PID_TOUGH_THUG_MALE, RL_GOSSE_KOLBE_HEX, 0, SCRIPT_RLKOLBE);
-   end
+   if ((welt[RL_W_PROLOG] == RL_PROLOG_FERTIG) and rl_kolbe_bleibt(welt)) then
+      call rl_figur(PID_TOUGH_THUG_MALE, RL_GOSSE_KOLBE_HEX, SCRIPT_RLKOLBE);
+   if (rl_mara_da(welt)) then
+      call rl_figur(PID_GENERIC_SLAVE_FEMALE, RL_GOSSE_MARA_HEX, SCRIPT_RLMARA);
+   if (rl_deke_bleibt(welt) and (welt[RL_W_TYLER] == RL_TYLER_OFFEN)) then
+      call rl_figur(PID_TOUGH_THUG_MALE, RL_GOSSE_DEKE_HEX, SCRIPT_RLDEKE);
+   if (rl_jess_bleibt(welt) and (welt[RL_W_LARA] == RL_LARA_OFFEN)) then
+      call rl_figur(PID_TOUGH_THUG_FEMALE, RL_GOSSE_DEKE_HEX, SCRIPT_RLJESS);
 end
 
-procedure rl_kolbe_da begin
+// Setzt eine Figur, wenn sie nicht schon auf der Karte steht
+procedure rl_figur(variable pid, variable hex, variable skript) begin
+   variable obj;
+   if (not rl_figur_da(skript)) then
+      obj := create_object_sid(pid, hex, 0, skript);
+end
+
+procedure rl_figur_da(variable skript) begin
    variable o;
    foreach o in list_as_array(LIST_CRITTERS) begin
-      if (get_script(o) == SCRIPT_RLKOLBE) then return 1;
+      if (get_script(o) == skript) then return 1;
    end
    return 0;
 end

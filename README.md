@@ -24,8 +24,9 @@ Konzept und Skripte für eine Addon-Modifikation für **Fallout 2** (sfall 4.x).
 | 3 | Anwerbung: Anwerber mit Werben oder Zwingen, Zulauf, Abgänge, Personal-Menü | umgesetzt, kompiliert, Test im Spiel offen: [docs/umsetzung-3-anwerbung.md](docs/umsetzung-3-anwerbung.md) |
 | 4 | „Ketten“, Akt 1: Metzgers Angebot, Riegel außen, Zwangspersonal | umgesetzt, kompiliert, Test im Spiel offen: [docs/umsetzung-4-ketten-akt1.md](docs/umsetzung-4-ketten-akt1.md) |
 | – | Prüfwerkzeug: Skripte ohne das Spiel ausführen und testen | fertig: [docs/pruefwerkzeug.md](docs/pruefwerkzeug.md) |
+| 5 | „Ketten“, Akt 2–5: Mara, Zuflucht, Route nach Süden, Lieferungen, Tylers Preis, Laras Sturm, vier Enden, Mara als Madame | umgesetzt, im Prüfwerkzeug getestet, Test im Spiel offen: [docs/umsetzung-5-ketten-akt2-5.md](docs/umsetzung-5-ketten-akt2-5.md) |
 
-Die übrigen Schritte 5–16 stehen im [Fahrplan](docs/fahrplan.md).
+Die übrigen Schritte 6–16 stehen im [Fahrplan](docs/fahrplan.md).
 
 ## Werkzeuge
 

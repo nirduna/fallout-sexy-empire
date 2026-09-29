@@ -24,14 +24,18 @@ ROOT = Path(__file__).resolve().parent.parent
 TEXTE = ROOT / "text_src/english"
 DIALOG = TEXTE / "dialog"
 MODULE_ANZAHL = 23
+SONDER_ANZAHL = int(re.search(r"#define RL_SM_ANZAHL\s+\((\d+)\)",
+                              (ROOT / "scripts_src/headers/rl_sonder.h").read_text()).group(1))
 
 # Berechnete Nummern: Basis + Wertebereich
 BERECHNET = {
     r"mstr\(135 \+": range(135, 139),                 # Preisstufen 0..3
-    r"mstr\(180 \+": range(181, 188),                 # Krisen 1..7
+    r"mstr\(180 \+": range(181, 189),                 # Krisen 1..8
     r"mstr\(483 \+": range(483, 486),                 # Anwerber-Methode 0..2
     r"mstr\(RL_MSG_MODUL_NAME \+": range(400, 400 + MODULE_ANZAHL),    # Modulnamen
     r"mstr\(RL_MSG_MODUL_EFFEKT \+": range(500, 500 + MODULE_ANZAHL),  # Moduleffekte
+    r"mstr\(RL_MSG_SONDER_NAME \+": range(430, 430 + SONDER_ANZAHL),   # Sondermodule
+    r"mstr\(RL_MSG_SONDER_EFFEKT \+": range(530, 530 + SONDER_ANZAHL),
 }
 MUSTER = [
     r"\bReply\((\d+)\)",

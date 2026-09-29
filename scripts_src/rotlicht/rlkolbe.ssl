@@ -17,6 +17,11 @@
    in den Tyrannen-Zweig (Riegel aussen, zwei aus den Pferchen), Ablehnen in
    den Fluchtzweig. Stirbt Kolbe vorher, ist die Gilde Feind.
 
+   Umsetzung 5, "Ketten" Akt 2-5 im Tyrannen-Zweig: Kolbe bleibt als Metzgers
+   Bote. Er findet Mara, wenn Essie fort ist, vergibt die Lieferungen nach
+   Norden (Speech oder Barter), warnt vor Laras Leuten und bringt in Akt 5
+   Metzgers Partnerschaft, oder den Verrat an ihm.
+
    Texte: text_src/english/dialog/rlkolbe.msg
 */
 
@@ -52,6 +57,18 @@ procedure Node351;      // "Und wenn ich nein sage?"
 procedure Node352;      // angenommen
 procedure Node353;      // abgelehnt
 procedure Node354;      // zu wenig Geld
+procedure Node700;      // Ketten, Akt 3 (Tyrann): Lieferungen nach Norden
+procedure Node701;      // Lieferung Vault City
+procedure Node702;      // Lieferung Vortis
+procedure Node710;      // Akt 4: Laras Leute
+procedure Node720;      // Akt 5: Metzgers Angebot
+procedure Node721;      // Metzgers Mann
+procedure Node723;      // Verrat
+procedure Node730;      // Verrat angesagt
+procedure Node740;      // Metzgers Mann
+procedure Node750;      // der neue Metzger
+procedure Node760;      // Mara gefunden (Essie ist fort)
+procedure rl_haus_option;
 procedure rl_angebot_optionen;
 procedure Node999;
 
@@ -62,24 +79,27 @@ variable welt;
 variable h := RL_DEN;
 variable angriff := 0;
 variable ueberblende := 0;
+variable selbst_weg := 0;   // destroy_p_proc: Kolbe geht nur, er stirbt nicht
 
 #include "../headers/rl_manager.h"
 
 procedure start begin
 end
 
-// Nach dem Prolog geht Kolbe, sobald Metzgers Angebot beantwortet ist,
-// ausser er fuehrt das Haus fuer Metzger
+// Nach dem Prolog bleibt Kolbe nur, solange er gebraucht wird (rl_kolbe_bleibt)
 procedure map_enter_p_proc begin
    welt := rl_lade_welt;
-   if ((welt[RL_W_PROLOG] == RL_PROLOG_FERTIG) and (welt[RL_W_ESSIE] != RL_ESSIE_AUSGELIEFERT)
-       and (welt[RL_W_KETTEN] != RL_KETTEN_ANGEBOT)) then
+   if ((welt[RL_W_PROLOG] == RL_PROLOG_FERTIG) and not rl_kolbe_bleibt(welt)) then begin
+      selbst_weg := 1;
       destroy_object(self_obj);
+   end
 end
 
 // Stirbt Metzgers Eintreiber, bevor das Angebot beantwortet ist: Die Gilde ist Feind
 procedure destroy_p_proc begin
+   if (selbst_weg) then return;
    welt := rl_lade_welt;
+   welt[RL_W_KOLBE] := welt[RL_W_KOLBE] bwor RL_KOLBE_TOT;
    if (welt[RL_W_KETTEN] == RL_KETTEN_ANGEBOT) then begin
       welt[RL_W_METZGER] := RL_METZGER_FEIND;
       call rl_ketten_akt1(welt, RL_KETTEN_ZWEIG_FLUCHT);
@@ -107,7 +127,28 @@ procedure talk_p_proc begin
          call Node301;
       else if (welt[RL_W_KETTEN] == RL_KETTEN_ANGEBOT) then
          call Node350;
-      else if (welt[RL_W_ESSIE] == RL_ESSIE_AUSGELIEFERT) then
+      else if ((welt[RL_W_MARA_WEG] == RL_MARA_KELLER) and (welt[RL_W_ESSIE] != RL_ESSIE_DA)
+               and (welt[RL_W_MARA_GESEHEN] == 0)) then
+         call Node760;
+      else if (welt[RL_W_KETTEN_ZWEIG] == RL_KETTEN_ZWEIG_TYRANN) then begin
+         if (welt[RL_W_KETTEN] == RL_KETTEN_KETTE) then
+            call Node700;
+         else if (welt[RL_W_KETTEN] == RL_KETTEN_TYLER) then
+            call Node710;
+         else if ((welt[RL_W_KETTEN] == RL_KETTEN_WAHL) and welt[RL_W_METZGER_VERRAT]) then
+            call Node730;
+         else if (welt[RL_W_KETTEN] == RL_KETTEN_WAHL) then
+            call Node720;
+         else if (welt[RL_W_KETTEN] == RL_KETTEN_METZGERS_MANN) then
+            call Node740;
+         else if (welt[RL_W_KETTEN] == RL_KETTEN_NEUER_METZGER) then
+            call Node750;
+         else if (welt[RL_W_ESSIE] != RL_ESSIE_DA) then
+            call RLM_Start;
+         else
+            call Node340;
+      end
+      else if (welt[RL_W_ESSIE] != RL_ESSIE_DA) then
          call RLM_Start;
       else
          call Node340;
@@ -305,7 +346,7 @@ end
 procedure Node353 begin
    call rl_ketten_akt1(welt, RL_KETTEN_ZWEIG_FLUCHT);
    welt[RL_W_METZGER_NEIN] := 1;
-   if (welt[RL_W_ESSIE] == RL_ESSIE_AUSGELIEFERT) then
+   if (welt[RL_W_ESSIE] != RL_ESSIE_DA) then
       Reply(362);
    else
       Reply(359);
@@ -318,6 +359,106 @@ procedure Node354 begin
    Reply(364);
    NOption(341, Node999, 004);
    NLowOption(341, Node999);
+end
+
+/* ------------------------------------------------------------------ */
+/* Ketten, Akt 2-5 im Tyrannen-Zweig (Umsetzung 5)                     */
+/* ------------------------------------------------------------------ */
+
+// Fuehrt Kolbe das Haus, kommt man von hier ins Manager-Menue
+procedure rl_haus_option begin
+   if (welt[RL_W_ESSIE] != RL_ESSIE_DA) then
+      NOption(706, RLM_Start, 004);
+end
+
+procedure Node700 begin
+   if (welt[RL_W_AUFTRAG] != RL_AUFTRAG_KEINER) then begin
+      Reply(705);
+   end else begin
+      Reply(700);
+      BOption(mstr(701) + rl_liefer_chance + mstr(703), Node701, 004);
+      BOption(mstr(702) + rl_liefer_chance + mstr(703), Node702, 004);
+   end
+   call rl_haus_option;
+   NOption(704, Node999, 004);
+   NLowOption(704, Node999);
+end
+
+procedure Node701 begin
+   call rl_auftrag_starten(welt, RL_AUFTRAG_VC, rl_liefer_chance);
+   Reply(707);
+   call rl_haus_option;
+   NOption(341, Node999, 004);
+   NLowOption(341, Node999);
+end
+
+procedure Node702 begin
+   call rl_auftrag_starten(welt, RL_AUFTRAG_VORTIS, rl_liefer_chance);
+   Reply(707);
+   call rl_haus_option;
+   NOption(341, Node999, 004);
+   NLowOption(341, Node999);
+end
+
+procedure Node710 begin
+   Reply(710);
+   call rl_haus_option;
+   NOption(711, Node999, 004);
+   NLowOption(711, Node999);
+end
+
+procedure Node720 begin
+   Reply(720);
+   BOption(721, Node721, 004);
+   BOption(723, Node723, 004);
+   call rl_haus_option;
+   NOption(725, Node999, 004);
+   NLowOption(725, Node999);
+end
+
+procedure Node721 begin
+   call rl_ketten_ende(haus, welt, RL_KETTEN_METZGERS_MANN);
+   Reply(722);
+   call rl_haus_option;
+   NOption(341, Node999, 004);
+   NLowOption(341, Node999);
+end
+
+procedure Node723 begin
+   welt[RL_W_METZGER_VERRAT] := 1;
+   Reply(724);
+   call rl_haus_option;
+   NOption(341, Node999, 004);
+   NLowOption(341, Node999);
+end
+
+procedure Node730 begin
+   Reply(730);
+   call rl_haus_option;
+   NOption(341, Node999, 004);
+   NLowOption(341, Node999);
+end
+
+procedure Node740 begin
+   Reply(740);
+   call rl_haus_option;
+   NOption(341, Node999, 004);
+   NLowOption(341, Node999);
+end
+
+procedure Node750 begin
+   Reply(750);
+   call rl_haus_option;
+   NOption(341, Node999, 004);
+   NLowOption(341, Node999);
+end
+
+procedure Node760 begin
+   welt[RL_W_MARA_GESEHEN] := 1;
+   Reply(760);
+   call rl_haus_option;
+   NOption(761, Node999, 004);
+   NLowOption(761, Node999);
 end
 
 procedure Node999 begin

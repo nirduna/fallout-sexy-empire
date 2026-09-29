@@ -1,0 +1,130 @@
+/*
+   rljess.ssl - Jess, Laras Leutnant (The Den)
+
+   Umsetzung 5, "Ketten" Akt 4 im Tyrannen-Zweig (Phase 3, 3.2): Laras Bande
+   weiss, was im Keller der Gosse sitzt, und will die Gefangenen befreien.
+     - ziehen lassen: Das Zwangspersonal geht mit Lara. Karma +10, Metzger
+       erfaehrt davon und vertraut dem Spieler nicht mehr.
+     - verteidigen:   Jess und zwei von Laras Leuten greifen an. Karma -10.
+   Beide Wege fuehren zu Akt 5.
+
+   Texte: text_src/english/dialog/rljess.msg
+*/
+
+#define SCRIPT_REALNAME "rljess"
+#include "define.h"
+#include "../headers/rotlicht.h"
+
+#define NAME                    SCRIPT_RLJESS
+#include "command.h"
+
+procedure start;
+procedure talk_p_proc;
+procedure map_enter_p_proc;
+procedure destroy_p_proc;
+procedure look_at_p_proc;
+procedure description_p_proc;
+procedure Node100;
+procedure Node110;
+procedure Node120;
+procedure Node999;
+
+variable haus;
+variable welt;
+variable gehen := 0;
+variable kampf := 0;
+variable selbst_weg := 0;
+
+procedure start begin
+end
+
+procedure map_enter_p_proc begin
+   welt := rl_lade_welt;
+   if (not rl_jess_bleibt(welt)) then begin
+      selbst_weg := 1;
+      destroy_object(self_obj);
+   end else if (welt[RL_W_LARA] == RL_LARA_KAMPF) then begin
+      attack_setup(self_obj, dude_obj);
+   end
+end
+
+procedure destroy_p_proc begin
+   if (selbst_weg) then return;
+   welt := rl_lade_welt;
+   haus := rl_lade_haeuser;
+   if (welt[RL_W_ANGRIFF] == RL_ANGRIFF_KEINER) then begin
+      welt[RL_W_ANGRIFF]   := RL_ANGRIFF_LARA;
+      welt[RL_W_ANGREIFER] := 1;
+   end
+   welt[RL_W_ANGREIFER] := welt[RL_W_ANGREIFER] - 1;
+   if (welt[RL_W_ANGREIFER] <= 0) then call rl_kampf_ende(haus, welt);
+end
+
+procedure look_at_p_proc begin
+   script_overrides;
+   display_mstr(200);
+end
+
+procedure description_p_proc begin
+   script_overrides;
+   display_mstr(201);
+end
+
+procedure talk_p_proc begin
+   haus := rl_lade_haeuser;
+   welt := rl_lade_welt;
+   if (welt[RL_W_LARA] == RL_LARA_KAMPF) then begin
+      float_msg(self_obj, mstr(150), FLOAT_MSG_RED);
+      return;
+   end
+   start_gdialog(NAME, self_obj, 4, -1, -1);
+   gSay_Start;
+      call Node100;
+   gSay_End;
+   end_dialogue;
+   if (gehen) then begin
+      gehen := 0;
+      gfade_out(600);
+      selbst_weg := 1;
+      destroy_object(self_obj);
+      gfade_in(600);
+   end else if (kampf) then begin
+      kampf := 0;
+      call rl_angriff_starten(welt, RL_ANGRIFF_LARA, self_obj, PID_GUN_THUG_FEMALE);
+   end
+end
+
+procedure Node100 begin
+   Reply(100);
+   GOption(101, Node110, 004);
+   BOption(102, Node120, 004);
+   NOption(103, Node999, 004);
+   NLowOption(104, Node110);
+end
+
+// Die Gefangenen gehen mit Lara: der Pferch ist leer
+procedure Node110 begin
+   variable n := haus[rl_idx(RL_DEN, RL_F_ZWANG)];
+   haus[rl_idx(RL_DEN, RL_F_PERSONAL)] := rl_max(0, haus[rl_idx(RL_DEN, RL_F_PERSONAL)] - n);
+   haus[rl_idx(RL_DEN, RL_F_ZWANG)] := 0;
+   rl_karma(10);
+   welt[RL_W_METZGER] := RL_METZGER_NEUTRAL;
+   welt[RL_W_LARA] := RL_LARA_ZIEHEN;
+   welt[RL_W_KETTEN] := RL_KETTEN_WAHL;
+   welt[RL_W_KETTEN_WOCHE] := rl_woche_jetzt;
+   gehen := 1;
+   Reply(110);
+   NOption(111, Node999, 004);
+   NLowOption(111, Node999);
+end
+
+procedure Node120 begin
+   welt[RL_W_LARA] := RL_LARA_KAMPF;
+   kampf := 1;
+   Reply(120);
+   NOption(121, Node999, 004);
+   NLowOption(121, Node999);
+end
+
+procedure Node999 begin
+end

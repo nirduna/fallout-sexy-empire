@@ -12,6 +12,8 @@
      6. Selbsttest gegen tools/economy_sim.py (mit -mRL_SELBSTTEST).
      7. Die Kellertreppe zur Gosse auf Den Business 2 setzen (Umsetzung 2).
      8. Personalwechsel: Anwerbung und Abgaenge (Umsetzung 3, Phase 4).
+     9. Questline "Ketten", Akt 2-5: Akte, Auftraege, Durchsuchung, Vergeltung,
+        Enden und Mara als Madame (Umsetzung 5, rl_ketten.h).
 
    sfall laedt alle gl*.int beim Spielstart. Die Wochenlogik laeuft nur
    auf lokalen Karten; Reisezeit auf der Weltkarte wird beim naechsten
@@ -51,6 +53,9 @@ procedure rl_setze_gvar(variable gvar, variable wert);
 procedure rl_selbsttest;
 procedure rl_prolog_nachlauf;
 procedure rl_text(variable n);
+procedure rl_ketten_woche(variable woche);
+procedure rl_ketten_tick;
+procedure rl_auftrag_abschluss;
 #ifdef RL_DEBUG
 procedure rl_taste;
 procedure rl_debug_spawn;
@@ -106,6 +111,7 @@ procedure rl_tick begin
    if (cur_map_index == MAP_DEN_BUSINESS) then call rl_gosse_eingang;
    call rl_prolog_nachlauf;
    if (welt[RL_W_AKTIV] == 0) then return;
+   call rl_ketten_tick;
 
    jetzt  := game_time_in_seconds / RL_SEKUNDEN_WOCHE;
    wochen := jetzt - welt[RL_W_WOCHE];
@@ -118,6 +124,7 @@ procedure rl_tick begin
 
    call rl_welt_modifikatoren;
    while (wochen > 0) do begin
+      call rl_ketten_woche(jetzt - wochen + 1);
       tyrann := 0;
       ausbeutung := 0;
       h := 0;
@@ -168,8 +175,11 @@ procedure rl_welt_modifikatoren begin
 
    if (Fallout2_enclave_destroyed) then global_boom := 10;
 
-   // The Den: Sklavengilde aktiv +20 %, Metzger tot -25 %
-   if (metzger_dead) then m := -25; else m := 20;
+   // The Den: Sklavengilde aktiv +20 %, Metzger tot -25 %.
+   // Der neue Metzger: die Gilde laeuft weiter, jetzt fuer den Spieler (+50 % dazu)
+   if (welt[RL_W_KETTEN] == RL_KETTEN_NEUER_METZGER) then m := 70;
+   else if (metzger_dead) then m := -25;
+   else m := 20;
    haus[rl_idx(RL_DEN, RL_F_STADTMOD)] := m + global_boom;
 
    // New Reno: Cat's Paw als Konkurrenz
@@ -467,6 +477,150 @@ procedure rl_prolog_nachlauf begin
        and (rl_woche_jetzt >= welt[RL_W_DIEBSTAHL_WOCHE] + 2)) then begin
       welt[RL_W_METZGER] := RL_METZGER_FEIND;
       display_msg(rl_haus_name(RL_DEN) + ": " + rl_text(120));
+   end
+end
+
+/* ------------------------------------------------------------------ */
+/* Ketten, Akt 2-5 (Phase 3, Abschnitt 3.2; Umsetzung 5)               */
+/* ------------------------------------------------------------------ */
+
+/* Einmal je abgerechneter Woche (auch nachtraeglich), vor den Haeusern. */
+procedure rl_ketten_woche(variable woche) begin
+   variable akt := welt[RL_W_KETTEN];
+
+   // Akt 2: eine Woche nach der Antwort auf Metzgers Angebot ist Mara im Keller
+   if ((akt == RL_KETTEN_KELLER) and (welt[RL_W_MARA_WEG] == RL_MARA_KEINE)
+       and (woche >= welt[RL_W_KETTEN_WOCHE] + 1)) then begin
+      welt[RL_W_MARA_WEG] := RL_MARA_KELLER;
+      if (welt[RL_W_ESSIE] == RL_ESSIE_DA) then
+         display_msg(rl_haus_name(RL_DEN) + ": " + rl_text(130));
+      else
+         display_msg(rl_haus_name(RL_DEN) + ": " + rl_text(131));
+   end
+
+   // Metzgers Leute durchsuchen die Den: Ohne Zuflucht finden sie Mara.
+   // Eine Zuflucht im Bau zaehlt schon: Die falsche Wand steht nach der ersten Nacht.
+   if ((welt[RL_W_SUCHE] > 0) and (woche >= welt[RL_W_SUCHE])) then begin
+      welt[RL_W_SUCHE] := 0;
+      if (welt[RL_W_MARA_WEG] == RL_MARA_VERSTECKT) then begin
+         if ((haus[rl_idx(RL_DEN, RL_F_MODULE)] bwand RL_MOD_ZUFLUCHT)
+             or (haus[rl_idx(RL_DEN, RL_F_BAU_ID)] == RL_SONDER_BASIS + RL_SM_ZUFLUCHT + 1)) then begin
+            display_msg(rl_haus_name(RL_DEN) + ": " + rl_text(132));
+         end else begin
+            welt[RL_W_MARA_WEG] := RL_MARA_VERSCHLEPPT;
+            welt[RL_W_METZGER]  := RL_METZGER_FEIND;
+            call rl_haus_plus(haus, RL_DEN, RL_F_MORAL, -15);
+            display_msg(rl_haus_name(RL_DEN) + ": " + rl_text(133));
+         end
+      end
+   end
+
+   // Auftraege aus Akt 3
+   if ((welt[RL_W_AUFTRAG] != RL_AUFTRAG_KEINER) and (woche >= welt[RL_W_AUFTRAG_WOCHE])) then
+      call rl_auftrag_abschluss;
+
+   // Akt 3 -> Akt 4 nach drei gelungenen Transporten oder Lieferungen
+   if (akt == RL_KETTEN_KETTE) then begin
+      if ((welt[RL_W_KETTEN_ZWEIG] == RL_KETTEN_ZWEIG_FLUCHT) and (welt[RL_W_TRANSPORTE] >= RL_KETTEN_ZIEL)) then begin
+         welt[RL_W_KETTEN] := RL_KETTEN_TYLER;
+         welt[RL_W_KETTEN_WOCHE] := woche;
+         display_msg(rl_haus_name(RL_DEN) + ": " + rl_text(139));
+      end else if ((welt[RL_W_KETTEN_ZWEIG] == RL_KETTEN_ZWEIG_TYRANN) and (welt[RL_W_LIEFERUNGEN] >= RL_KETTEN_ZIEL)) then begin
+         welt[RL_W_KETTEN] := RL_KETTEN_TYLER;
+         welt[RL_W_KETTEN_WOCHE] := woche;
+         display_msg(rl_haus_name(RL_DEN) + ": " + rl_text(140));
+      end
+   end
+
+   // Der stille Krieg: Metzger schlaegt alle sechs Wochen zurueck (Phase 4, 4.3)
+   if ((welt[RL_W_KETTEN] == RL_KETTEN_STILLER_KRIEG) and (woche >= welt[RL_W_VERGELTUNG])) then begin
+      welt[RL_W_VERGELTUNG] := woche + RL_VERGELTUNG_ABSTAND;
+      if (haus[rl_idx(RL_DEN, RL_F_BESITZ)] and (haus[rl_idx(RL_DEN, RL_F_KRISE)] == RL_EV_KEINS)) then begin
+         haus[rl_idx(RL_DEN, RL_F_KRISE)] := RL_EV_VERGELTUNG;
+         haus[rl_idx(RL_DEN, RL_F_KRISENWOCHEN)] := 0;
+         display_msg(rl_haus_name(RL_DEN) + ": " + rl_text(115));
+      end
+   end
+
+   // Metzgers Mann: Anteil an den Lieferungen
+   if ((welt[RL_W_KETTEN] == RL_KETTEN_METZGERS_MANN) and haus[rl_idx(RL_DEN, RL_F_BESITZ)]) then
+      haus[rl_idx(RL_DEN, RL_F_KASSE)] := haus[rl_idx(RL_DEN, RL_F_KASSE)] + RL_METZGERS_MANN_WOCHE;
+
+   // Mara kehrt zurueck, wenn die Linie im Fluchtzweig endet (Phase 4, 3.5)
+   if (((welt[RL_W_KETTEN] == RL_KETTEN_GILDE_FAELLT) or (welt[RL_W_KETTEN] == RL_KETTEN_STILLER_KRIEG))
+       and (welt[RL_W_MARA_WEG] == RL_MARA_SICHER) and (woche >= welt[RL_W_KETTEN_WOCHE] + 2)) then begin
+      welt[RL_W_MARA_WEG] := RL_MARA_ZURUECK;
+      display_msg(rl_haus_name(RL_DEN) + ": " + rl_text(143));
+   end
+
+   // Mara geht, sobald irgendwo Zwangspersonal arbeitet, und nimmt Beweise mit
+   if ((welt[RL_W_MARA_WEG] == RL_MARA_MADAME) and rl_zwang_irgendwo(haus)) then begin
+      welt[RL_W_MARA_WEG] := RL_MARA_GEGANGEN;
+      welt[RL_W_MARA] := 0;
+      haus[rl_idx(RL_DEN, RL_F_FUEHRUNG)] := 45;
+      haus[rl_idx(RL_DEN, RL_F_MORALBONUS)] := rl_max(0, haus[rl_idx(RL_DEN, RL_F_MORALBONUS)] - 1);
+      call rl_haus_plus(haus, RL_NCR, RL_F_HITZE, 20);
+      display_msg(rl_haus_name(RL_DEN) + ": " + rl_text(144));
+   end
+end
+
+/* Ein Auftrag aus Akt 3 ist abgeschlossen. Die Probe fiel beim Annehmen. */
+procedure rl_auftrag_abschluss begin
+   variable typ := welt[RL_W_AUFTRAG], betrag;
+   welt[RL_W_AUFTRAG] := RL_AUFTRAG_KEINER;
+   if (typ == RL_AUFTRAG_SUEDEN) then begin
+      call rl_haus_plus(haus, RL_DEN, RL_F_HITZE, 10);
+      if (welt[RL_W_AUFTRAG_WURF]) then begin
+         welt[RL_W_TRANSPORTE] := welt[RL_W_TRANSPORTE] + 1;
+         rl_karma(5);
+         call rl_haus_plus(haus, RL_NCR, RL_F_EINFLUSS, 3);
+         display_msg(rl_haus_name(RL_DEN) + ": " + rl_text(134));
+      end else begin
+         welt[RL_W_METZGER] := RL_METZGER_FEIND;
+         call rl_haus_plus(haus, RL_DEN, RL_F_MORAL, -10);
+         display_msg(rl_haus_name(RL_DEN) + ": " + rl_text(135));
+      end
+   end else begin
+      // Lieferung nach Norden: Karma -15 in jedem Fall, die Rangers zaehlen mit
+      rl_karma(-15);
+      if (welt[RL_W_AUFTRAG_WURF]) then begin
+         betrag := random(300, 600);
+         welt[RL_W_LIEFERUNGEN] := welt[RL_W_LIEFERUNGEN] + 1;
+         haus[rl_idx(RL_DEN, RL_F_KASSE)] := haus[rl_idx(RL_DEN, RL_F_KASSE)] + betrag;
+         call rl_haus_plus(haus, RL_NCR, RL_F_HITZE, 10);
+         display_msg(rl_haus_name(RL_DEN) + ": " + rl_text(136) + betrag + rl_text(137));
+      end else begin
+         call rl_haus_plus(haus, RL_NCR, RL_F_HITZE, 20);
+         display_msg(rl_haus_name(RL_DEN) + ": " + rl_text(138));
+      end
+   end
+end
+
+/* Bei jedem Tick: Enden, die am Tod Metzgers haengen, und Tylers Tod (Vanilla). */
+procedure rl_ketten_tick begin
+   variable akt := welt[RL_W_KETTEN];
+   if ((akt < RL_KETTEN_KELLER) or (akt == RL_KETTEN_GILDE_FAELLT) or (akt == RL_KETTEN_NEUER_METZGER)
+       or (akt == RL_KETTEN_METZGERS_MANN)) then return;
+
+   // Tyler ist in Vanilla schon tot: Akt 4 im Fluchtzweig entfaellt
+   if ((akt == RL_KETTEN_TYLER) and (welt[RL_W_KETTEN_ZWEIG] == RL_KETTEN_ZWEIG_FLUCHT)
+       and (welt[RL_W_TYLER] == RL_TYLER_OFFEN) and tyler_dead) then begin
+      welt[RL_W_TYLER] := RL_TYLER_TOT;
+      welt[RL_W_KETTEN] := RL_KETTEN_WAHL;
+      welt[RL_W_KETTEN_WOCHE] := rl_woche_jetzt;
+      akt := RL_KETTEN_WAHL;
+   end
+
+   if (not metzger_dead) then return;
+   if (welt[RL_W_KETTEN_ZWEIG] == RL_KETTEN_ZWEIG_TYRANN) then begin
+      // Wer im Tyrannen-Zweig Metzger stuerzt, erbt die Gilde
+      if (akt >= RL_KETTEN_KETTE) then begin
+         call rl_ketten_ende(haus, welt, RL_KETTEN_NEUER_METZGER);
+         display_msg(rl_haus_name(RL_DEN) + ": " + rl_text(142));
+      end
+   end else if ((akt == RL_KETTEN_WAHL) or (akt == RL_KETTEN_STURM) or (akt == RL_KETTEN_STILLER_KRIEG)) then begin
+      call rl_ketten_ende(haus, welt, RL_KETTEN_GILDE_FAELLT);
+      display_msg(rl_haus_name(RL_DEN) + ": " + rl_text(141));
    end
 end
 

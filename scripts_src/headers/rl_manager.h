@@ -7,6 +7,9 @@
      460-477  Ausbau-Menue
      480-499  Personal und Anwerber (Umsetzung 3), Pferch und Metzger (Umsetzung 4)
      400-422  Modulnamen, 500-522 Moduleffekte (aus _rl_module.inc)
+     430-439  Namen der Sondermodule, 530-539 ihre Wirkung (rl_sonder.h)
+     174-177  Metzgers Vergeltung (Krise), 188 ihr Text
+     600-619  Die Route nach Sueden (Ketten, Akt 3, Umsetzung 5)
 
    Das einbindende Skript stellt bereit:
      variable haus, welt, h   (Haus-Array, Welt-Array, Hausnummer)
@@ -73,6 +76,16 @@ procedure rlm_modul_frei(variable id);
 procedure rlm_gruppe_hat_module(variable gruppe);
 procedure rlm_bezahlbar(variable kosten);
 procedure rlm_option_modul(variable id, variable knoten);
+procedure rlm_modul_name(variable id);
+procedure rlm_modul_effekt(variable id);
+procedure rlm_modul_kosten(variable id);
+procedure rlm_modul_wochen(variable id);
+procedure rlm_sonder_frei(variable sm);
+procedure RLM_Route;
+procedure RLM_RoutePerception;
+procedure RLM_RouteStart;
+procedure RLM_VergeltungKampf;
+procedure RLM_VergeltungRangers;
 
 /* ------------------------------------------------------------------ */
 /* Hauptmenue                                                          */
@@ -91,6 +104,11 @@ procedure RLM_Start begin
    NOption(117, RLM_Ausbau, 004);
    if (haus[rl_idx(h, RL_F_KRISE)] != RL_EV_KEINS) then
       NOption(114, RLM_Krise, 004);
+   // Ketten, Akt 3 im Fluchtzweig: die Route nach Sueden (Umsetzung 5)
+   if ((h == RL_DEN) and (welt[RL_W_KETTEN_ZWEIG] == RL_KETTEN_ZWEIG_FLUCHT)
+       and (((welt[RL_W_KETTEN] >= RL_KETTEN_KETTE) and (welt[RL_W_KETTEN] <= RL_KETTEN_STURM))
+            or (welt[RL_W_KETTEN] == RL_KETTEN_STILLER_KRIEG))) then
+      NOption(600, RLM_Route, 004);
 #ifdef RL_DEBUG
    NOption(195, RLM_DebugZimmer, 001);
    NOption(194, RLM_Abspann, 001);
@@ -199,8 +217,60 @@ procedure RLM_Krise begin
       Reply(mstr(170) + " " + mstr(180 + haus[rl_idx(h, RL_F_KRISE)]));
       if (dude_caps >= 300) then
          NOption(171, RLM_KriseGeld, 004);
+      // Metzgers Vergeltung im stillen Krieg (Phase 4, Abschnitt 4.3)
+      if (haus[rl_idx(h, RL_F_KRISE)] == RL_EV_VERGELTUNG) then begin
+         if (rl_max(rl_max(has_skill(dude_obj, SKILL_SMALL_GUNS), has_skill(dude_obj, SKILL_MELEE)),
+                    has_skill(dude_obj, SKILL_UNARMED_COMBAT)) >= 60) then
+            NOption(174, RLM_VergeltungKampf, 004);
+         if (welt[RL_W_RANGERS] >= RL_RANGERS_KONTAKT) then
+            GOption(175, RLM_VergeltungRangers, 004);
+      end
    end
    NOption(172, RLM_Ende, 004);
+end
+
+procedure RLM_VergeltungKampf begin
+   call rlm_krise_loesen;
+   call rl_haus_plus(haus, h, RL_F_HITZE, 10);
+   Reply(176);
+   NOption(123, RLM_Start, 004);
+end
+
+procedure RLM_VergeltungRangers begin
+   call rlm_krise_loesen;
+   Reply(177);
+   NOption(123, RLM_Start, 004);
+end
+
+/* ------------------------------------------------------------------ */
+/* Ketten, Akt 3 im Fluchtzweig: die Route nach Sueden (Umsetzung 5)   */
+/* ------------------------------------------------------------------ */
+procedure RLM_Route begin
+   if (welt[RL_W_RANGERS] == RL_RANGERS_UNBEKANNT) then begin
+      Reply(601);
+      if (dude_perception >= 7) then
+         NOption(602, RLM_RoutePerception, 004);
+   end else if ((haus[rl_idx(h, RL_F_MODULE)] bwand RL_MOD_ZUFLUCHT) == 0) then begin
+      Reply(603);
+   end else if (welt[RL_W_AUFTRAG] != RL_AUFTRAG_KEINER) then begin
+      Reply(604);
+   end else begin
+      Reply(mstr(605) + welt[RL_W_TRANSPORTE] + mstr(606));
+      NOption(mstr(607) + rl_transport_chance(welt) + mstr(608), RLM_RouteStart, 004);
+   end
+   NOption(609, RLM_Start, 004);
+end
+
+procedure RLM_RoutePerception begin
+   welt[RL_W_RANGERS] := RL_RANGERS_KONTAKT;
+   Reply(610);
+   NOption(123, RLM_Route, 004);
+end
+
+procedure RLM_RouteStart begin
+   call rl_auftrag_starten(welt, RL_AUFTRAG_SUEDEN, rl_transport_chance(welt));
+   Reply(611);
+   NOption(123, RLM_Start, 004);
 end
 
 procedure RLM_StoffDoctor begin
@@ -310,7 +380,7 @@ end
 procedure RLM_Ausbau begin
    variable id := haus[rl_idx(h, RL_F_BAU_ID)] - 1;
    if (id >= 0) then begin
-      Reply(mstr(472) + mstr(RL_MSG_MODUL_NAME + id) + mstr(473) + haus[rl_idx(h, RL_F_BAU_WOCHEN)] + mstr(474));
+      Reply(mstr(472) + rlm_modul_name(id) + mstr(473) + haus[rl_idx(h, RL_F_BAU_WOCHEN)] + mstr(474));
       NOption(477, RLM_Start, 004);
       return;
    end
@@ -336,12 +406,18 @@ procedure RLM_Gruppe2 begin
    call RLM_Gruppe;
 end
 
-// Zeigt pro Kette (z. B. Einrichtung I-III) nur die naechste freie Stufe
+// Zeigt pro Kette (z. B. Einrichtung I-III) nur die naechste freie Stufe.
+// In Gruppe 2 kommen die Sondermodule der Stadt dazu (rl_sonder.h).
 procedure RLM_Gruppe begin
-   variable id := 0, slot := 0;
+   variable id := 0, slot := 0, frei;
    rlm_slot1 := -1; rlm_slot2 := -1; rlm_slot3 := -1; rlm_slot4 := -1;
-   while ((id < RL_MODULE_ANZAHL) and (slot < 4)) do begin
-      if ((rl_modul(id, RL_MK_GRUPPE) == rlm_aktive_gruppe) and rlm_modul_frei(id)) then begin
+   while ((id < RL_SONDER_BASIS + RL_SM_ANZAHL) and (slot < 4)) do begin
+      frei := 0;
+      if (id < RL_MODULE_ANZAHL) then
+         frei := ((rl_modul(id, RL_MK_GRUPPE) == rlm_aktive_gruppe) and rlm_modul_frei(id));
+      else if ((id >= RL_SONDER_BASIS) and (rlm_aktive_gruppe == 2)) then
+         frei := rlm_sonder_frei(id - RL_SONDER_BASIS);
+      if (frei) then begin
          slot := slot + 1;
          if (slot == 1) then rlm_slot1 := id;
          else if (slot == 2) then rlm_slot2 := id;
@@ -349,6 +425,7 @@ procedure RLM_Gruppe begin
          else rlm_slot4 := id;
       end
       id := id + 1;
+      if (id == RL_MODULE_ANZAHL) then id := RL_SONDER_BASIS;
    end
 
    if (slot == 0) then
@@ -363,7 +440,7 @@ procedure RLM_Gruppe begin
 end
 
 procedure rlm_option_modul(variable id, variable knoten) begin
-   variable text := mstr(RL_MSG_MODUL_NAME + id) + " ($" + rl_modul(id, RL_MK_KOSTEN) + ")";
+   variable text := rlm_modul_name(id) + " ($" + rlm_modul_kosten(id) + ")";
    if (knoten == 1) then NOption(text, RLM_Wahl1, 004);
    else if (knoten == 2) then NOption(text, RLM_Wahl2, 004);
    else if (knoten == 3) then NOption(text, RLM_Wahl3, 004);
@@ -391,8 +468,8 @@ procedure RLM_Wahl4 begin
 end
 
 procedure RLM_Bestaetigen begin
-   variable kosten := rl_modul(rlm_gewaehlt, RL_MK_KOSTEN);
-   Reply(mstr(RL_MSG_MODUL_EFFEKT + rlm_gewaehlt) + " " + mstr(466) + kosten + mstr(467)
+   variable kosten := rlm_modul_kosten(rlm_gewaehlt);
+   Reply(rlm_modul_effekt(rlm_gewaehlt) + " " + mstr(466) + kosten + mstr(467)
          + rl_max(0, haus[rl_idx(h, RL_F_KASSE)]) + mstr(468) + dude_caps + mstr(469));
    if (rlm_bezahlbar(kosten)) then begin
       NOption(470, RLM_Kaufen, 004);
@@ -404,11 +481,12 @@ end
 
 // Bezahlt wird zuerst aus der Kasse des Hauses, der Rest aus der Tasche des Spielers
 procedure RLM_Kaufen begin
-   call rlm_bezahlen(rl_modul(rlm_gewaehlt, RL_MK_KOSTEN));
-   haus[rl_idx(h, RL_F_GEKAUFT)]    := haus[rl_idx(h, RL_F_GEKAUFT)] bwor rl_bit(rlm_gewaehlt);
+   call rlm_bezahlen(rlm_modul_kosten(rlm_gewaehlt));
+   if (rlm_gewaehlt < RL_SONDER_BASIS) then
+      haus[rl_idx(h, RL_F_GEKAUFT)] := haus[rl_idx(h, RL_F_GEKAUFT)] bwor rl_bit(rlm_gewaehlt);
    haus[rl_idx(h, RL_F_BAU_ID)]     := rlm_gewaehlt + 1;
-   haus[rl_idx(h, RL_F_BAU_WOCHEN)] := rl_modul(rlm_gewaehlt, RL_MK_WOCHEN);
-   Reply(mstr(475) + rl_modul(rlm_gewaehlt, RL_MK_WOCHEN) + mstr(476));
+   haus[rl_idx(h, RL_F_BAU_WOCHEN)] := rlm_modul_wochen(rlm_gewaehlt);
+   Reply(mstr(475) + rlm_modul_wochen(rlm_gewaehlt) + mstr(476));
    NOption(123, RLM_Start, 004);
 end
 
@@ -443,6 +521,49 @@ procedure rlm_gruppe_hat_module(variable gruppe) begin
    while (id < RL_MODULE_ANZAHL) do begin
       if ((rl_modul(id, RL_MK_GRUPPE) == gruppe) and rlm_modul_frei(id)) then return 1;
       id := id + 1;
+   end
+   if (gruppe == 2) then begin
+      id := 0;
+      while (id < RL_SM_ANZAHL) do begin
+         if (rlm_sonder_frei(id)) then return 1;
+         id := id + 1;
+      end
+   end
+   return 0;
+end
+
+// Katalog- und Sondermodule einheitlich (Sondermodule ab RL_SONDER_BASIS)
+procedure rlm_modul_name(variable id) begin
+   if (id >= RL_SONDER_BASIS) then return mstr(RL_MSG_SONDER_NAME + id - RL_SONDER_BASIS);
+   return mstr(RL_MSG_MODUL_NAME + id);
+end
+
+procedure rlm_modul_effekt(variable id) begin
+   if (id >= RL_SONDER_BASIS) then return mstr(RL_MSG_SONDER_EFFEKT + id - RL_SONDER_BASIS);
+   return mstr(RL_MSG_MODUL_EFFEKT + id);
+end
+
+procedure rlm_modul_kosten(variable id) begin
+   if (id >= RL_SONDER_BASIS) then return rl_sonder_kosten(id - RL_SONDER_BASIS);
+   return rl_modul(id, RL_MK_KOSTEN);
+end
+
+procedure rlm_modul_wochen(variable id) begin
+   if (id >= RL_SONDER_BASIS) then return rl_sonder_wochen(id - RL_SONDER_BASIS);
+   return rl_modul(id, RL_MK_WOCHEN);
+end
+
+/* Sondermodule: nur in ihrer Stadt, nur einmal, mit ihren Bedingungen */
+procedure rlm_sonder_frei(variable sm) begin
+   variable module := haus[rl_idx(h, RL_F_MODULE)];
+   if (module bwand rl_sonder_flag(sm)) then return 0;
+   if (haus[rl_idx(h, RL_F_BAU_ID)] == RL_SONDER_BASIS + sm + 1) then return 0;
+   if (sm == RL_SM_ZUFLUCHT) then begin
+      // Die Zuflucht schliesst den Riegel aussen aus (Phase 2). Frei, sobald Mara
+      // versteckt ist oder die Route nach Sueden laeuft (Ketten, Akt 2/3).
+      if ((h != RL_DEN) or (module bwand RL_MOD_RIEGEL_AUSSEN)) then return 0;
+      return ((welt[RL_W_MARA_WEG] == RL_MARA_VERSTECKT)
+              or ((welt[RL_W_KETTEN_ZWEIG] == RL_KETTEN_ZWEIG_FLUCHT) and (welt[RL_W_KETTEN] >= RL_KETTEN_KETTE)));
    end
    return 0;
 end

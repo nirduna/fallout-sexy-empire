@@ -1,0 +1,71 @@
+/*
+   rlangreifer.ssl - Angreifer bei einem Kampf im Haus (Umsetzung 5)
+
+   Tylers oder Laras Leute in "Ketten" Akt 4. Sie greifen an, sobald sie
+   erscheinen und wann immer der Spieler die Karte wieder betritt. Jeder Tote
+   zaehlt RL_W_ANGREIFER herunter; faellt der letzte, endet der Kampf
+   (rl_kampf_ende in rl_ketten.h). Ist der Kampf anders beendet, gehen sie.
+
+   Texte: text_src/english/dialog/rlangreifer.msg
+*/
+
+#define SCRIPT_REALNAME "rlangreifer"
+#include "define.h"
+#include "../headers/rotlicht.h"
+
+#define NAME                    SCRIPT_RLANGREIFER
+#include "command.h"
+
+procedure start;
+procedure map_enter_p_proc;
+procedure critter_p_proc;
+procedure destroy_p_proc;
+procedure talk_p_proc;
+procedure look_at_p_proc;
+procedure description_p_proc;
+
+variable haus;
+variable welt;
+variable selbst_weg := 0;
+
+procedure start begin
+end
+
+procedure map_enter_p_proc begin
+   welt := rl_lade_welt;
+   if (welt[RL_W_ANGRIFF] == RL_ANGRIFF_KEINER) then begin
+      selbst_weg := 1;
+      destroy_object(self_obj);
+   end else begin
+      attack_setup(self_obj, dude_obj);
+   end
+end
+
+procedure critter_p_proc begin
+   if (welt == 0) then welt := rl_lade_welt;
+   if ((welt[RL_W_ANGRIFF] != RL_ANGRIFF_KEINER) and (not combat_is_initialized)) then
+      attack_setup(self_obj, dude_obj);
+end
+
+procedure destroy_p_proc begin
+   if (selbst_weg) then return;
+   welt := rl_lade_welt;
+   haus := rl_lade_haeuser;
+   if (welt[RL_W_ANGRIFF] == RL_ANGRIFF_KEINER) then return;
+   welt[RL_W_ANGREIFER] := welt[RL_W_ANGREIFER] - 1;
+   if (welt[RL_W_ANGREIFER] <= 0) then call rl_kampf_ende(haus, welt);
+end
+
+procedure talk_p_proc begin
+   float_msg(self_obj, mstr(100), FLOAT_MSG_RED);
+end
+
+procedure look_at_p_proc begin
+   script_overrides;
+   display_mstr(200);
+end
+
+procedure description_p_proc begin
+   script_overrides;
+   display_mstr(201);
+end

@@ -32,6 +32,10 @@
 #define SCRIPT_RLKOLBE              (RL_SCRIPT_BASE + 1)
 #define SCRIPT_RLGOSSE              (RL_SCRIPT_BASE + 2)   // Kellertreppe zur Gosse (Den Business 2)
 #define SCRIPT_RLDEN01              (RL_SCRIPT_BASE + 3)   // Kartenskript der Gosse
+#define SCRIPT_RLMARA               (RL_SCRIPT_BASE + 4)   // Mara (Ketten, Akt 2; Madame, Phase 4)
+#define SCRIPT_RLDEKE               (RL_SCRIPT_BASE + 5)   // Deke, einer von Tylers Leuten (Akt 4, Fluchtzweig)
+#define SCRIPT_RLJESS               (RL_SCRIPT_BASE + 6)   // Jess, Laras Leutnant (Akt 4, Tyrannen-Zweig)
+#define SCRIPT_RLANGREIFER          (RL_SCRIPT_BASE + 7)   // Angreifer bei Kaempfen im Haus
 
 /* ------------------------------------------------------------------ */
 /* Echte GVARs (Phase 6). Nur dort, wo die Engine sie verlangt:        */
@@ -136,9 +140,10 @@
 #define RL_MOD_RIEGEL_AUSSEN        (16)
 #define RL_MOD_AKTE                 (32)
 #define RL_MOD_LEINE                (64)    // "An der Leine halten": Jet statt Lohn (Phase 4)
+#define RL_MOD_ZUFLUCHT             (128)   // Die Zuflucht: versteckte Kammer (Den, Ketten Akt 2)
 
-// Welt-Felder
-#define RL_WELT_FELDER              (32)
+// Welt-Felder (aeltere Spielstaende mit weniger Feldern werden beim Laden erweitert)
+#define RL_WELT_FELDER              (96)
 #define RL_W_WOCHE                  (0)     // zuletzt abgerechnete Woche
 #define RL_W_AKTIV                  (1)     // 1, sobald das erste Haus uebernommen ist
 #define RL_W_HQ_KASSE               (2)     // Geld, das Laeufer ins Hauptquartier gebracht haben
@@ -170,6 +175,25 @@
 #define RL_W_GOSSE_TREPPE           (27)    // Hex + 1, an dem die Kellertreppe gesetzt wurde
 #define RL_W_KETTEN_REAKTION        (28)    // 1 = Essies Reaktion auf Akt 1 steht aus, 2 = gezeigt
 #define RL_W_METZGER_NEIN           (29)    // 1 = Metzgers Angebot abgelehnt ("er merkt es sich")
+// Ketten, Akt 2-5 (Umsetzung 5, rl_ketten.h)
+#define RL_W_KETTEN_WOCHE           (30)    // Woche, in der der aktuelle Akt begann
+#define RL_W_MARA_WEG               (31)    // RL_MARA_*
+#define RL_W_RANGERS                (32)    // RL_RANGERS_*
+#define RL_W_TRANSPORTE             (33)    // gelungene Transporte nach Sueden
+#define RL_W_AUFTRAG                (34)    // laufender Auftrag RL_AUFTRAG_*
+#define RL_W_AUFTRAG_WOCHE          (35)    // Woche, in der er abgeschlossen wird
+#define RL_W_AUFTRAG_WURF           (36)    // 1 = gelingt (beim Annehmen gewuerfelt)
+#define RL_W_TYLER                  (37)    // RL_TYLER_*
+#define RL_W_LARA                   (38)    // RL_LARA_*
+#define RL_W_SUCHE                  (39)    // Woche, in der Metzgers Leute die Gosse durchsuchen (0 = keine)
+#define RL_W_VERGELTUNG             (40)    // naechste Vergeltung im stillen Krieg (Woche)
+#define RL_W_ANGRIFF                (41)    // RL_ANGRIFF_*: laufender Kampf in der Gosse
+#define RL_W_ANGREIFER              (42)    // wie viele Angreifer noch stehen
+#define RL_W_METZGER_VERRAT         (43)    // 1 = Kolbes Leute folgen dem Spieler, sobald Metzger tot ist
+#define RL_W_LIEFERUNGEN            (44)    // gelungene Lieferungen nach Norden
+#define RL_W_MARA_GESEHEN           (45)    // 1 = Essie hat Mara gezeigt
+#define RL_W_KETTEN_MELDUNG         (46)    // zuletzt gemeldeter Aktstand (einmalige Meldungen)
+#define RL_W_VORTIS                 (47)    // 1 = Vortis ist Feind (Die Gilde faellt)
 
 #define RL_PROLOG_OFFEN             (0)
 #define RL_PROLOG_LAEUFT            (1)
@@ -203,7 +227,11 @@
 
 // Questline "Ketten" (Phase 3, Abschnitt 3.2): Aktstand in RL_W_KETTEN
 #define RL_KETTEN_ANGEBOT           (1)     // Akt 1: Metzgers Angebot steht aus
-#define RL_KETTEN_KELLER            (2)     // Akt 2: "Die im Keller" (folgt)
+#define RL_KETTEN_KELLER            (2)     // Akt 2: "Die im Keller"
+#define RL_KETTEN_KETTE             (3)     // Akt 3: "Die Kette" (Transporte oder Lieferungen)
+#define RL_KETTEN_TYLER             (4)     // Akt 4: "Tylers Preis" (Fluchtzweig) oder Laras Sturm (Tyrannen-Zweig)
+#define RL_KETTEN_WAHL              (5)     // Akt 5: Die Entscheidung steht aus
+#define RL_KETTEN_STURM             (6)     // Fluchtzweig: Sturm angesagt, Metzger ist dran
 
 // Akt 1 und Riegel aussen (Phase 2, Abschnitt 2.1; Phase 4, Abschnitt 2.3)
 #define RL_ANGEBOT_PERSONEN         (2)     // Metzger bringt zwei aus den Pferchen
@@ -265,6 +293,7 @@
 #define RL_EV_SEUCHE                (5)
 #define RL_EV_KASSE                 (6)
 #define RL_EV_FLUCHT                (7)
+#define RL_EV_VERGELTUNG            (8)     // Metzgers Vergeltung ("Der stille Krieg", Phase 4)
 
 // Stadtwerte (rl_stadt)
 #define RL_S_KUNDEN                 (0)
@@ -288,11 +317,13 @@
 /* Hilfsfunktionen                                                     */
 /* ------------------------------------------------------------------ */
 #define rl_idx(h, f)                ((h) * RL_FELDER + (f))
+#define rl_karma(n)                 set_global_var(GVAR_PLAYER_REPUTATION, global_var(GVAR_PLAYER_REPUTATION) + (n))
 #define rl_min(a, b)                (((a) < (b)) * (a) + ((a) >= (b)) * (b))
 #define rl_max(a, b)                (((a) > (b)) * (a) + ((a) <= (b)) * (b))
 
 #include "rl_katalog.h"
 #include "rl_karten.h"
+#include "rl_sonder.h"
 
 procedure rl_clamp(variable v, variable lo, variable hi);
 procedure rl_fdiv(variable a, variable b);
@@ -341,6 +372,12 @@ end
 procedure rl_bau_fertig(variable haus, variable h) begin
    variable id := haus[rl_idx(h, RL_F_BAU_ID)] - 1;
    if (id < 0) then return;
+   if (id >= RL_SONDER_BASIS) then begin
+      call rl_sonder_fertig(haus, h, id - RL_SONDER_BASIS);
+      haus[rl_idx(h, RL_F_BAU_ID)]     := 0;
+      haus[rl_idx(h, RL_F_BAU_WOCHEN)] := 0;
+      return;
+   end
    haus[rl_idx(h, RL_F_KLASSE)]         := haus[rl_idx(h, RL_F_KLASSE)] + rl_modul(id, RL_MK_KLASSE);
    haus[rl_idx(h, RL_F_ZIMMER)]         := haus[rl_idx(h, RL_F_ZIMMER)] + rl_modul(id, RL_MK_ZIMMER);
    haus[rl_idx(h, RL_F_AUSSTATTUNG)]    := haus[rl_idx(h, RL_F_AUSSTATTUNG)] + rl_modul(id, RL_MK_AUSSTATTUNG);
@@ -385,11 +422,21 @@ procedure rl_lade_haeuser begin
 end
 
 procedure rl_lade_welt begin
-   variable arr;
+   variable arr, alt, f;
    arr := load_array(RL_ARR_WELT);
    if (arr == 0) then begin
       arr := create_array(RL_WELT_FELDER, 0);
       save_array(RL_ARR_WELT, arr);
+   end else if (len_array(arr) < RL_WELT_FELDER) then begin
+      alt := arr;
+      arr := create_array(RL_WELT_FELDER, 0);
+      f := 0;
+      while (f < len_array(alt)) do begin
+         arr[f] := get_array(alt, f);
+         f := f + 1;
+      end
+      save_array(RL_ARR_WELT, arr);
+      free_array(alt);
    end
    return arr;
 end
@@ -665,6 +712,9 @@ procedure rl_ketten_akt1(variable welt, variable zweig) begin
    welt[RL_W_KETTEN]          := RL_KETTEN_KELLER;
    welt[RL_W_KETTEN_ZWEIG]    := zweig;
    welt[RL_W_KETTEN_REAKTION] := 1;
+   welt[RL_W_KETTEN_WOCHE]    := rl_woche_jetzt;
 end
+
+#include "rl_ketten.h"
 
 #endif

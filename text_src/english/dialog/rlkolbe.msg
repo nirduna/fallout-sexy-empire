@@ -115,6 +115,11 @@
 {185}{}{Something's going around. Two are down.}
 {186}{}{Something's missing from the till. Wasn't me.}
 {187}{}{Two are gone. Just gone.}
+{188}{}{Metzger's men came by. Broke some doors, broke an arm. Metzger sends his regards, and a reminder.}
+{174}{}{I'll handle Metzger's men myself.}
+{175}{}{Send word to the Rangers.}
+{176}{}{You were waiting for them. Two won't be coming back. Metzger will hear about it before breakfast.}
+{177}{}{Rangers on the roof for a week. Didn't think I'd live to see that. Neither did Metzger's boys.}
 {194}{}{[Debug] Show me the ending.}
 {195}{}{[Debug] Add two empty rooms.}
 
@@ -159,4 +164,42 @@
 {497}{}{ a head)}
 {498}{}{One more for the cellar. Metzger says thanks.}
 
+# The route south (only shown to the escape branch; Kolbe's voice)
+{600}{}{The route south.}
+{601}{}{Nobody in the Den knows where the Rangers hide. Nobody who talks, anyway.}
+{602}{}{[Perception] I know where to look.}
+{603}{}{No hidden room, no route. Simple.}
+{604}{}{They're on the road.}
+{605}{}{Groups through so far: }
+{606}{}{. Who takes the next one?}
+{607}{}{I'll take them myself. [}
+{608}{}{% chance]}
+{609}{}{Back.}
+{610}{}{An old garage in Downtown. Clever.}
+{611}{}{They leave tonight. Your neck, not mine.}
+
+# Chains, acts 2-5, tyrant branch (Umsetzung 5)
+{700}{}{Metzger has work for you. Shipments north. Vault City takes them as servants and calls it charity. Vortis in the NCR takes them as stock and calls it business. Both pay. Somebody has to talk at the handover, and Metzger wants it to be you.}
+{701}{}{Vault City, the Servant Allocation Center. [}
+{702}{}{Vortis in the Bazaar. [}
+{703}{}{% chance]}
+{704}{}{Not now.}
+{705}{}{The shipment's on the road. You'll know by next week. So will Metzger.}
+{706}{}{Let's talk about the house.}
+{707}{}{Good. They leave tonight, in chains, under a tarp. Don't come to see them off. Nobody ever does.}
+{710}{}{Lara's people have been counting our guards. They know what's in the cellar. When they come, they won't knock, and they won't ask which ones are ours.}
+{711}{}{Let them come.}
+{720}{}{Metzger's pleased with you. He wants you as a partner. Proper. A cut of every shipment, his men watching your houses, your name next to his. Nobody in the Den says no to that. Nobody who wants to stay in the Den.}
+{721}{}{Tell him yes.}
+{722}{}{He'll be glad. The first cut comes next week. Welcome to the family business.}
+{723}{}{And if Metzger had an accident?}
+{724}{}{(Kolbe looks at the door, then back at you.) Then somebody would have to run the pens. Some of the boys would follow you. I'm one of them. He's in his office most nights. Nobody will come when he screams.}
+{725}{}{Not yet.}
+{730}{}{He's still breathing. The boys are waiting for you. So am I.}
+{740}{}{The shipments run. Metzger's cut goes to him, yours goes to your till. That's business.}
+{750}{}{The pens are yours now, boss. The Guild answers to you. Try not to get soft.}
+{760}{}{Found a runaway in the cellar. Guild property, from one of Metzger's caravans. She's tied up behind the boiler. Metzger pays five hundred for her. Your call, but make it soon, before somebody else makes it for you.}
+{761}{}{I'll deal with her.}
+
 # @include _rl_module.inc
+# @include _rl_sonder.inc

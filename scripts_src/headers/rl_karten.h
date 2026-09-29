@@ -16,5 +16,9 @@
 #define RL_GOSSE_EINGANG_HEX        (17066)
 #define RL_GOSSE_ESSIE_HEX          (17866)
 #define RL_GOSSE_KOLBE_HEX          (17270)
+#define RL_GOSSE_MARA_HEX           (18466)
+#define RL_GOSSE_DEKE_HEX           (17466)
+#define RL_GOSSE_ANGREIFER1_HEX     (16866)
+#define RL_GOSSE_ANGREIFER2_HEX     (17264)
 
 #endif

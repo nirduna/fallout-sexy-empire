@@ -1,0 +1,153 @@
+/*
+   rldeke.ssl - Deke, einer von Tylers Leuten (The Den)
+
+   Umsetzung 5, "Ketten" Akt 4 im Fluchtzweig: Tylers Preis (Phase 3, 3.2).
+   Tylers Bande ist Metzgers Muskel und hat gemerkt, dass die Gosse Menschen
+   nach Sueden schafft. Deke kommt, um den Preis fuer Tylers Schweigen zu nennen.
+     - abkaufen:  Barter 60 und 400 $ (Kasse zuerst)
+     - Lara auf Tyler hetzen: Speech 60 (der Vanilla-Streit um die Kirche)
+     - umdrehen:  Speech 80
+     - Kampf:     Deke und zwei von Tylers Leuten greifen an
+   Jeder Weg fuehrt zu Akt 5. Ist Tyler in Vanilla schon tot, entfaellt Akt 4
+   (gl_rotlicht.ssl).
+
+   Texte: text_src/english/dialog/rldeke.msg
+*/
+
+#define SCRIPT_REALNAME "rldeke"
+#include "define.h"
+#include "../headers/rotlicht.h"
+
+#define NAME                    SCRIPT_RLDEKE
+#include "command.h"
+
+procedure start;
+procedure talk_p_proc;
+procedure map_enter_p_proc;
+procedure destroy_p_proc;
+procedure look_at_p_proc;
+procedure description_p_proc;
+procedure Node100;
+procedure Node110;
+procedure Node120;
+procedure Node130;
+procedure Node140;
+procedure rl_weiter(variable weg);
+procedure Node999;
+
+variable haus;
+variable welt;
+variable gehen := 0;
+variable kampf := 0;
+variable selbst_weg := 0;
+
+procedure start begin
+end
+
+procedure map_enter_p_proc begin
+   welt := rl_lade_welt;
+   if (not rl_deke_bleibt(welt)) then begin
+      selbst_weg := 1;
+      destroy_object(self_obj);
+   end else if (welt[RL_W_TYLER] == RL_TYLER_KAMPF) then begin
+      attack_setup(self_obj, dude_obj);
+   end
+end
+
+// Faellt Deke, zaehlt er als Angreifer (auch ohne angesagten Kampf)
+procedure destroy_p_proc begin
+   if (selbst_weg) then return;
+   welt := rl_lade_welt;
+   haus := rl_lade_haeuser;
+   if (welt[RL_W_ANGRIFF] == RL_ANGRIFF_KEINER) then begin
+      welt[RL_W_ANGRIFF]   := RL_ANGRIFF_TYLER;
+      welt[RL_W_ANGREIFER] := 1;
+   end
+   welt[RL_W_ANGREIFER] := welt[RL_W_ANGREIFER] - 1;
+   if (welt[RL_W_ANGREIFER] <= 0) then call rl_kampf_ende(haus, welt);
+end
+
+procedure look_at_p_proc begin
+   script_overrides;
+   display_mstr(200);
+end
+
+procedure description_p_proc begin
+   script_overrides;
+   display_mstr(201);
+end
+
+procedure talk_p_proc begin
+   haus := rl_lade_haeuser;
+   welt := rl_lade_welt;
+   if (welt[RL_W_TYLER] == RL_TYLER_KAMPF) then begin
+      float_msg(self_obj, mstr(150), FLOAT_MSG_RED);
+      return;
+   end
+   start_gdialog(NAME, self_obj, 4, -1, -1);
+   gSay_Start;
+      call Node100;
+   gSay_End;
+   end_dialogue;
+   if (gehen) then begin
+      gehen := 0;
+      selbst_weg := 1;
+      destroy_object(self_obj);
+   end else if (kampf) then begin
+      kampf := 0;
+      call rl_angriff_starten(welt, RL_ANGRIFF_TYLER, self_obj, PID_GUN_THUG_MALE);
+   end
+end
+
+procedure Node100 begin
+   Reply(100);
+   if ((has_skill(dude_obj, SKILL_BARTER) >= 60) and rl_zahlbar(haus, RL_DEN, RL_TYLER_PREIS)) then
+      NOption(101, Node110, 004);
+   if (has_skill(dude_obj, SKILL_SPEECH) >= 60) then
+      NOption(102, Node120, 004);
+   if (has_skill(dude_obj, SKILL_SPEECH) >= 80) then
+      NOption(103, Node130, 004);
+   BOption(104, Node140, 004);
+   NOption(105, Node999, 004);
+   NLowOption(106, Node140);
+end
+
+procedure rl_weiter(variable weg) begin
+   welt[RL_W_TYLER] := weg;
+   welt[RL_W_KETTEN] := RL_KETTEN_WAHL;
+   welt[RL_W_KETTEN_WOCHE] := rl_woche_jetzt;
+   gehen := 1;
+end
+
+procedure Node110 begin
+   call rl_zahlen(haus, RL_DEN, RL_TYLER_PREIS);
+   call rl_weiter(RL_TYLER_GEKAUFT);
+   Reply(110);
+   NOption(111, Node999, 004);
+   NLowOption(111, Node999);
+end
+
+procedure Node120 begin
+   call rl_weiter(RL_TYLER_LARA);
+   Reply(120);
+   NOption(111, Node999, 004);
+   NLowOption(111, Node999);
+end
+
+procedure Node130 begin
+   call rl_weiter(RL_TYLER_UMGEDREHT);
+   Reply(130);
+   NOption(111, Node999, 004);
+   NLowOption(111, Node999);
+end
+
+procedure Node140 begin
+   welt[RL_W_TYLER] := RL_TYLER_KAMPF;
+   kampf := 1;
+   Reply(140);
+   NOption(141, Node999, 004);
+   NLowOption(141, Node999);
+end
+
+procedure Node999 begin
+end

@@ -2,3 +2,7 @@ rlessie.int     ; Madame Esther Kowalski, die Gosse (Rotlicht)          # local_
 rlkolbe.int     ; Kolbe, Metzgers Eintreiber (Rotlicht)                 # local_vars=0
 rlgosse.int     ; Kellertreppe zur Gosse, Den Business 2 (Rotlicht)     # local_vars=0
 rlden01.int     ; Kartenskript der Gosse RLDEN01 (Rotlicht)             # local_vars=0
+rlmara.int      ; Mara, die Frau aus dem Keller (Rotlicht)              # local_vars=0
+rldeke.int      ; Deke, einer von Tylers Leuten (Rotlicht)              # local_vars=0
+rljess.int      ; Jess, Laras Leutnant (Rotlicht)                       # local_vars=0
+rlangreifer.int ; Angreifer bei Kaempfen im Haus (Rotlicht)             # local_vars=0

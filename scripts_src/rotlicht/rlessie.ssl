@@ -7,6 +7,10 @@
      - danach Managerin der Gosse mit den gemeinsamen Knoten (rl_manager.h):
        Bericht, Kasse, Preise, Anteil, Moral, Krisen, Ausbau
      - wurde sie an Metzger ausgeliefert, verschwindet sie
+   Umsetzung 5 (Ketten, Akt 2-5):
+     - zeigt Mara im Keller, warnt vor Metzgers Durchsuchung
+     - kuendigt, wenn der Spieler Mara ausliefert (Fluchtzweig)
+     - Akt 5 im Fluchtzweig: Sturm auf die Gilde oder der stille Krieg
 
    Texte: text_src/english/dialog/rlessie.msg
 */
@@ -22,6 +26,7 @@
 procedure start;
 procedure talk_p_proc;
 procedure critter_p_proc;
+procedure map_enter_p_proc;
 procedure look_at_p_proc;
 procedure description_p_proc;
 
@@ -32,11 +37,20 @@ procedure Node310;      // Prolog laeuft
 procedure Node320;      // Reaktion auf den Weg (einmalig)
 procedure Node340;      // Reaktion auf Metzgers Angebot, Ketten Akt 1 (einmalig)
 procedure Node391;      // nur mit RL_DEBUG: Prolog ueberspringen
+procedure Node800;      // Ketten, Akt 2: das Maedchen im Keller
+procedure Node801;
+procedure Node810;      // Essie kuendigt (Mara ausgeliefert)
+procedure Node820;      // Metzgers Leute suchen: die Zuflucht bauen
+procedure Node830;      // Akt 5 im Fluchtzweig: die Entscheidung
+procedure Node831;      // Sturm
+procedure Node832;      // stiller Krieg
+procedure Node835;      // Sturm angesagt: Erinnerung
 procedure Node999;
 
 variable haus;
 variable welt;
 variable h := RL_DEN;
+variable gehen := 0;
 
 #include "../headers/rl_manager.h"
 
@@ -60,6 +74,13 @@ procedure critter_p_proc begin
       destroy_object(self_obj);
 end
 
+// Hat sie gekuendigt, ist sie beim naechsten Betreten der Gosse fort
+procedure map_enter_p_proc begin
+   welt := rl_lade_welt;
+   if (welt[RL_W_ESSIE] == RL_ESSIE_GEKUENDIGT) then
+      destroy_object(self_obj);
+end
+
 procedure talk_p_proc begin
    haus := rl_lade_haeuser;
    welt := rl_lade_welt;
@@ -70,7 +91,9 @@ procedure talk_p_proc begin
    end
    start_gdialog(NAME, self_obj, 4, -1, -1);
    gSay_Start;
-      if (welt[RL_W_PROLOG] == RL_PROLOG_OFFEN) then
+      if (welt[RL_W_ESSIE] == RL_ESSIE_GEKUENDIGT) then
+         call Node810;
+      else if (welt[RL_W_PROLOG] == RL_PROLOG_OFFEN) then
          call Node300;
       else if (welt[RL_W_PROLOG] == RL_PROLOG_LAEUFT) then
          call Node310;
@@ -78,11 +101,24 @@ procedure talk_p_proc begin
          call Node320;
       else if (welt[RL_W_KETTEN_REAKTION] == 1) then
          call Node340;
+      else if ((welt[RL_W_MARA_WEG] == RL_MARA_KELLER) and (welt[RL_W_MARA_GESEHEN] == 0)) then
+         call Node800;
+      else if ((welt[RL_W_MARA_WEG] == RL_MARA_VERSTECKT) and (welt[RL_W_SUCHE] > 0)
+               and ((haus[rl_idx(RL_DEN, RL_F_MODULE)] bwand RL_MOD_ZUFLUCHT) == 0)) then
+         call Node820;
+      else if ((welt[RL_W_KETTEN] == RL_KETTEN_WAHL) and (welt[RL_W_KETTEN_ZWEIG] == RL_KETTEN_ZWEIG_FLUCHT)) then
+         call Node830;
+      else if (welt[RL_W_KETTEN] == RL_KETTEN_STURM) then
+         call Node835;
       else
          call RLM_Start;
    gSay_End;
    end_dialogue;
    RLM_NACH_DIALOG
+   if (gehen) then begin
+      gehen := 0;
+      destroy_object(self_obj);
+   end
 end
 
 procedure Node300 begin
@@ -141,6 +177,71 @@ procedure Node340 begin
       Reply(351);
    NOption(352, RLM_Start, 004);
    NLowOption(352, RLM_Start);
+end
+
+/* ------------------------------------------------------------------ */
+/* Ketten, Akt 2-5 (Umsetzung 5)                                       */
+/* ------------------------------------------------------------------ */
+procedure Node800 begin
+   welt[RL_W_MARA_GESEHEN] := 1;
+   Reply(800);
+   NOption(801, Node801, 004);
+   NOption(123, RLM_Start, 004);
+   NLowOption(801, Node801);
+end
+
+procedure Node801 begin
+   Reply(802);
+   NOption(803, Node999, 004);
+   NOption(123, RLM_Start, 004);
+   NLowOption(803, Node999);
+end
+
+// Mara ausgeliefert: Essie geht (nicht im Tyrannen-Zweig, dort ist sie laengst gebrochen)
+procedure Node810 begin
+   gehen := 1;
+   Reply(810);
+   NOption(811, Node999, 004);
+   NLowOption(811, Node999);
+end
+
+procedure Node820 begin
+   Reply(820);
+   NOption(821, RLM_Ausbau, 004);
+   NOption(123, RLM_Start, 004);
+   NLowOption(123, RLM_Start);
+end
+
+procedure Node830 begin
+   Reply(830);
+   GOption(831, Node831, 004);
+   NOption(832, Node832, 004);
+   NOption(833, RLM_Start, 004);
+   NLowOption(833, RLM_Start);
+end
+
+procedure Node831 begin
+   welt[RL_W_KETTEN] := RL_KETTEN_STURM;
+   welt[RL_W_KETTEN_WOCHE] := rl_woche_jetzt;
+   Reply(834);
+   NOption(123, RLM_Start, 004);
+   NOption(124, Node999, 004);
+   NLowOption(124, Node999);
+end
+
+procedure Node832 begin
+   call rl_ketten_ende(haus, welt, RL_KETTEN_STILLER_KRIEG);
+   Reply(836);
+   NOption(123, RLM_Start, 004);
+   NOption(124, Node999, 004);
+   NLowOption(124, Node999);
+end
+
+procedure Node835 begin
+   Reply(835);
+   NOption(123, RLM_Start, 004);
+   NOption(124, Node999, 004);
+   NLowOption(124, Node999);
 end
 
 procedure Node999 begin

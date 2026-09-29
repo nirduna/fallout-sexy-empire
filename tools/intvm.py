@@ -65,7 +65,7 @@ NAMEN = {
     0x80DE: 'start_gdialog', 0x80DF: 'end_dialogue', 0x80E4: 'load_map',
     0x80E9: 'set_light_level', 0x80EA: 'game_time', 0x80EB: 'game_time_in_seconds',
     0x80EC: 'elevation', 0x80EF: 'critter_dmg', 0x80F4: 'destroy_object',
-    0x8101: 'cur_map_index', 0x8105: 'message_str', 0x810B: 'metarule',
+    0x8101: 'cur_map_index', 0x8105: 'message_str', 0x810A: 'float_msg', 0x810B: 'metarule',
     0x811C: 'gsay_start', 0x811D: 'gsay_end', 0x811E: 'gsay_reply', 0x8121: 'giq_option',
     0x8128: 'combat_is_initialized', 0x8136: 'gfade_out', 0x8137: 'gfade_in',
     0x8138: 'item_caps_total', 0x8139: 'item_caps_adjust', 0x8143: 'attack_setup',
@@ -974,6 +974,13 @@ def _s_attack_setup(vm, sp):
     sp.protokoll.append(f'attack_setup {wer} {ziel}')
 
 
+def _s_float_msg(vm, sp):
+    farbe = vm.pop()
+    text = vm.pop()
+    o = vm.pop_obj()
+    sp.schwebetexte.append((o, text))
+
+
 def _s_endgame_slideshow(vm, sp):
     sp.protokoll.append('endgame_slideshow')
 
@@ -1192,6 +1199,7 @@ SPIEL = {
     0x80EF: _s_critter_dmg,
     0x80F4: _s_destroy_object,
     0x8101: lambda vm, sp: vm.stack.append(sp.karte),
+    0x810A: _s_float_msg,
     0x8105: _s_message_str,
     0x810B: _s_metarule,
     0x811C: _s_gsay_start,
@@ -1259,7 +1267,7 @@ class Spieler:
         """Die Option, die den Dialog beendet (Node999 oder ohne Prozedur),
         sonst die letzte, die keine Debug-Option ist."""
         for i, o in enumerate(optionen):
-            if o[1] in (None, 'node999'):
+            if o[1] in (None, 'node999', 'rlm_ende'):
                 return i
         for i in range(len(optionen) - 1, -1, -1):
             if not optionen[i][0].startswith('[Debug]'):
@@ -1295,6 +1303,7 @@ class Spiel:
         self.erster_besuch = False
         self.zeit = 0                     # Spielzeit in Zehntelsekunden
         self.meldungen = []
+        self.schwebetexte = []
         self.protokoll = []
         self.karten_wechsel = []
         self.angriffe = []
