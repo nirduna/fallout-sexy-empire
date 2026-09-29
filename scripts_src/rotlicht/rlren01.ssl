@@ -1,9 +1,11 @@
 /*
    rlren01.ssl - Kartenskript: Das Silberne Strumpfband (New Reno), Innenkarte RLREN01
 
-   Umsetzung 6: Licht und ein Satz beim ersten Besuch. Die Figuren (Madame,
-   Quest-Figuren) setzt das Kartenskript zur Laufzeit, sobald sie dazukommen
-   (rl_figur in rl_haeuser.h, Plaetze aus rl_karten.h).
+   Umsetzung 6: Licht und ein Satz beim ersten Besuch.
+   Umsetzung 7: die Figuren nach dem Stand von "Der Segen" (rl_nr_figuren in
+   rl_newreno.h): vor der Uebernahme die Witwe und Frankie Pagano, danach
+   Roz Mercer und Leopold Asch. Ist Pagano tot und die Urkunde beschafft,
+   beginnt die Eroeffnungsnacht von selbst: Wer allein aufmacht, wird besucht.
 
    Die Karte baut tools/bau_karten.py aus einer Vorlage des RPU (HAEUSER).
    Texte: text_src/english/dialog/rlren01.msg
@@ -43,4 +45,13 @@ procedure rl_figuren begin
    variable haus, welt;
    haus := rl_lade_haeuser;
    welt := rl_lade_welt;
+   welt[RL_W_HAUS_HIER] := RL_HAUS + 1;    // fuer die Angreifer (rl_kampf.h)
+   call rl_nr_figuren(haus, welt);
+   if ((welt[RL_W_NR_TOTE] bwand RL_NR_TOT_FIXER) and (not rl_nr_besitz(haus))
+       and (welt[RL_W_NR_URKUNDE] != RL_URKUNDE_KEINE) and (welt[RL_W_NR_SEGEN] == RL_SEGEN_KEINER)
+       and (welt[RL_W_NR_EROEFFNUNG] == RL_EROEFFNUNG_KEINE)) then begin
+      welt[RL_W_NR_EROEFFNUNG] := RL_EROEFFNUNG_KAMPF;
+      display_mstr(101);
+      call rl_angriff_haus(haus, welt, RL_ANGRIFF_EROEFFNUNG, RL_HAUS, PID_TOUGH_THUG_MALE);
+   end
 end

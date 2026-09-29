@@ -1,0 +1,101 @@
+/*
+   rlroz.ssl - Roz Mercer, Madame des Silbernen Strumpfbands (New Reno)
+
+   Umsetzung 7: Roz kommt mit der Uebernahme (Pagano schickt sie). Sie hat
+   zehn Jahre im Shark Club Karten gegeben und weiss, wer betruegt.
+   Fuehrung 55. Das gemeinsame Manager-Menue (rl_manager.h). Ist der
+   Consigliere tot, zahlt sie auch die HQ-Kasse aus.
+
+   Texte: text_src/english/dialog/rlroz.msg (ihre Saetze) und
+   _rl_manager.inc (die neutralen Texte des Manager-Menues)
+*/
+
+#define SCRIPT_REALNAME "rlroz"
+#define NAME                    SCRIPT_RLROZ
+#include "define.h"
+#include "../headers/rotlicht.h"
+#include "command.h"
+
+procedure start;
+procedure talk_p_proc;
+procedure map_enter_p_proc;
+procedure destroy_p_proc;
+procedure look_at_p_proc;
+procedure description_p_proc;
+procedure Node800;      // erste Begegnung
+procedure Node810;      // HQ-Kasse, wenn Asch tot ist
+procedure Node999;
+
+variable haus;
+variable welt;
+variable h := RL_NEW_RENO;
+variable selbst_weg := 0;
+
+#define RLM_EXTRA_OPTIONEN   if ((welt[RL_W_NR_TOTE] bwand RL_NR_TOT_ASCH) and (welt[RL_W_HQ_KASSE] > 0)) then \
+                                NOption(810, Node810, 004);
+
+#include "../headers/rl_manager.h"
+
+procedure start begin
+end
+
+procedure map_enter_p_proc begin
+   haus := rl_lade_haeuser;
+   if (not rl_nr_besitz(haus)) then begin
+      selbst_weg := 1;
+      destroy_object(self_obj);
+   end
+end
+
+// Ohne Madame fuehrt das Haus sich selbst, schlecht
+procedure destroy_p_proc begin
+   if (selbst_weg) then return;
+   welt := rl_lade_welt;
+   haus := rl_lade_haeuser;
+   welt[RL_W_NR_TOTE] := welt[RL_W_NR_TOTE] bwor RL_NR_TOT_ROZ;
+   haus[rl_idx(RL_NEW_RENO, RL_F_FUEHRUNG)] := RL_OHNE_ROZ_FUEHRUNG;
+end
+
+procedure look_at_p_proc begin
+   script_overrides;
+   display_mstr(200);
+end
+
+procedure description_p_proc begin
+   script_overrides;
+   display_mstr(201);
+end
+
+procedure talk_p_proc begin
+   haus := rl_lade_haeuser;
+   welt := rl_lade_welt;
+   start_gdialog(NAME, self_obj, 4, -1, -1);
+   gSay_Start;
+      if ((welt[RL_W_NR_KENNT] bwand RL_NR_KENNT_ROZ) == 0) then
+         call Node800;
+      else
+         call RLM_Start;
+   gSay_End;
+   end_dialogue;
+   RLM_NACH_DIALOG
+end
+
+procedure Node800 begin
+   welt[RL_W_NR_KENNT] := welt[RL_W_NR_KENNT] bwor RL_NR_KENNT_ROZ;
+   Reply(800);
+   NOption(801, RLM_Start, 004);
+   NOption(115, RLM_Ende, 004);
+   NLowOption(116, RLM_Kasse);
+end
+
+procedure Node810 begin
+   variable betrag := welt[RL_W_HQ_KASSE];
+   item_caps_adjust(dude_obj, betrag);
+   welt[RL_W_HQ_KASSE] := 0;
+   Reply(mstr(811) + betrag + mstr(812));
+   NOption(123, RLM_Start, 004);
+   NOption(124, RLM_Ende, 004);
+end
+
+procedure Node999 begin
+end

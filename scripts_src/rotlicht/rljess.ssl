@@ -85,9 +85,10 @@ procedure talk_p_proc begin
    if (gehen) then begin
       gehen := 0;
       gfade_out(600);
-      selbst_weg := 1;
-      destroy_object(self_obj);
+      set_obj_visibility(self_obj, 1);
       gfade_in(600);
+      selbst_weg := 1;
+      destroy_object(self_obj);      // beendet das Skript: muss zuletzt stehen
    end else if (kampf) then begin
       kampf := 0;
       call rl_angriff_starten(welt, RL_ANGRIFF_LARA, self_obj, PID_GUN_THUG_FEMALE);

@@ -1,0 +1,322 @@
+/*
+   rlconsig.ssl - Leopold Asch, Consigliere im Hauptquartier (Silbernes Strumpfband)
+
+   Umsetzung 7 (Phase 1, Ansatz C; Phase 5, Abschnitt 7):
+     - Die HQ-Kasse: was die Laeufer aus den anderen Haeusern bringen.
+     - Der Bericht ueber alle Haeuser: Kunden, Gewinn, Kasse, Hitze.
+     - Was die Familien denken: der Pate und wer misstrauisch ist.
+     - Das Familientreffen: ab dem Familiensitz (Hausklasse 3) alle vier
+       Wochen, fuenf Themen der Reihe nach (rl_newreno.h). Die Fuenfte Familie
+       (Titel, Phase 6) gibt +10 auf die Checks.
+   Ist Roz tot, zahlt Asch auch die Kasse des Strumpfbands aus.
+
+   Texte: text_src/english/dialog/rlconsig.msg
+*/
+
+#define SCRIPT_REALNAME "rlconsig"
+#define NAME                    SCRIPT_RLCONSIG
+#include "define.h"
+#include "../headers/rotlicht.h"
+#include "command.h"
+
+procedure start;
+procedure talk_p_proc;
+procedure map_enter_p_proc;
+procedure destroy_p_proc;
+procedure look_at_p_proc;
+procedure description_p_proc;
+
+procedure Node100;      // Hauptmenue
+procedure Node110;      // HQ-Kasse
+procedure Node111;      // ausgezahlt
+procedure Node115;      // Kasse des Strumpfbands (Roz tot)
+procedure Node120;      // Bericht
+procedure Node140;      // die Familien
+procedure Node160;      // das naechste Treffen
+procedure Node200;      // das Treffen
+procedure Node210;      // Salvatore will mehr
+procedure Node211;      // zahlen
+procedure Node212;      // Speech
+procedure Node213;      // nein
+procedure Node220;      // Jet-Vertrag
+procedure Node221;      // angenommen
+procedure Node222;      // abgelehnt
+procedure Node230;      // Wright
+procedure Node231;      // helfen
+procedure Node232;      // schweigen
+procedure Node240;      // Shark Club
+procedure Node241;      // bezahlt
+procedure Node242;      // der Brief
+procedure Node243;      // abgelehnt
+procedure Node250;      // der Laeufer
+procedure Node251;      // Perception
+procedure Node252;      // Speech
+procedure Node253;      // ein Exempel
+procedure Node999;
+procedure rl_treffen_zurueck(variable text);
+
+variable haus;
+variable welt;
+variable selbst_weg := 0;
+
+procedure start begin
+end
+
+procedure map_enter_p_proc begin
+   haus := rl_lade_haeuser;
+   if (not rl_nr_besitz(haus)) then begin
+      selbst_weg := 1;
+      destroy_object(self_obj);
+   end
+end
+
+procedure destroy_p_proc begin
+   if (selbst_weg) then return;
+   welt := rl_lade_welt;
+   welt[RL_W_NR_TOTE] := welt[RL_W_NR_TOTE] bwor RL_NR_TOT_ASCH;
+end
+
+procedure look_at_p_proc begin
+   script_overrides;
+   display_mstr(300);
+end
+
+procedure description_p_proc begin
+   script_overrides;
+   display_mstr(301);
+end
+
+procedure talk_p_proc begin
+   haus := rl_lade_haeuser;
+   welt := rl_lade_welt;
+   start_gdialog(NAME, self_obj, 4, -1, -1);
+   gSay_Start;
+      call Node100;
+   gSay_End;
+   end_dialogue;
+end
+
+procedure Node100 begin
+   if ((welt[RL_W_NR_KENNT] bwand RL_NR_KENNT_ASCH) == 0) then begin
+      welt[RL_W_NR_KENNT] := welt[RL_W_NR_KENNT] bwor RL_NR_KENNT_ASCH;
+      Reply(100);
+   end else if (welt[RL_W_TREFFEN_OFFEN] != RL_TREFFEN_KEINS) then
+      Reply(102);
+   else
+      Reply(101);
+   if (welt[RL_W_TREFFEN_OFFEN] != RL_TREFFEN_KEINS) then
+      NOption(103, Node200, 004);
+   NOption(104, Node110, 004);
+   if ((welt[RL_W_NR_TOTE] bwand RL_NR_TOT_ROZ) and (haus[rl_idx(RL_NEW_RENO, RL_F_KASSE)] > 0)) then
+      NOption(109, Node115, 004);
+   NOption(105, Node120, 004);
+   NOption(106, Node140, 004);
+   NOption(107, Node160, 004);
+   NOption(108, Node999, 004);
+   NLowOption(108, Node999);
+end
+
+/* ------------------------------------------------------------------ */
+/* Kasse und Bericht                                                   */
+/* ------------------------------------------------------------------ */
+procedure Node110 begin
+   Reply(mstr(110) + welt[RL_W_HQ_KASSE] + mstr(111));
+   if (welt[RL_W_HQ_KASSE] > 0) then
+      NOption(112, Node111, 004);
+   NOption(113, Node100, 004);
+end
+
+procedure Node111 begin
+   variable betrag := welt[RL_W_HQ_KASSE];
+   item_caps_adjust(dude_obj, betrag);
+   welt[RL_W_HQ_KASSE] := 0;
+   Reply(mstr(114) + betrag + mstr(115));
+   NOption(113, Node100, 004);
+   NOption(108, Node999, 004);
+end
+
+procedure Node115 begin
+   variable betrag := haus[rl_idx(RL_NEW_RENO, RL_F_KASSE)];
+   item_caps_adjust(dude_obj, betrag);
+   haus[rl_idx(RL_NEW_RENO, RL_F_KASSE)] := 0;
+   Reply(mstr(116) + betrag + mstr(115));
+   NOption(113, Node100, 004);
+end
+
+// Eine Zeile je eigenem Haus
+procedure Node120 begin
+   variable h := 0, text := mstr(120);
+   while (h < RL_ANZAHL_HAEUSER) do begin
+      if (haus[rl_idx(h, RL_F_BESITZ)]) then
+         text := text + " " + mstr(130 + h) + mstr(121) + haus[rl_idx(h, RL_F_KUNDEN)]
+                 + mstr(122) + haus[rl_idx(h, RL_F_GEWINN)] + mstr(123) + haus[rl_idx(h, RL_F_HITZE)] + mstr(124);
+      h := h + 1;
+   end
+   Reply(text);
+   NOption(113, Node100, 004);
+end
+
+// Der Pate und die misstrauischen Familien (nur die lebenden)
+procedure Node140 begin
+   variable f := 1, text := mstr(141 + welt[RL_W_NR_SEGEN]), keine := 1;
+   while (f <= RL_SEGEN_BISHOP) do begin
+      if (rl_nr_misstrauisch(welt, f) and not rl_familie_weg(f)) then begin
+         if (keine) then text := text + " " + mstr(147);
+         text := text + " " + mstr(150 + f);
+         keine := 0;
+      end
+      f := f + 1;
+   end
+   if (keine) then text := text + " " + mstr(148);
+   Reply(text);
+   NOption(113, Node100, 004);
+end
+
+procedure Node160 begin
+   if (haus[rl_idx(RL_NEW_RENO, RL_F_KLASSE)] < 3) then
+      Reply(160);
+   else if (welt[RL_W_TREFFEN_OFFEN] != RL_TREFFEN_KEINS) then
+      Reply(161);
+   else
+      Reply(mstr(162) + rl_max(1, welt[RL_W_TREFFEN_WOCHE] - rl_woche_jetzt) + mstr(163));
+   NOption(113, Node100, 004);
+end
+
+/* ------------------------------------------------------------------ */
+/* Das Familientreffen                                                 */
+/* ------------------------------------------------------------------ */
+procedure Node200 begin
+   variable t := welt[RL_W_TREFFEN_OFFEN];
+   if (t == RL_TREFFEN_SALVATORE) then call Node210;
+   else if (t == RL_TREFFEN_JET) then call Node220;
+   else if (t == RL_TREFFEN_WRIGHT) then call Node230;
+   else if (t == RL_TREFFEN_SHARK) then call Node240;
+   else call Node250;
+end
+
+procedure rl_treffen_zurueck(variable text) begin
+   call rl_treffen_ende(welt);
+   Reply(text);
+   NOption(113, Node100, 004);
+   NOption(108, Node999, 004);
+end
+
+// Salvatore will mehr: zahlen, reden oder nein
+procedure Node210 begin
+   Reply(210);
+   NOption(211, Node211, 004);
+   if (has_skill(dude_obj, SKILL_SPEECH) + rl_treffen_bonus >= 70) then
+      GOption(212, Node212, 004);
+   BOption(213, Node213, 004);
+end
+
+procedure Node211 begin
+   haus[rl_idx(RL_NEW_RENO, RL_F_TRIBUTMOD)] := haus[rl_idx(RL_NEW_RENO, RL_F_TRIBUTMOD)] + 5;
+   call rl_treffen_zurueck(mstr(214));
+end
+
+procedure Node212 begin
+   call rl_haus_plus(haus, RL_NEW_RENO, RL_F_EINFLUSS, 5);
+   call rl_treffen_zurueck(mstr(215));
+end
+
+procedure Node213 begin
+   call rl_nr_misstrauen(welt, RL_SEGEN_SALVATORE);
+   call rl_haus_plus(haus, RL_NEW_RENO, RL_F_HITZE, 20);
+   haus[rl_idx(RL_NEW_RENO, RL_F_KASSE)] := haus[rl_idx(RL_NEW_RENO, RL_F_KASSE)] - RL_SALVATORE_SCHADEN;
+   call rl_treffen_zurueck(mstr(216));
+end
+
+// Die Mordinos wollen durch die Hintertuer verkaufen
+procedure Node220 begin
+   Reply(220);
+   BOption(221, Node221, 004);
+   NOption(222, Node222, 004);
+end
+
+procedure Node221 begin
+   welt[RL_W_JET_VERTRAG] := 1;
+   rl_karma(-10);
+   call rl_nr_misstrauen(welt, RL_SEGEN_WRIGHT);
+   call rl_treffen_zurueck(mstr(223));
+end
+
+procedure Node222 begin
+   call rl_nr_misstrauen(welt, RL_SEGEN_MORDINO);
+   call rl_treffen_zurueck(mstr(224));
+end
+
+// Wright will wissen, wer das Jet verkauft hat
+procedure Node230 begin
+   Reply(230);
+   GOption(231, Node231, 004);
+   NOption(232, Node232, 004);
+end
+
+procedure Node231 begin
+   call rl_haus_plus(haus, RL_NEW_RENO, RL_F_EINFLUSS, 10);
+   call rl_haus_plus(haus, RL_NEW_RENO, RL_F_HITZE, 10);
+   call rl_nr_misstrauen(welt, RL_SEGEN_MORDINO);
+   call rl_treffen_zurueck(mstr(233));
+end
+
+procedure Node232 begin
+   call rl_nr_misstrauen(welt, RL_SEGEN_WRIGHT);
+   call rl_treffen_zurueck(mstr(234));
+end
+
+// Bishop bietet einen Anteil am Shark Club
+procedure Node240 begin
+   Reply(240);
+   if (rl_hq_zahlbar(welt, RL_SHARK_EINSATZ)) then
+      NOption(241, Node241, 004);
+   if (welt[RL_W_NR_BRIEF] == RL_BRIEF_ERLEDIGT_OFFEN) then
+      BOption(242, Node242, 004);
+   NOption(243, Node243, 004);
+end
+
+procedure Node241 begin
+   call rl_hq_zahlen(welt, RL_SHARK_EINSATZ);
+   welt[RL_W_SHARK_ANTEIL] := 1;
+   call rl_treffen_zurueck(mstr(244));
+end
+
+procedure Node242 begin
+   welt[RL_W_SHARK_ANTEIL] := 1;
+   call rl_nr_misstrauen(welt, RL_SEGEN_BISHOP);
+   call rl_haus_plus(haus, RL_NEW_RENO, RL_F_HITZE, 10);
+   call rl_treffen_zurueck(mstr(245));
+end
+
+procedure Node243 begin
+   call rl_treffen_zurueck(mstr(246));
+end
+
+// Ein Laeufer zweigt ab
+procedure Node250 begin
+   Reply(250);
+   if (dude_perception + rl_treffen_bonus / 10 >= 7) then
+      GOption(251, Node251, 004);
+   if (has_skill(dude_obj, SKILL_SPEECH) + rl_treffen_bonus >= 60) then
+      GOption(252, Node252, 004);
+   BOption(253, Node253, 004);
+end
+
+procedure Node251 begin
+   welt[RL_W_HQ_KASSE] := welt[RL_W_HQ_KASSE] + RL_LAEUFER_BEUTE;
+   call rl_treffen_zurueck(mstr(254));
+end
+
+procedure Node252 begin
+   call rl_haus_plus(haus, RL_NEW_RENO, RL_F_EINFLUSS, 5);
+   call rl_treffen_zurueck(mstr(255));
+end
+
+procedure Node253 begin
+   call rl_haus_plus(haus, RL_NEW_RENO, RL_F_HITZE, 10);
+   rl_karma(-5);
+   call rl_treffen_zurueck(mstr(256));
+end
+
+procedure Node999 begin
+end

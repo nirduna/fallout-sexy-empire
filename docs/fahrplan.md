@@ -1,7 +1,7 @@
 # Fahrplan: der Rest der Umsetzung
 
 **Arbeitstitel:** *Rotlicht über dem Ödland* – Addon-Modifikation für Fallout 2
-**Stand:** Umsetzung 1–4 sind fertig, die Gosse ist im Spiel getestet. Das [Prüfwerkzeug](pruefwerkzeug.md) steht.
+**Stand:** Umsetzung 1–7 sind fertig, die Gosse ist im Spiel getestet. Das [Prüfwerkzeug](pruefwerkzeug.md) steht.
 **Auftrag:** Alles Übrige aus Phase 1–6 umsetzen, prüfen und abschließen, ohne weitere Rückfragen. Wo eine Entscheidung nötig ist, gilt meine Empfehlung. Jede steht in der Doku des jeweiligen Schritts.
 
 ---
@@ -36,7 +36,7 @@ Diese Regeln gelten für alle folgenden Schritte. Sie halten das Addon verträgl
 |---|---|---|
 | 5 ✔ | **„Ketten“, Akt 2–5** ([Umsetzung 5](umsetzung-5-ketten-akt2-5.md)) | Mara im Keller, Modul „Zuflucht“, Fluchtroute und Lieferungen als Aufträge, Tylers Preis, Laras Sturm, die vier Enden. Mara als Madame der Gosse (Phase 4, 3.5). Ereignis „Metzgers Vergeltung“ |
 | 6 ✔ | **Technik für weitere Häuser** ([Umsetzung 6](umsetzung-6-haeuser-technik.md)) | `bau_karten.py` und `paket.py` für beliebig viele Häuser. Gemeinsames Eingangs-Skript, gemeinsames Kartenskript, Laufzeit-Figuren. Essie erzählt von den anderen Städten |
-| 7 | **New Reno: Das Silberne Strumpfband** | Karte, Madame, „Der Segen“ (Urkunde und Segen einer Familie oder die Eröffnungsnacht), Spieltische, Jet-Theke. **Hauptquartier:** Consigliere, Läufer ins HQ, Auszahlung, Familientreffen alle 4 Wochen, Hausklasse 3 |
+| 7 ✔ | **New Reno: Das Silberne Strumpfband** ([Umsetzung 7](umsetzung-7-new-reno.md)) | Karte, Madame, „Der Segen“ (Urkunde und Segen einer Familie oder die Eröffnungsnacht), Spieltische, Jet-Theke. **Hauptquartier:** Consigliere, Läufer ins HQ, Auszahlung, Familientreffen alle 4 Wochen, Hausklasse 3 |
 | 8 | **Redding: Die Schlacke** | Karte, Madame, „Ascortis Lizenz“ mit vier Wegen, Goldwaage (ehrlich oder gezinkt), Entzugsstube, Malamute Saloon (vier Wege) |
 | 9 | **Vault City: Die Kloake** | Karte, Hanne Voss, „Ein Keller im Courtyard“, Schweigegeld je Hausklasse, Wartungstunnel, **Die Akte**, Razzia mit Dienstboten-Folge, Abigail Kessler |
 | 10 | **NCR: Die Tränke** | Karte, Madame, „Etablissement Nr. 9“ (vier Wege, Krankenstube als Auflage), Karawanenhof, Registratur, **Vortis' Angebot**. Questline **„Die Reinen“** mit Ruth Calloway in fünf Akten |

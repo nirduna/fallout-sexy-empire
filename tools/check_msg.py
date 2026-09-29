@@ -38,6 +38,10 @@ BERECHNET = {
     r"display_mstr\(100 \+ 10 \* h\)": range(110, 160, 10),        # Eingaenge (rltuer)
     r"display_mstr\(101 \+ 10 \* h\)": range(111, 161, 10),
     r"mstr\(RL_MSG_SONDER_NAME \+": range(430, 430 + SONDER_ANZAHL),   # Sondermodule
+    r"mstr\(190 \+ pate\)": range(191, 195),                 # Segen der vier Familien (rlfixer)
+    r"mstr\(130 \+ h\)": range(130, 136),                    # Hausnamen (rlconsig)
+    r"mstr\(141 \+ welt\[RL_W_NR_SEGEN\]\)": range(141, 147),  # der Pate (rlconsig)
+    r"mstr\(150 \+ f\)": range(151, 155),                    # misstrauische Familien (rlconsig)
     r"mstr\(RL_MSG_SONDER_EFFEKT \+": range(530, 530 + SONDER_ANZAHL),
 }
 MUSTER = [

@@ -42,6 +42,10 @@
 #define SCRIPT_RLVCT01              (RL_SCRIPT_BASE + 11)  // Kartenskript: Die Kloake (Vault City)
 #define SCRIPT_RLNCR01              (RL_SCRIPT_BASE + 12)  // Kartenskript: Die Traenke (NCR)
 #define SCRIPT_RLSFR01              (RL_SCRIPT_BASE + 13)  // Kartenskript: Die Bilge (San Francisco)
+#define SCRIPT_RLWITWE              (RL_SCRIPT_BASE + 14)  // Loretta Varga, die Witwe (New Reno, Urkunde)
+#define SCRIPT_RLFIXER              (RL_SCRIPT_BASE + 15)  // Frankie Pagano, Mittelsmann der Familien (Segen)
+#define SCRIPT_RLROZ                (RL_SCRIPT_BASE + 16)  // Roz Mercer, Madame des Strumpfbands
+#define SCRIPT_RLCONSIG             (RL_SCRIPT_BASE + 17)  // Leopold Asch, Consigliere im Hauptquartier
 
 /* ------------------------------------------------------------------ */
 /* Echte GVARs (Phase 6). Nur dort, wo die Engine sie verlangt:        */
@@ -125,6 +129,8 @@
 #define RL_F_GEKAUFT                (33)    // Bitmaske der gekauften Module (rl_katalog.h)
 #define RL_F_BAU_ID                 (34)    // Modul-ID + 1 der laufenden Baustelle, 0 = keine
 #define RL_F_BAU_WOCHEN             (35)    // verbleibende Bauwochen
+#define RL_F_ANGRIFF                (36)    // laufender Kampf im Haus (RL_ANGRIFF_*), nicht fuer die Gosse
+#define RL_F_ANGREIFER              (37)    // wie viele Angreifer dort noch stehen
 
 // Anwerber (Phase 4, Abschnitt 2.2). Eine Person je RL_ANWERB_PUNKTE Punkte:
 // Werben 2/Woche (Anstaendiges Haus 4), Zwingen 4/Woche, Zulauf ab Moral 75 +1.
@@ -203,6 +209,25 @@
 // Umsetzung 6: Eingaenge der weiteren Haeuser (Hex + 1, an dem die Treppe gesetzt wurde)
 #define RL_W_EINGANG                (48)    // + Hausnummer 1..5 (48 ist frei, 49 New Reno ... 53 San Francisco)
 #define RL_W_STAEDTE_ERZAEHLT       (54)    // Bitfeld: welche Staedte Essie schon erwaehnt hat
+// New Reno und Hauptquartier (Umsetzung 7, rl_newreno.h)
+#define RL_W_NR_URKUNDE             (55)    // RL_URKUNDE_*
+#define RL_W_NR_SEGEN               (56)    // RL_SEGEN_*: der Pate
+#define RL_W_NR_MISSTRAUEN          (57)    // Bitfeld rl_bit(RL_SEGEN_*): misstrauische Familien
+#define RL_W_NR_BRIEF               (58)    // RL_BRIEF_*: Bishops Brief an Westin
+#define RL_W_NR_EROEFFNUNG          (59)    // RL_EROEFFNUNG_*
+#define RL_W_NR_FAELSCHUNG          (60)    // Woche, in der die Faelschung auffliegt (0 = nie)
+#define RL_W_NR_WITWE               (61)    // RL_WITWE_*: die Witwe nach der Faelschung
+#define RL_W_NR_WITWE_WOCHE         (62)    // Frist fuer ihre Forderung
+#define RL_W_KITTY_WEISS            (63)    // 1 = Miss Kitty weiss, wer im Cat's Paw geschnueffelt hat
+#define RL_W_TREFFEN_WOCHE          (64)    // naechstes Familientreffen (Woche)
+#define RL_W_TREFFEN_NR             (65)    // wie viele Treffen es schon gab (Reihenfolge der Themen)
+#define RL_W_TREFFEN_OFFEN          (66)    // RL_TREFFEN_*: das Thema des offenen Treffens, 0 = keins
+#define RL_W_TREFFEN_FRIST          (67)    // bis zu dieser Woche wartet der Consigliere
+#define RL_W_SHARK_ANTEIL           (68)    // 1 = Anteil am Shark Club (Bishop)
+#define RL_W_JET_VERTRAG            (69)    // 1 = Jet-Vertrag mit den Mordinos
+#define RL_W_HAUS_HIER              (70)    // Haus + 1 der Innenkarte, auf der der Spieler steht (Kartenskripte)
+#define RL_W_NR_TOTE                (71)    // Bitfeld RL_NR_TOT_*: wer im Strumpfband gestorben ist
+#define RL_W_NR_KENNT               (72)    // Bitfeld RL_NR_KENNT_*: wen der Spieler schon kennt
 
 #define RL_PROLOG_OFFEN             (0)
 #define RL_PROLOG_LAEUFT            (1)
@@ -726,5 +751,7 @@ end
 
 #include "rl_ketten.h"
 #include "rl_haeuser.h"
+#include "rl_newreno.h"
+#include "rl_kampf.h"
 
 #endif

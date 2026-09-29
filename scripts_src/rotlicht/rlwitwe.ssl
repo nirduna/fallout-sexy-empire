@@ -1,0 +1,183 @@
+/*
+   rlwitwe.ssl - Loretta Varga, die Witwe des letzten Besitzers (New Reno)
+
+   Umsetzung 7, "Der Segen" Teil A (Phase 3, Abschnitt 2.2): die Urkunde.
+     - Kaufen: 1.000 $ (Barter 60: 750 $). Sauber, E New Reno +5.
+     - Ueberreden: Speech 60. Sauber, E New Reno +5.
+     - Das Grab: Sie verraet, dass ihr Mann mit der Urkunde begraben liegt.
+       Mit einer Schaufel geht der Spieler nachts nach Golgotha: Grave Digger,
+       Karma -10. Ohne Sneak 40 sieht ihn jemand (H New Reno +10).
+   Fliegt eine Faelschung auf (rl_newreno.h), kommt sie zurueck und will 500 $.
+   Zahlt der Spieler nicht, erzaehlt sie es ganz Virgin Street (E -10, H +10).
+
+   Texte: text_src/english/dialog/rlwitwe.msg
+*/
+
+#define SCRIPT_REALNAME "rlwitwe"
+#define NAME                    SCRIPT_RLWITWE
+#include "define.h"
+#include "../headers/rotlicht.h"
+#include "command.h"
+
+procedure start;
+procedure talk_p_proc;
+procedure map_enter_p_proc;
+procedure destroy_p_proc;
+procedure look_at_p_proc;
+procedure description_p_proc;
+
+procedure Node100;      // Begruessung
+procedure Node110;      // Kaufen
+procedure Node111;      // gekauft
+procedure Node112;      // mit Rabatt gekauft
+procedure Node120;      // ueberredet
+procedure Node130;      // wo ist die Urkunde?
+procedure Node131;      // das Grab
+procedure Node200;      // die Faelschung ist aufgeflogen
+procedure Node201;      // bezahlt
+procedure Node202;      // verweigert
+procedure Node999;
+
+variable haus;
+variable welt;
+variable gehen := 0;
+variable selbst_weg := 0;
+
+procedure start begin
+end
+
+procedure map_enter_p_proc begin
+   welt := rl_lade_welt;
+   if (not rl_nr_witwe_da(welt)) then begin
+      selbst_weg := 1;
+      destroy_object(self_obj);
+   end
+end
+
+procedure destroy_p_proc begin
+   if (selbst_weg) then return;
+   welt := rl_lade_welt;
+   welt[RL_W_NR_TOTE] := welt[RL_W_NR_TOTE] bwor RL_NR_TOT_WITWE;
+   if (welt[RL_W_NR_WITWE] == RL_WITWE_FORDERT) then welt[RL_W_NR_WITWE] := RL_WITWE_KEINE;
+end
+
+procedure look_at_p_proc begin
+   script_overrides;
+   display_mstr(300);
+end
+
+procedure description_p_proc begin
+   script_overrides;
+   display_mstr(301);
+end
+
+procedure talk_p_proc begin
+   haus := rl_lade_haeuser;
+   welt := rl_lade_welt;
+   start_gdialog(NAME, self_obj, 4, -1, -1);
+   gSay_Start;
+      if (welt[RL_W_NR_WITWE] == RL_WITWE_FORDERT) then
+         call Node200;
+      else
+         call Node100;
+   gSay_End;
+   end_dialogue;
+   if (gehen) then begin
+      gehen := 0;
+      gfade_out(600);
+      set_obj_visibility(self_obj, 1);
+      gfade_in(600);
+      selbst_weg := 1;
+      destroy_object(self_obj);      // beendet das Skript: muss zuletzt stehen
+   end
+end
+
+procedure Node100 begin
+   Reply(100);
+   NOption(101, Node110, 004);
+   if (has_skill(dude_obj, SKILL_SPEECH) >= 60) then
+      GOption(102, Node120, 004);
+   NOption(103, Node130, 004);
+   NOption(104, Node999, 004);
+   NLowOption(105, Node999);
+end
+
+procedure Node110 begin
+   Reply(110);
+   if (dude_caps >= RL_URKUNDE_PREIS) then
+      NOption(111, Node111, 004);
+   if ((has_skill(dude_obj, SKILL_BARTER) >= 60) and (dude_caps >= RL_URKUNDE_RABATT)) then
+      NOption(112, Node112, 004);
+   NOption(113, Node100, 004);
+end
+
+procedure Node111 begin
+   item_caps_adjust(dude_obj, -RL_URKUNDE_PREIS);
+   call rl_nr_urkunde(haus, welt, RL_URKUNDE_KAUF);
+   gehen := 1;
+   Reply(114);
+   NOption(116, Node999, 004);
+end
+
+procedure Node112 begin
+   item_caps_adjust(dude_obj, -RL_URKUNDE_RABATT);
+   call rl_nr_urkunde(haus, welt, RL_URKUNDE_KAUF);
+   gehen := 1;
+   Reply(115);
+   NOption(116, Node999, 004);
+end
+
+procedure Node120 begin
+   call rl_nr_urkunde(haus, welt, RL_URKUNDE_REDE);
+   gehen := 1;
+   Reply(120);
+   NOption(121, Node999, 004);
+end
+
+procedure Node130 begin
+   Reply(130);
+   if (obj_is_carrying_obj_pid(dude_obj, PID_SHOVEL)) then
+      BOption(131, Node131, 004);
+   NOption(132, Node100, 004);
+   NOption(104, Node999, 004);
+end
+
+// Das Grab in Golgotha. Die Witwe erfaehrt es nie; sie kommt nur nicht wieder.
+procedure Node131 begin
+   call rl_nr_urkunde(haus, welt, RL_URKUNDE_GRAB);
+   gehen := 1;
+   if (has_skill(dude_obj, SKILL_SNEAK) >= 40) then
+      Reply(135);
+   else
+      Reply(mstr(135) + " " + mstr(136));
+   NOption(137, Node999, 004);
+end
+
+/* Die Faelschung ist aufgeflogen */
+procedure Node200 begin
+   Reply(200);
+   if (dude_caps >= RL_WITWE_FORDERUNG) then
+      NOption(201, Node201, 004);
+   BOption(202, Node202, 004);
+   NLowOption(203, Node202);
+end
+
+procedure Node201 begin
+   item_caps_adjust(dude_obj, -RL_WITWE_FORDERUNG);
+   welt[RL_W_NR_WITWE] := RL_WITWE_BEZAHLT;
+   gehen := 1;
+   Reply(210);
+   NOption(212, Node999, 004);
+end
+
+procedure Node202 begin
+   welt[RL_W_NR_WITWE] := RL_WITWE_VERWEIGERT;
+   call rl_haus_plus(haus, RL_NEW_RENO, RL_F_EINFLUSS, -10);
+   call rl_haus_plus(haus, RL_NEW_RENO, RL_F_HITZE, 10);
+   gehen := 1;
+   Reply(211);
+   NOption(212, Node999, 004);
+end
+
+procedure Node999 begin
+end

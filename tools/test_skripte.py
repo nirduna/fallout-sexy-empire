@@ -72,7 +72,7 @@ class Umgebung:
         hdr = os.path.join(WURZEL, 'scripts_src', 'headers')
         for f in ['rotlicht.h'] + sorted(n for n in os.listdir(hdr) if n.startswith('rl_') and n.endswith('.h')):
             self.k.lade(os.path.join(hdr, f), extra)
-        for f in ('global.h', 'maps.h', 'critrpid.h', 'define.h', 'den.h'):
+        for f in ('global.h', 'maps.h', 'critrpid.h', 'itempid.h', 'define.h', 'den.h'):
             p = os.path.join(fo2, 'headers', f)
             if os.path.exists(p):
                 self.k.lade(p)
@@ -167,6 +167,8 @@ def allgemein(sp, name):
     for m in sp.meldungen:
         if 'Error' in m:
             fehler.append(f'Meldung mit Error: {m}')
+    if sp.abgeblendet:
+        fehler.append('Bildschirm bleibt schwarz (gfade_out ohne gfade_in)')
     if fehler:
         raise AssertionError(f'{name}: ' + '; '.join(fehler))
 
@@ -1017,12 +1019,476 @@ def test_erkundung_ketten(u):
     print(f'      {gesamt} Dialogzustaende der Akte 2-5 erkundet')
 
 
+# --------------------------------------------------------------------------
+# Umsetzung 7: New Reno, Der Segen und das Hauptquartier
+
+NR = 1
+
+
+def strumpfband(u, sp=None):
+    """Das Silberne Strumpfband betreten (Kartenskript RLREN01); liefert (sp, w)."""
+    k = u.k
+    sp = sp or u.neues_spiel()
+    if not sp.finde(k['SCRIPT_RLREN01']):
+        sp.erzeuge(0, -1, 0, k['SCRIPT_RLREN01'], 'Kartenskript RLREN01')
+    betrete_strumpfband(u, sp)
+    return sp, Welt(sp, k)
+
+
+def betrete_strumpfband(u, sp):
+    sp.betrete_karte(u.cfg['RL_MAP_INDEX'] + NR)
+    sp.temp_freigeben()
+
+
+def _nr_uebernommen(u, pate='Salvatore', sp=None):
+    """Urkunde gekauft und Segen einer Familie: Das Strumpfband gehoert dem Spieler."""
+    k = u.k
+    sp, w = strumpfband(u, sp)
+    rede(sp, figur(sp, k, 'RLWITWE'), ['buy the deed', "Here's a thousand", None])
+    if pate == 'Salvatore':
+        sp.dude.skills[k['SKILL_SMALL_GUNS']] = 60
+        rede(sp, figur(sp, k, 'RLFIXER'), ['families', 'Salvatore', '[Combat]', None])
+    elif pate == 'Mordino':
+        sp.dude.skills[k['SKILL_SNEAK']] = 60
+        rede(sp, figur(sp, k, 'RLFIXER'), ['families', 'Mordino', '[Sneak]', None])
+    elif pate == 'Wright':
+        sp.dude.stats[k['STAT_pe']] = 7
+        rede(sp, figur(sp, k, 'RLFIXER'), ['families', 'Wright', '[Perception]', None])
+    pruefe(w.haus(NR, 'RL_F_BESITZ') == 1, f'Strumpfband nicht uebernommen ({pate})')
+    return sp, w
+
+
+def test_nr_kauf_und_mordino(u):
+    k = u.k
+    sp, w = strumpfband(u)
+    witwe = figur(sp, k, 'RLWITWE')
+    fixer = figur(sp, k, 'RLFIXER')
+    keine_figur(sp, k, 'RLROZ')
+    keine_figur(sp, k, 'RLCONSIG')
+    pruefe(w.welt('RL_W_HAUS_HIER') == NR + 1, 'Haus hier')
+    geld = sp.dude.kronkorken
+    rede(sp, witwe, ['buy the deed', "Here's a thousand", None])
+    pruefe(w.welt('RL_W_NR_URKUNDE') == k['RL_URKUNDE_KAUF'] and sp.dude.kronkorken == geld - 1000, 'Kauf')
+    pruefe(w.haus(NR, 'RL_F_EINFLUSS') == 5 and w.haus(NR, 'RL_F_BESITZ') == 0, 'E +5, noch kein Besitz')
+    keine_figur(sp, k, 'RLWITWE')
+    v = rede(sp, fixer, ['families', 'Mordino'])
+    pruefe('Stables' in texte(v), 'Mordino-Auftrag')
+    pruefe(not any('[Sneak]' in o[0] for o in sp.dialog_optionen), 'Sneak ohne Skill angeboten')
+    sp.dude.skills[k['SKILL_SNEAK']] = 60
+    v = rede(sp, fixer, ['families', 'Mordino', '[Sneak]', None])
+    pruefe('Roz Mercer' in texte(v), 'Uebergabe an Roz')
+    pruefe(w.haus(NR, 'RL_F_BESITZ') == 1 and w.welt('RL_W_NR_SEGEN') == k['RL_SEGEN_MORDINO'], 'Segen Mordino')
+    pruefe(w.haus(NR, 'RL_F_TRIBUTMOD') == 5 and w.haus(NR, 'RL_F_MODUL_STADTMOD') == 15
+           and w.haus(NR, 'RL_F_NEBEN') == 3, 'Paten-Wirkung Mordino')
+    pruefe(w.welt('RL_W_NR_MISSTRAUEN') == 1 << k['RL_SEGEN_WRIGHT'], 'Wright misstrauisch')
+    pruefe(w.haus(NR, 'RL_F_EINFLUSS') == 20 and w.haus(NR, 'RL_F_FUEHRUNG') == 55 and w.haus(NR, 'RL_F_HITZE') == 10,
+           f'E {w.haus(NR, "RL_F_EINFLUSS")} F {w.haus(NR, "RL_F_FUEHRUNG")} H {w.haus(NR, "RL_F_HITZE")}')
+    pruefe(w.welt('RL_W_AKTIV') == 1 and w.welt('RL_W_TREFFEN_WOCHE') > 0, 'aktiv, Treffen geplant')
+    keine_figur(sp, k, 'RLFIXER')
+    figur(sp, k, 'RLROZ')
+    figur(sp, k, 'RLCONSIG')
+    betrete_strumpfband(u, sp)
+    figur(sp, k, 'RLROZ')
+    figur(sp, k, 'RLCONSIG')
+    keine_figur(sp, k, 'RLWITWE')
+    keine_figur(sp, k, 'RLFIXER')
+    # Roz: erstes Gespraech, dann das Manager-Menue des Strumpfbands
+    roz = figur(sp, k, 'RLROZ')
+    v = rede(sp, roz, ['how the house', 'How are our people'])
+    pruefe('Shark Club' in texte(v) and 'Last week we had' in texte(v), f'Roz: {texte(v)[:200]}')
+    v = rede(sp, roz, [])
+    pruefe('cards' in texte(v).lower(), 'Roz ohne Einleitung')
+    allgemein(sp, 'nr kauf mordino')
+
+
+def test_nr_urkunde_wege(u):
+    k = u.k
+    # Barter: 750
+    sp, w = strumpfband(u)
+    sp.dude.skills[k['SKILL_BARTER']] = 60
+    geld = sp.dude.kronkorken
+    rede(sp, figur(sp, k, 'RLWITWE'), ['buy the deed', '[Barter]', None])
+    pruefe(sp.dude.kronkorken == geld - 750 and w.welt('RL_W_NR_URKUNDE') == k['RL_URKUNDE_KAUF'], 'Barter')
+    # Speech: umsonst
+    sp, w = strumpfband(u)
+    sp.dude.skills[k['SKILL_SPEECH']] = 60
+    geld = sp.dude.kronkorken
+    rede(sp, figur(sp, k, 'RLWITWE'), ['[Speech]', None])
+    pruefe(sp.dude.kronkorken == geld and w.welt('RL_W_NR_URKUNDE') == k['RL_URKUNDE_REDE'], 'Speech')
+    pruefe(w.haus(NR, 'RL_F_EINFLUSS') == 5, 'E +5')
+    # Das Grab: nur mit Schaufel; ohne Sneak 40 gesehen
+    for sneak, hitze in ((20, 10), (40, 0)):
+        sp, w = strumpfband(u)
+        sp.dude.skills[k['SKILL_SNEAK']] = sneak
+        witwe = figur(sp, k, 'RLWITWE')
+        rede(sp, witwe, ['Where is the deed', None])
+        pruefe(not any('Golgotha' in o[0] for o in sp.dialog_optionen), 'Grab ohne Schaufel')
+        sp.dude.inventar[k['PID_SHOVEL']] = 1
+        karma = sp.gvars.get(k['GVAR_PLAYER_REPUTATION'], 0)
+        v = rede(sp, witwe, ['Where is the deed', 'Golgotha', None])
+        pruefe(w.welt('RL_W_NR_URKUNDE') == k['RL_URKUNDE_GRAB'], 'Grab')
+        pruefe(sp.gvars[k['GVAR_PLAYER_REPUTATION']] == karma - 10 and sp.gvars[k['GVAR_GRAVES_UNEARTHED']] == 1,
+               'Karma -10, Grave Digger')
+        pruefe(w.haus(NR, 'RL_F_HITZE') == hitze, f'Sneak {sneak}: Hitze {w.haus(NR, "RL_F_HITZE")}')
+        pruefe(('gravedigger' in texte(v)) == (sneak < 40), 'gesehen')
+        keine_figur(sp, k, 'RLWITWE')
+        betrete_strumpfband(u, sp)
+        keine_figur(sp, k, 'RLWITWE')
+    allgemein(sp, 'nr urkunde')
+
+
+def test_nr_faelschung(u):
+    k = u.k
+    for zahlen in (True, False):
+        sp, w = strumpfband(u)
+        sp.dude.skills[k['SKILL_SMALL_GUNS']] = 60
+        fixer = figur(sp, k, 'RLFIXER')
+        rede(sp, fixer, ['families', 'Salvatore', '[Combat]', None])
+        pruefe(w.welt('RL_W_NR_SEGEN') == k['RL_SEGEN_SALVATORE'] and w.haus(NR, 'RL_F_BESITZ') == 0, 'Segen ohne Urkunde')
+        figur(sp, k, 'RLFIXER')             # bleibt, bis die Urkunde da ist
+        rede(sp, fixer, ['About the deed'])
+        pruefe(not any('[Science]' in o[0] for o in sp.dialog_optionen), 'Science ohne Skill')
+        sp.dude.skills[k['SKILL_SCIENCE']] = 60
+        sp.zufall_fest = 'min'              # die 15 % treffen
+        v = rede(sp, fixer, ['About the deed', '[Science]', 'hundred', None])
+        sp.zufall_fest = None
+        pruefe(w.welt('RL_W_NR_URKUNDE') == k['RL_URKUNDE_FAELSCHUNG'] and w.haus(NR, 'RL_F_BESITZ') == 1, 'Faelschung')
+        pruefe('Roz Mercer' in texte(v), 'Uebernahme nach der Faelschung')
+        pruefe(w.welt('RL_W_NR_FAELSCHUNG') > 0, 'fliegt auf')
+        pruefe(w.haus(NR, 'RL_F_SICHERHEIT') == 75 and w.haus(NR, 'RL_F_TRIBUTMOD') == 10, 'Salvatore-Wirkung')
+        pruefe(w.welt('RL_W_NR_MISSTRAUEN') == 1 << k['RL_SEGEN_BISHOP'], 'Bishop misstrauisch')
+        betrete_strumpfband(u, sp)
+        keine_figur(sp, k, 'RLWITWE')           # sie geht, sobald das Haus vergeben ist
+        woche(sp, 2)
+        pruefe(w.welt('RL_W_NR_WITWE') == k['RL_WITWE_FORDERT'], 'Witwe fordert')
+        pruefe(any('forged' in m for m in sp.meldungen), 'Meldung Faelschung')
+        betrete_strumpfband(u, sp)
+        witwe = figur(sp, k, 'RLWITWE')
+        if zahlen:
+            geld = sp.dude.kronkorken
+            rede(sp, witwe, ['five hundred', None])
+            pruefe(sp.dude.kronkorken == geld - 500 and w.welt('RL_W_NR_WITWE') == k['RL_WITWE_BEZAHLT'], 'bezahlt')
+            keine_figur(sp, k, 'RLWITWE')
+        else:
+            e = w.haus(NR, 'RL_F_EINFLUSS')
+            woche(sp, 2)
+            pruefe(w.welt('RL_W_NR_WITWE') == k['RL_WITWE_VERWEIGERT'] and w.haus(NR, 'RL_F_EINFLUSS') == e - 10,
+                   'Frist verstrichen')
+            betrete_strumpfband(u, sp)
+            keine_figur(sp, k, 'RLWITWE')
+        allgemein(sp, f'nr faelschung {zahlen}')
+
+
+def test_nr_bishop_brief(u):
+    k = u.k
+    for oeffnen in (False, True):
+        sp, w = strumpfband(u)
+        fixer = figur(sp, k, 'RLFIXER')
+        if oeffnen:
+            sp.dude.skills[k['SKILL_LOCKPICK']] = 60
+            v = rede(sp, fixer, ['families', 'Bishop', '[Lockpick]', None])
+            pruefe(w.welt('RL_W_NR_BRIEF') == k['RL_BRIEF_GEOEFFNET'] and w.haus(NR, 'RL_F_HITZE') == 15, 'geoeffnet')
+            pruefe('councilmen' in texte(v), 'Inhalt')
+        else:
+            rede(sp, fixer, ['families', 'Bishop', 'Give me the letter', None])
+            pruefe(w.welt('RL_W_NR_BRIEF') == k['RL_BRIEF_UNTERWEGS'], 'Brief unterwegs')
+        v = rede(sp, fixer, ["Bishop's letter", None])
+        pruefe('Until that letter' in texte(v), 'wartet auf den Brief')
+        sp.betrete_karte(k['MAP_NCR_DOWNTOWN'])
+        pruefe(w.welt('RL_W_NR_BRIEF') in (k['RL_BRIEF_UNTERWEGS'], k['RL_BRIEF_GEOEFFNET']), 'nicht in Downtown abgeben')
+        sp.betrete_karte(k['MAP_NCR_WESTIN_RANCH'])
+        erwartet = k['RL_BRIEF_ABGEGEBEN_OFFEN'] if oeffnen else k['RL_BRIEF_ABGEGEBEN']
+        pruefe(w.welt('RL_W_NR_BRIEF') == erwartet and any('Westin' in m for m in sp.meldungen), 'abgegeben')
+        betrete_strumpfband(u, sp)
+        v = rede(sp, figur(sp, k, 'RLFIXER'), [None])
+        pruefe(w.welt('RL_W_NR_SEGEN') == k['RL_SEGEN_BISHOP'], 'Bishops Segen')
+        pruefe(w.haus(k['RL_NCR'], 'RL_F_EINFLUSS') == 10, 'E NCR +10')
+        erledigt = k['RL_BRIEF_ERLEDIGT_OFFEN'] if oeffnen else k['RL_BRIEF_ERLEDIGT']
+        pruefe(w.welt('RL_W_NR_BRIEF') == erledigt, 'erledigt')
+        rede(sp, figur(sp, k, 'RLWITWE'), ['buy the deed', "Here's a thousand", None])
+        pruefe(w.haus(NR, 'RL_F_BESITZ') == 1 and w.haus(k['RL_NCR'], 'RL_F_EINFLUSS') == 30, 'Bishop-Pate: E NCR +20')
+        pruefe(w.welt('RL_W_NR_MISSTRAUEN') == 1 << k['RL_SEGEN_SALVATORE'], 'Salvatore misstrauisch')
+        allgemein(sp, f'nr bishop {oeffnen}')
+
+
+def test_nr_made_man_und_vanilla(u):
+    k = u.k
+    sp, w = strumpfband(u)
+    sp.gvars[k['GVAR_MADE_MAN_WRIGHT']] = 1
+    rede(sp, figur(sp, k, 'RLFIXER'), ['families', 'already family', None])
+    pruefe(w.welt('RL_W_NR_SEGEN') == k['RL_SEGEN_WRIGHT'], 'Made Man Wright')
+    sp, w = strumpfband(u)
+    sp.gvars[k['GVAR_NEW_RENO_GUARD_ASSIGNMENT']] = 3
+    rede(sp, figur(sp, k, 'RLFIXER'), ['families', 'Salvatore', "guarded Salvatore's exchange", None])
+    pruefe(w.welt('RL_W_NR_SEGEN') == k['RL_SEGEN_SALVATORE'], 'Salvatore-Vorleistung')
+    # Tote Familien bieten nichts an
+    sp, w = strumpfband(u)
+    sp.gvars[k['GVAR_NEW_RENO_FLAG_2']] = k['bit_26']
+    v = rede(sp, figur(sp, k, 'RLFIXER'), ['families'])
+    pruefe(not any(o[0] == 'Mordino.' for o in sp.dialog_optionen), 'Mordino tot, trotzdem angeboten')
+    allgemein(sp, 'nr made man')
+
+
+def test_nr_eroeffnungsnacht(u):
+    k = u.k
+    sp, w = strumpfband(u)
+    fixer = figur(sp, k, 'RLFIXER')
+    v = rede(sp, fixer, ['families', 'What if', None])
+    pruefe('First the deed' in texte(v) and not sp.finde(k['SCRIPT_RLANGREIFER']), 'ohne Urkunde keine Eroeffnung')
+    rede(sp, figur(sp, k, 'RLWITWE'), ['buy the deed', "Here's a thousand", None])
+    angriffe = len(sp.angriffe)
+    rede(sp, fixer, ['families', 'What if', 'Let them come', None])
+    angreifer = sp.finde(k['SCRIPT_RLANGREIFER'])
+    pruefe(len(angreifer) == 3 and w.haus(NR, 'RL_F_ANGREIFER') == 3
+           and w.haus(NR, 'RL_F_ANGRIFF') == k['RL_ANGRIFF_EROEFFNUNG'], 'drei Angreifer')
+    pruefe(len(sp.angriffe) >= angriffe + 3, 'greifen an')
+    pruefe(w.welt('RL_W_NR_EROEFFNUNG') == k['RL_EROEFFNUNG_KAMPF'] and w.welt('RL_W_ANGRIFF') == 0, 'Gosse unberuehrt')
+    keine_figur(sp, k, 'RLFIXER')
+    pruefe(not (w.welt('RL_W_NR_TOTE') & k['RL_NR_TOT_FIXER']), 'Pagano ist gegangen, nicht tot')
+    # Karte verlassen und wiederkommen: die Angreifer bleiben, Pagano nicht
+    betrete_strumpfband(u, sp)
+    pruefe(len(sp.finde(k['SCRIPT_RLANGREIFER'])) == 3, 'Angreifer weg')
+    keine_figur(sp, k, 'RLFIXER')
+    o = angreifer[0]
+    sp.meldungen.clear()
+    o.skript.rufe('description_p_proc', self_obj=o, source=sp.dude)
+    pruefe('colors' in sp.meldungen[-1], 'Beschreibung')
+    for o in angreifer:
+        sp.zerstoere(o)
+    pruefe(w.haus(NR, 'RL_F_BESITZ') == 1 and w.welt('RL_W_NR_SEGEN') == k['RL_SEGEN_UNABHAENGIG'], 'unabhaengig')
+    pruefe(w.welt('RL_W_NR_EROEFFNUNG') == k['RL_EROEFFNUNG_UEBERSTANDEN'] and w.haus(NR, 'RL_F_ANGRIFF') == 0, 'ueberstanden')
+    pruefe(w.haus(NR, 'RL_F_TRIBUTMOD') == -20 and w.haus(NR, 'RL_F_HITZE') == 20, 'kein Tribut, Hitze +20')
+    alle = sum(1 << k[f] for f in ('RL_SEGEN_MORDINO', 'RL_SEGEN_WRIGHT', 'RL_SEGEN_SALVATORE', 'RL_SEGEN_BISHOP'))
+    pruefe(w.welt('RL_W_NR_MISSTRAUEN') == alle, 'alle misstrauisch')
+    pruefe(w.haus(NR, 'RL_F_EINFLUSS') == 20, f'E {w.haus(NR, "RL_F_EINFLUSS")}')
+    figur(sp, k, 'RLROZ')
+    figur(sp, k, 'RLCONSIG')
+    # Misstrauen: Hitze +2 je Familie und Woche, Abbau -5
+    h = w.haus(NR, 'RL_F_HITZE')
+    woche(sp)
+    pruefe(w.haus(NR, 'RL_F_HITZE') == h + 8 - 5, f'Hitze {h} -> {w.haus(NR, "RL_F_HITZE")}')
+    betrete_strumpfband(u, sp)
+    pruefe(not sp.finde(k['SCRIPT_RLANGREIFER']), 'Angreifer nach dem Kampf')
+    allgemein(sp, 'eroeffnung')
+
+
+def test_nr_pagano_tot(u):
+    k = u.k
+    sp, w = strumpfband(u)
+    sp.zerstoere(figur(sp, k, 'RLFIXER'))
+    pruefe(w.welt('RL_W_NR_TOTE') & k['RL_NR_TOT_FIXER'], 'Tod vermerkt')
+    betrete_strumpfband(u, sp)
+    keine_figur(sp, k, 'RLFIXER')
+    pruefe(not sp.finde(k['SCRIPT_RLANGREIFER']), 'Eroeffnung ohne Urkunde')
+    rede(sp, figur(sp, k, 'RLWITWE'), ['buy the deed', "Here's a thousand", None])
+    sp.meldungen.clear()
+    betrete_strumpfband(u, sp)
+    pruefe(len(sp.finde(k['SCRIPT_RLANGREIFER'])) == 3 and any('Two Chairs is dead' in m for m in sp.meldungen),
+           'Eroeffnung von selbst')
+    betrete_strumpfband(u, sp)
+    pruefe(len(sp.finde(k['SCRIPT_RLANGREIFER'])) == 3, 'nur einmal')
+    # Die Witwe tot: Pagano weiss vom Grab
+    sp, w = strumpfband(u)
+    sp.zerstoere(figur(sp, k, 'RLWITWE'))
+    sp.dude.inventar[k['PID_SHOVEL']] = 1
+    rede(sp, figur(sp, k, 'RLFIXER'), ['About the deed', 'grave', None])
+    pruefe(w.welt('RL_W_NR_URKUNDE') == k['RL_URKUNDE_GRAB'], 'Grab ueber Pagano')
+    allgemein(sp, 'pagano tot')
+
+
+def test_nr_hauptquartier(u):
+    k = u.k
+    sp, e, ko, w = prolog(u, 'bezahlt')
+    sp, w = _nr_uebernommen(u, 'Salvatore', sp)
+    asch = figur(sp, k, 'RLCONSIG')
+    v = rede(sp, asch, ['houses doing'])
+    pruefe('The Gutter' in texte(v) and 'The Silver Garter' in texte(v), f'Bericht: {texte(v)[-200:]}')
+    v = rede(sp, asch, ['families think'])
+    pruefe('Salvatore is our godfather' in texte(v) and 'Bishop asks' in texte(v), f'Familien: {texte(v)[-200:]}')
+    v = rede(sp, asch, ['next family meeting'])
+    pruefe('family seat' in texte(v), 'kein Treffen ohne Familiensitz')
+    # Laeufer: die Kasse der Gosse geht ins Hauptquartier
+    sp.zufall_fest = 'max'
+    woche(sp)
+    sp.zufall_fest = None
+    pruefe(w.haus(0, 'RL_F_KASSE') == 0 and w.welt('RL_W_HQ_KASSE') != 0, 'Laeufer')
+    w.setze_welt('RL_W_HQ_KASSE', 700)
+    geld = sp.dude.kronkorken
+    rede(sp, asch, ['treasury', 'Pay it out', None])
+    pruefe(sp.dude.kronkorken == geld + 700 and w.welt('RL_W_HQ_KASSE') == 0, 'Auszahlung')
+    # Familiensitz: alle vier Wochen ein Treffen
+    w.setze_haus(NR, 'RL_F_KLASSE', 3)
+    woche(sp, 4)
+    pruefe(w.welt('RL_W_TREFFEN_OFFEN') == k['RL_TREFFEN_SALVATORE'], f'Treffen {w.welt("RL_W_TREFFEN_OFFEN")}')
+    pruefe(any('Asch is keeping a chair' in m for m in sp.meldungen), 'Meldung Treffen')
+    trib = w.haus(NR, 'RL_F_TRIBUTMOD')
+    rede(sp, asch, ['family meeting', 'Pay him', None])
+    pruefe(w.haus(NR, 'RL_F_TRIBUTMOD') == trib + 5 and w.welt('RL_W_TREFFEN_OFFEN') == 0
+           and w.welt('RL_W_TREFFEN_NR') == 1, 'Salvatore bezahlt')
+    # Die weiteren Themen
+    def treffen(thema, plan):
+        w.setze_welt('RL_W_TREFFEN_OFFEN', k[thema])
+        return rede(sp, asch, ['family meeting'] + plan + [None])
+    karma = sp.gvars.get(k['GVAR_PLAYER_REPUTATION'], 0)
+    treffen('RL_TREFFEN_JET', ['Take the deal'])
+    pruefe(w.welt('RL_W_JET_VERTRAG') == 1 and sp.gvars[k['GVAR_PLAYER_REPUTATION']] == karma - 10, 'Jet-Vertrag')
+    pruefe(w.welt('RL_W_NR_MISSTRAUEN') & (1 << k['RL_SEGEN_WRIGHT']), 'Wright misstrauisch nach Jet')
+    kasse = w.haus(NR, 'RL_F_KASSE')
+    sp.zufall_fest = 'max'
+    woche(sp)
+    sp.zufall_fest = None
+    pruefe(w.haus(NR, 'RL_F_KASSE') == kasse + 300 + w.haus(NR, 'RL_F_GEWINN'), 'Jet-Vertrag zahlt')
+    e0 = w.haus(NR, 'RL_F_EINFLUSS')
+    treffen('RL_TREFFEN_WRIGHT', ['Tell him'])
+    pruefe(w.haus(NR, 'RL_F_EINFLUSS') == e0 + 10 and w.welt('RL_W_NR_MISSTRAUEN') & (1 << k['RL_SEGEN_MORDINO']), 'Wright')
+    w.setze_welt('RL_W_HQ_KASSE', 400)
+    geld = sp.dude.kronkorken
+    treffen('RL_TREFFEN_SHARK', ['Pay the thousand'])
+    pruefe(w.welt('RL_W_SHARK_ANTEIL') == 1 and w.welt('RL_W_HQ_KASSE') == 0 and sp.dude.kronkorken == geld - 600, 'Shark')
+    hq = w.welt('RL_W_HQ_KASSE')
+    w.setze_haus(0, 'RL_F_BESITZ', 0)          # nur der Anteil soll ins HQ fliessen
+    woche(sp)
+    pruefe(w.welt('RL_W_HQ_KASSE') == hq + 100, f'Shark zahlt: {w.welt("RL_W_HQ_KASSE") - hq}')
+    sp.dude.stats[k['STAT_pe']] = 7
+    treffen('RL_TREFFEN_LAEUFER', ['[Perception]'])
+    pruefe(w.welt('RL_W_HQ_KASSE') == hq + 300, 'Laeufer gefunden')
+    # Verpasst: die Folgen des Nein
+    w.setze_welt('RL_W_TREFFEN_OFFEN', k['RL_TREFFEN_SALVATORE'])
+    w.setze_welt('RL_W_TREFFEN_FRIST', 0)
+    w.setze_welt('RL_W_NR_MISSTRAUEN', 0)
+    woche(sp)
+    pruefe(w.welt('RL_W_TREFFEN_OFFEN') == 0 and w.welt('RL_W_NR_MISSTRAUEN') == 1 << k['RL_SEGEN_SALVATORE'], 'verpasst')
+    pruefe(any('decided without us' in m for m in sp.meldungen), 'Meldung verpasst')
+    # Themen toter Familien entfallen
+    for g, b in (('GVAR_NEW_RENO_SALVATORE', 'bit_10'), ('GVAR_NEW_RENO_WRIGHT_FLAGS', 'bit_4'),
+                 ('GVAR_NEW_RENO_BISHOP', 'bit_10'), ('GVAR_NEW_RENO_FLAG_2', 'bit_26')):
+        sp.gvars[k[g]] = sp.gvars.get(k[g], 0) | k[b]
+    w.setze_welt('RL_W_TREFFEN_WOCHE', 0)
+    w.setze_welt('RL_W_JET_VERTRAG', 1)
+    woche(sp)
+    pruefe(w.welt('RL_W_TREFFEN_OFFEN') == k['RL_TREFFEN_LAEUFER'], 'nur der Laeufer bleibt')
+    pruefe(w.welt('RL_W_JET_VERTRAG') == 0, 'Jet-Vertrag endet mit den Mordinos')
+    allgemein(sp, 'hauptquartier')
+
+
+def _optionen_bei(verlauf, gewaehlt):
+    """Die Optionen des Knotens, der nach der Wahl `gewaehlt` angezeigt wurde."""
+    for i, (_, _, t) in enumerate(verlauf):
+        if gewaehlt in t and i + 1 < len(verlauf):
+            return verlauf[i + 1][1]
+    return []
+
+
+def _sondermodule(sp, roz):
+    """Die Optionen der Gruppe "nur hier" im Ausbau-Menue (leer, wenn es sie nicht gibt)."""
+    v = rede(sp, roz, ['build'])
+    if not any('only get in New Reno' in o for o in _optionen_bei(v, 'What could we build')):
+        return []
+    return _optionen_bei(rede(sp, roz, ['build', 'only get in New Reno']), 'only get in New Reno')
+
+
+def test_nr_jet_theke(u):
+    k = u.k
+    sp, w = _nr_uebernommen(u, 'Wright')
+    roz = figur(sp, k, 'RLROZ')
+    rede(sp, roz, ['how the house', None])
+    pruefe(not any('Jet Counter' in o for o in _sondermodule(sp, roz)), 'Jet-Theke unter Wright')
+    w.setze_welt('RL_W_JET_VERTRAG', 1)
+    pruefe(not any('Jet Counter' in o for o in _sondermodule(sp, roz)), 'Jet-Theke unter Wright trotz Vertrag')
+    sp, w = _nr_uebernommen(u, 'Mordino')
+    roz = figur(sp, k, 'RLROZ')
+    rede(sp, roz, ['how the house', None])
+    pruefe(any('Jet Counter ($800)' in o for o in _sondermodule(sp, roz)), 'Jet-Theke unter Mordino')
+    rede(sp, roz, ['build', 'only get in New Reno', 'Jet Counter', 'Build it', None])
+    pruefe(w.haus(NR, 'RL_F_BAU_ID') == k['RL_SONDER_BASIS'] + k['RL_SM_JET_THEKE'] + 1
+           and w.haus(NR, 'RL_F_BAU_WOCHEN') == 2, 'Baustelle')
+    woche(sp, 2)
+    pruefe(w.haus(NR, 'RL_F_MODULE') & k['RL_MOD_JET_THEKE'] and w.haus(NR, 'RL_F_NEBEN') == 9, 'Jet-Theke fertig')
+    pruefe(w.welt('RL_W_NR_MISSTRAUEN') & (1 << k['RL_SEGEN_WRIGHT']), 'Wright misstrauisch')
+    pruefe(not any('Jet Counter' in o for o in _sondermodule(sp, roz)), 'Jet-Theke zweimal')
+    allgemein(sp, 'jet-theke')
+
+
+def test_nr_tote_figuren(u):
+    k = u.k
+    sp, w = _nr_uebernommen(u, 'Salvatore')
+    w.setze_welt('RL_W_HQ_KASSE', 250)
+    sp.zerstoere(figur(sp, k, 'RLCONSIG'))
+    betrete_strumpfband(u, sp)
+    keine_figur(sp, k, 'RLCONSIG')
+    geld = sp.dude.kronkorken
+    rede(sp, figur(sp, k, 'RLROZ'), ['how the house', "Asch's safe", None])
+    pruefe(sp.dude.kronkorken == geld + 250 and w.welt('RL_W_HQ_KASSE') == 0, 'Roz zahlt die HQ-Kasse aus')
+    sp, w = _nr_uebernommen(u, 'Salvatore')
+    sp.zerstoere(figur(sp, k, 'RLROZ'))
+    pruefe(w.haus(NR, 'RL_F_FUEHRUNG') == 30, 'Fuehrung ohne Roz')
+    w.setze_haus(NR, 'RL_F_KASSE', 120)
+    betrete_strumpfband(u, sp)
+    keine_figur(sp, k, 'RLROZ')
+    geld = sp.dude.kronkorken
+    rede(sp, figur(sp, k, 'RLCONSIG'), ["Roz's till", None])
+    pruefe(sp.dude.kronkorken == geld + 120, 'Asch zahlt die Kasse des Strumpfbands aus')
+    allgemein(sp, 'tote figuren')
+
+
+def test_erkundung_newreno(u):
+    """Alle Dialogpfade der Figuren im Strumpfband."""
+    k = u.k
+    gesamt = 0
+    for skill in (0, 60):
+        sp, w = strumpfband(u)
+        for s in ('SKILL_BARTER', 'SKILL_SPEECH', 'SKILL_SNEAK', 'SKILL_SCIENCE', 'SKILL_LOCKPICK',
+                  'SKILL_STEAL', 'SKILL_SMALL_GUNS'):
+            sp.dude.skills[k[s]] = skill
+        sp.dude.stats[k['STAT_pe']] = 7 if skill else 5
+        sp.dude.inventar[k['PID_SHOVEL']] = 1 if skill else 0
+        gesamt += erkunde(sp, figur(sp, k, 'RLWITWE'), f'Witwe {skill}')[1]
+        gesamt += erkunde(sp, figur(sp, k, 'RLFIXER'), f'Pagano {skill}')[1]
+        rede(sp, figur(sp, k, 'RLWITWE'), ['buy the deed', "Here's a thousand", None])
+        gesamt += erkunde(sp, figur(sp, k, 'RLFIXER'), f'Pagano mit Urkunde {skill}')[1]
+    sp, w = strumpfband(u)
+    rede(sp, figur(sp, k, 'RLFIXER'), ['families', 'Bishop', 'Give me the letter', None])
+    gesamt += erkunde(sp, figur(sp, k, 'RLFIXER'), 'Pagano Brief unterwegs')[1]
+    w.setze_welt('RL_W_NR_BRIEF', k['RL_BRIEF_ABGEGEBEN'])
+    gesamt += erkunde(sp, figur(sp, k, 'RLFIXER'), 'Pagano Brief abgegeben')[1]
+    sp.gvars[k['GVAR_MADE_MAN_BISHOP']] = 1
+    w.setze_welt('RL_W_NR_BRIEF', 0)
+    gesamt += erkunde(sp, figur(sp, k, 'RLFIXER'), 'Pagano Made Man')[1]
+    w.setze_welt('RL_W_NR_WITWE', k['RL_WITWE_FORDERT'])
+    gesamt += erkunde(sp, figur(sp, k, 'RLWITWE'), 'Witwe fordert')[1]
+    sp, w = _nr_uebernommen(u, 'Mordino')
+    roz = figur(sp, k, 'RLROZ')
+    gesamt += erkunde(sp, roz, 'Roz erstes Gespraech')[1]
+    rede(sp, roz, ['how the house', None])
+    gesamt += erkunde(sp, roz, 'Roz Manager')[1]
+    asch = figur(sp, k, 'RLCONSIG')
+    gesamt += erkunde(sp, asch, 'Asch')[1]
+    w.setze_haus(NR, 'RL_F_KLASSE', 3)
+    w.setze_welt('RL_W_NR_BRIEF', k['RL_BRIEF_ERLEDIGT_OFFEN'])
+    for skill in (0, 70):
+        sp.dude.skills[k['SKILL_SPEECH']] = skill
+        sp.dude.stats[k['STAT_pe']] = 7 if skill else 5
+        for thema in range(1, k['RL_TREFFEN_ANZAHL'] + 1):
+            w.setze_welt('RL_W_TREFFEN_OFFEN', thema)
+            gesamt += erkunde(sp, asch, f'Asch Treffen {thema} ({skill})')[1]
+    w.setze_welt('RL_W_TREFFEN_OFFEN', 0)
+    w.setze_welt('RL_W_NR_TOTE', k['RL_NR_TOT_ROZ'] | k['RL_NR_TOT_ASCH'])
+    w.setze_welt('RL_W_HQ_KASSE', 100)
+    w.setze_haus(NR, 'RL_F_KASSE', 100)
+    gesamt += erkunde(sp, asch, 'Asch ohne Roz')[1]
+    gesamt += erkunde(sp, roz, 'Roz ohne Asch')[1]
+    print(f'      {gesamt} Dialogzustaende in New Reno erkundet')
+
+
 TESTS = [test_wirtschaft_paritaet, test_erkundung, test_eingang, test_prolog_wege, test_diebstahl_erwischt, test_ketten_annehmen,
          test_ketten_ablehnen, test_ketten_kein_geld, test_kolbe_stirbt, test_kolbe_kommt_zurueck,
          test_wochen, test_anwerbung_werben, test_anwerbung_zwingen, test_pferch_flucht_und_nachschub,
          test_akt2_verstecken_bis_madame, test_suche_ohne_zuflucht, test_akt2_retten_stiller_krieg,
          test_akt2_ausliefern_essie_geht, test_tyrann_bis_metzgers_mann, test_neuer_metzger,
-         test_kampf_deke_und_jess, test_tyler_tot_vanilla, test_eingaenge_haeuser, test_alter_spielstand, test_erkundung_ketten]
+         test_kampf_deke_und_jess, test_tyler_tot_vanilla, test_eingaenge_haeuser, test_alter_spielstand, test_erkundung_ketten,
+         test_nr_kauf_und_mordino, test_nr_urkunde_wege, test_nr_faelschung, test_nr_bishop_brief,
+         test_nr_made_man_und_vanilla, test_nr_eroeffnungsnacht, test_nr_pagano_tot, test_nr_hauptquartier,
+         test_nr_jet_theke, test_nr_tote_figuren, test_erkundung_newreno]
 
 
 def main():

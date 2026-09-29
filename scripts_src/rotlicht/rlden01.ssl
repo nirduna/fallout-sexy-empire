@@ -40,6 +40,7 @@ procedure map_enter_p_proc begin
    Basement_Lighting;
 
    welt := rl_lade_welt;
+   welt[RL_W_HAUS_HIER] := RL_DEN + 1;     // fuer die Angreifer (rl_kampf.h)
    if ((welt[RL_W_PROLOG] == RL_PROLOG_FERTIG) and rl_kolbe_bleibt(welt)) then
       call rl_figur(PID_TOUGH_THUG_MALE, RL_GOSSE_KOLBE_HEX, SCRIPT_RLKOLBE);
    if (rl_mara_da(welt)) then

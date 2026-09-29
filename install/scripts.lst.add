@@ -12,3 +12,7 @@ rlred01.int     ; Kartenskript Schlacke RLRED01 (Rotlicht)              # local_
 rlvct01.int     ; Kartenskript Kloake RLVCT01 (Rotlicht)                # local_vars=0
 rlncr01.int     ; Kartenskript Traenke RLNCR01 (Rotlicht)               # local_vars=0
 rlsfr01.int     ; Kartenskript Bilge RLSFR01 (Rotlicht)                 # local_vars=0
+rlwitwe.int     ; Loretta Varga, die Witwe, New Reno (Rotlicht)         # local_vars=0
+rlfixer.int     ; Frankie Pagano, Mittelsmann der Familien (Rotlicht)   # local_vars=0
+rlroz.int       ; Roz Mercer, Madame des Strumpfbands (Rotlicht)        # local_vars=0
+rlconsig.int    ; Leopold Asch, Consigliere im Hauptquartier (Rotlicht) # local_vars=0

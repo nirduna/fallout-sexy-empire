@@ -14,6 +14,9 @@
      8. Personalwechsel: Anwerbung und Abgaenge (Umsetzung 3, Phase 4).
      9. Questline "Ketten", Akt 2-5: Akte, Auftraege, Durchsuchung, Vergeltung,
         Enden und Mara als Madame (Umsetzung 5, rl_ketten.h).
+    10. New Reno (Umsetzung 7, rl_newreno.h): Bishops Brief bei Westin abgeben,
+        die aufgeflogene Faelschung, Familientreffen, Shark Club, Jet-Vertrag,
+        misstrauische Familien.
 
    sfall laedt alle gl*.int beim Spielstart. Die Wochenlogik laeuft nur
    auf lokalen Karten; Reisezeit auf der Weltkarte wird beim naechsten
@@ -57,6 +60,8 @@ procedure rl_text(variable n);
 procedure rl_ketten_woche(variable woche);
 procedure rl_ketten_tick;
 procedure rl_auftrag_abschluss;
+procedure rl_nr_woche(variable woche);
+procedure rl_nr_brief;
 #ifdef RL_DEBUG
 procedure rl_taste;
 procedure rl_debug_spawn;
@@ -87,6 +92,7 @@ end
 procedure map_enter_p_proc begin
    if (cur_map_index == MAP_DEN_BUSINESS) then call rl_gosse_eingang;
    call rl_eingaenge;
+   if (cur_map_index == MAP_NCR_WESTIN_RANCH) then call rl_nr_brief;
 end
 
 /* Die Gosse: Die Vanilla-Karte Den Business 2 bleibt unveraendert. Die
@@ -146,6 +152,7 @@ procedure rl_tick begin
    call rl_welt_modifikatoren;
    while (wochen > 0) do begin
       call rl_ketten_woche(jetzt - wochen + 1);
+      call rl_nr_woche(jetzt - wochen + 1);
       tyrann := 0;
       ausbeutung := 0;
       h := 0;
@@ -373,6 +380,13 @@ procedure rl_ereignis_waehlen(variable h) begin
    g[RL_EV_STOFF] := 10;
    if ((h == RL_REDDING) and (haus[rl_idx(h, RL_F_STADTMOD)] < 0)) then g[RL_EV_STOFF] := g[RL_EV_STOFF] * 2;
    if (module bwand RL_MOD_JET_THEKE) then g[RL_EV_STOFF] := g[RL_EV_STOFF] * 2;
+   // New Reno: Mordino-Pate oder Jet-Vertrag doppelt, Wrights "Keine Chems im Haus!" halb (Phase 1)
+   if (h == RL_NEW_RENO) then begin
+      if ((welt[RL_W_NR_SEGEN] == RL_SEGEN_MORDINO) or welt[RL_W_JET_VERTRAG]) then
+         g[RL_EV_STOFF] := g[RL_EV_STOFF] * 2;
+      else if (welt[RL_W_NR_SEGEN] == RL_SEGEN_WRIGHT) then
+         g[RL_EV_STOFF] := g[RL_EV_STOFF] / 2;
+   end
    if (moral < 40) then g[RL_EV_STOFF] := g[RL_EV_STOFF] * 3 / 2;
    // Razzia
    g[RL_EV_RAZZIA] := 5 + rl_stadt(h, RL_S_RISIKO) * 3 + haus[rl_idx(h, RL_F_HITZE)] / 2;
@@ -642,6 +656,84 @@ procedure rl_ketten_tick begin
    end else if ((akt == RL_KETTEN_WAHL) or (akt == RL_KETTEN_STURM) or (akt == RL_KETTEN_STILLER_KRIEG)) then begin
       call rl_ketten_ende(haus, welt, RL_KETTEN_GILDE_FAELLT);
       display_msg(rl_haus_name(RL_DEN) + ": " + rl_text(141));
+   end
+end
+
+/* ------------------------------------------------------------------ */
+/* New Reno und Hauptquartier (Umsetzung 7, rl_newreno.h)              */
+/* ------------------------------------------------------------------ */
+
+/* Bishops Brief: abgegeben, sobald der Spieler Westins Ranch betritt. Ist
+   Westin tot, nimmt ihn sein Vormann; Bishop kommt es auf den Weg an. */
+procedure rl_nr_brief begin
+   if (welt == 0) then welt := rl_lade_welt;
+   if (welt[RL_W_NR_BRIEF] == RL_BRIEF_UNTERWEGS) then
+      welt[RL_W_NR_BRIEF] := RL_BRIEF_ABGEGEBEN;
+   else if (welt[RL_W_NR_BRIEF] == RL_BRIEF_GEOEFFNET) then
+      welt[RL_W_NR_BRIEF] := RL_BRIEF_ABGEGEBEN_OFFEN;
+   else
+      return;
+   display_msg(rl_text(154));
+end
+
+/* Einmal je abgerechneter Woche, vor den Haeusern. */
+procedure rl_nr_woche(variable woche) begin
+   variable f, n;
+
+   // Die Faelschung fliegt auf: Die Witwe kommt zurueck und will Geld
+   if ((welt[RL_W_NR_FAELSCHUNG] > 0) and (woche >= welt[RL_W_NR_FAELSCHUNG])) then begin
+      welt[RL_W_NR_FAELSCHUNG] := 0;
+      if ((welt[RL_W_NR_TOTE] bwand RL_NR_TOT_WITWE) == 0) then begin
+         welt[RL_W_NR_WITWE] := RL_WITWE_FORDERT;
+         welt[RL_W_NR_WITWE_WOCHE] := woche + RL_WITWE_FRIST;
+         display_msg(rl_haus_name(RL_NEW_RENO) + ": " + rl_text(150));
+      end
+   end
+   if ((welt[RL_W_NR_WITWE] == RL_WITWE_FORDERT) and (woche >= welt[RL_W_NR_WITWE_WOCHE])) then begin
+      welt[RL_W_NR_WITWE] := RL_WITWE_VERWEIGERT;
+      call rl_haus_plus(haus, RL_NEW_RENO, RL_F_EINFLUSS, -10);
+      call rl_haus_plus(haus, RL_NEW_RENO, RL_F_HITZE, 10);
+      display_msg(rl_haus_name(RL_NEW_RENO) + ": " + rl_text(151));
+   end
+
+   if (not rl_nr_besitz(haus)) then return;
+
+   // Die Jet-Theke: Die Wrights vergessen das nicht
+   if (haus[rl_idx(RL_NEW_RENO, RL_F_MODULE)] bwand RL_MOD_JET_THEKE) then
+      call rl_nr_misstrauen(welt, RL_SEGEN_WRIGHT);
+
+   // Misstrauische Familien, die noch leben, machen Druck
+   n := 0;
+   f := RL_SEGEN_MORDINO;
+   while (f <= RL_SEGEN_BISHOP) do begin
+      if (rl_nr_misstrauisch(welt, f) and not rl_familie_weg(f)) then n := n + 1;
+      f := f + 1;
+   end
+   if (n > 0) then call rl_haus_plus(haus, RL_NEW_RENO, RL_F_HITZE, n * RL_MISSTRAUEN_HITZE);
+
+   // Der Anteil am Shark Club, solange Bishop lebt
+   if (welt[RL_W_SHARK_ANTEIL] and not rl_bishop_weg) then
+      welt[RL_W_HQ_KASSE] := welt[RL_W_HQ_KASSE] + RL_SHARK_WOCHE;
+
+   // Der Jet-Vertrag, solange es Mordinos gibt, die ihn einhalten
+   if (welt[RL_W_JET_VERTRAG]) then begin
+      if (rl_mordino_weg) then begin
+         welt[RL_W_JET_VERTRAG] := 0;
+         display_msg(rl_haus_name(RL_NEW_RENO) + ": " + rl_text(155));
+      end else
+         haus[rl_idx(RL_NEW_RENO, RL_F_KASSE)] := haus[rl_idx(RL_NEW_RENO, RL_F_KASSE)] + RL_JET_VERTRAG_WOCHE;
+   end
+
+   // Familientreffen: ab dem Familiensitz alle vier Wochen
+   if (haus[rl_idx(RL_NEW_RENO, RL_F_KLASSE)] >= 3) then begin
+      if ((welt[RL_W_TREFFEN_OFFEN] == RL_TREFFEN_KEINS) and (woche >= welt[RL_W_TREFFEN_WOCHE])) then begin
+         welt[RL_W_TREFFEN_OFFEN] := rl_treffen_thema(welt);
+         welt[RL_W_TREFFEN_FRIST] := woche + RL_TREFFEN_FRIST_WOCHEN;
+         display_msg(rl_haus_name(RL_NEW_RENO) + ": " + rl_text(152));
+      end else if ((welt[RL_W_TREFFEN_OFFEN] != RL_TREFFEN_KEINS) and (woche >= welt[RL_W_TREFFEN_FRIST])) then begin
+         call rl_treffen_verpasst(haus, welt);
+         display_msg(rl_haus_name(RL_NEW_RENO) + ": " + rl_text(153));
+      end
    end
 end
 

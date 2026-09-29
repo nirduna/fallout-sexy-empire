@@ -253,16 +253,17 @@ end
 
 /* Ein Kampf in der Gosse ist vorbei (alle Angreifer liegen). */
 procedure rl_kampf_ende(variable haus, variable welt) begin
-   if (welt[RL_W_ANGRIFF] == RL_ANGRIFF_TYLER) then begin
+   variable typ := welt[RL_W_ANGRIFF];
+   if (typ == RL_ANGRIFF_TYLER) then begin
       welt[RL_W_TYLER] := RL_TYLER_BESIEGT;
       call rl_haus_plus(haus, RL_DEN, RL_F_HITZE, 10);
-   end else if (welt[RL_W_ANGRIFF] == RL_ANGRIFF_LARA) then begin
+   end else if (typ == RL_ANGRIFF_LARA) then begin
       welt[RL_W_LARA] := RL_LARA_ABGEWEHRT;
       rl_karma(-10);
    end
    welt[RL_W_ANGRIFF]   := RL_ANGRIFF_KEINER;
    welt[RL_W_ANGREIFER] := 0;
-   if (welt[RL_W_KETTEN] == RL_KETTEN_TYLER) then begin
+   if (((typ == RL_ANGRIFF_TYLER) or (typ == RL_ANGRIFF_LARA)) and (welt[RL_W_KETTEN] == RL_KETTEN_TYLER)) then begin
       welt[RL_W_KETTEN]       := RL_KETTEN_WAHL;
       welt[RL_W_KETTEN_WOCHE] := rl_woche_jetzt;
    end

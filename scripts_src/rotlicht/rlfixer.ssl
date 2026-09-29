@@ -1,0 +1,366 @@
+/*
+   rlfixer.ssl - Frankie "Two Chairs" Pagano, Mittelsmann der Familien (New Reno)
+
+   Umsetzung 7, "Der Segen" (Phase 3, Abschnitt 2.2). Pagano sitzt an jedem
+   Tisch in New Reno und vermittelt den Segen einer Familie. Die Paten selbst
+   sprechen nicht (Fahrplan, Grundsatz 1). Die Auftraege sind Dialog-Auftraege:
+   Die Probe entscheidet sofort, die Nacht vergeht hinter einer Blende.
+     Mordino    Jet an den Wrights vorbei in die Stables: Sneak 60 oder Kampf 60
+     Wright     beweisen, dass Mordino-Jet im Cat's Paw kursiert: PE 7 oder Steal 60
+     Salvatore  eine Uebergabe in der Wueste bewachen: Kampf 60, oder die
+                Vanilla-Uebergabe ist schon erledigt
+     Bishop     ein Brief an Westin in der NCR (Abgabe beim Betreten der Ranch,
+                gl_rotlicht.ssl); oeffnen mit Lockpick 60: H +15
+     Made Man   einer Familie: deren Segen sofort
+     allein     mit der Urkunde: die Eroeffnungsnacht (Kampf im Haus)
+   Ausserdem die Faelschung der Urkunde (Science 60, 100 $ fuer Papier) und,
+   falls die Witwe tot ist, der Hinweis auf das Grab.
+
+   Texte: text_src/english/dialog/rlfixer.msg
+*/
+
+#define SCRIPT_REALNAME "rlfixer"
+#define NAME                    SCRIPT_RLFIXER
+#include "define.h"
+#include "../headers/rotlicht.h"
+#include "command.h"
+
+procedure start;
+procedure talk_p_proc;
+procedure map_enter_p_proc;
+procedure destroy_p_proc;
+procedure look_at_p_proc;
+procedure description_p_proc;
+
+procedure Node100;      // Begruessung
+procedure Node110;      // die Urkunde
+procedure Node111;      // faelschen?
+procedure Node112;      // gefaelscht
+procedure Node113;      // das Grab (Witwe tot)
+procedure Node120;      // die Familien
+procedure Node130;      // Mordino
+procedure Node131;      // Mordino: Sneak
+procedure Node132;      // Mordino: Kampf
+procedure Node140;      // Wright
+procedure Node141;      // Wright: Perception
+procedure Node142;      // Wright: Steal
+procedure Node150;      // Salvatore
+procedure Node151;      // Salvatore: Kampf
+procedure Node152;      // Salvatore: schon erledigt
+procedure Node160;      // Bishop
+procedure Node161;      // Brief genommen
+procedure Node162;      // Brief geoeffnet
+procedure Node165;      // Brief abgegeben: Segen
+procedure Node168;      // Brief unterwegs
+procedure Node170;      // Made Man
+procedure Node180;      // allein
+procedure Node181;      // die Eroeffnungsnacht beginnt
+procedure Node190;      // Segen erhalten
+procedure Node999;
+procedure rl_familien_optionen;
+procedure rl_segen_geben(variable familie);
+procedure rl_urkunde_da(variable text);
+
+variable haus;
+variable welt;
+variable gehen := 0;
+variable selbst_weg := 0;
+variable eroeffnung := 0;   // nach dem Dialog: die Maenner ohne Farben kommen
+variable pate := 0;         // Familie, deren Segen gerade vermittelt wird
+
+procedure start begin
+end
+
+procedure map_enter_p_proc begin
+   haus := rl_lade_haeuser;
+   welt := rl_lade_welt;
+   if (not rl_nr_fixer_da(haus, welt)) then begin
+      selbst_weg := 1;
+      destroy_object(self_obj);
+   end
+end
+
+procedure destroy_p_proc begin
+   if (selbst_weg) then return;
+   welt := rl_lade_welt;
+   welt[RL_W_NR_TOTE] := welt[RL_W_NR_TOTE] bwor RL_NR_TOT_FIXER;
+end
+
+procedure look_at_p_proc begin
+   script_overrides;
+   display_mstr(300);
+end
+
+procedure description_p_proc begin
+   script_overrides;
+   display_mstr(301);
+end
+
+procedure talk_p_proc begin
+   haus := rl_lade_haeuser;
+   welt := rl_lade_welt;
+   start_gdialog(NAME, self_obj, 4, -1, -1);
+   gSay_Start;
+      if ((welt[RL_W_NR_BRIEF] == RL_BRIEF_ABGEGEBEN) or (welt[RL_W_NR_BRIEF] == RL_BRIEF_ABGEGEBEN_OFFEN)) then
+         call Node165;
+      else
+         call Node100;
+   gSay_End;
+   end_dialogue;
+   if (eroeffnung) then begin
+      eroeffnung := 0;
+      gfade_out(600);
+      set_obj_visibility(self_obj, 1);
+      call rl_angriff_haus(haus, welt, RL_ANGRIFF_EROEFFNUNG, RL_NEW_RENO, PID_TOUGH_THUG_MALE);
+      gfade_in(600);
+      selbst_weg := 1;
+      destroy_object(self_obj);      // beendet das Skript: muss zuletzt stehen
+   end else if (gehen) then begin
+      gehen := 0;
+      gfade_out(600);
+      set_obj_visibility(self_obj, 1);
+      selbst_weg := 1;               // rl_nr_figuren setzt Pagano nicht neu (Besitz)
+      call rl_nr_figuren(haus, welt);
+      gfade_in(600);
+      destroy_object(self_obj);      // beendet das Skript: muss zuletzt stehen
+   end
+end
+
+procedure Node100 begin
+   if (welt[RL_W_NR_SEGEN] != RL_SEGEN_KEINER) then
+      Reply(mstr(100) + " " + mstr(107));
+   else if (welt[RL_W_NR_URKUNDE] != RL_URKUNDE_KEINE) then
+      Reply(mstr(100) + " " + mstr(106));
+   else
+      Reply(100);
+   if (welt[RL_W_NR_URKUNDE] == RL_URKUNDE_KEINE) then
+      NOption(101, Node110, 004);
+   if (welt[RL_W_NR_SEGEN] == RL_SEGEN_KEINER) then begin
+      if ((welt[RL_W_NR_BRIEF] == RL_BRIEF_UNTERWEGS) or (welt[RL_W_NR_BRIEF] == RL_BRIEF_GEOEFFNET)) then
+         NOption(102, Node168, 004);
+      else
+         NOption(103, Node120, 004);
+   end
+   NOption(104, Node999, 004);
+   NLowOption(105, Node999);
+end
+
+/* ------------------------------------------------------------------ */
+/* Die Urkunde                                                         */
+/* ------------------------------------------------------------------ */
+procedure Node110 begin
+   if (welt[RL_W_NR_TOTE] bwand RL_NR_TOT_WITWE) then
+      Reply(111);
+   else
+      Reply(110);
+   if (has_skill(dude_obj, SKILL_SCIENCE) >= 60) then
+      NOption(112, Node111, 004);
+   if ((welt[RL_W_NR_TOTE] bwand RL_NR_TOT_WITWE) and obj_is_carrying_obj_pid(dude_obj, PID_SHOVEL)) then
+      BOption(113, Node113, 004);
+   NOption(114, Node100, 004);
+end
+
+procedure Node111 begin
+   Reply(115);
+   if (dude_caps >= RL_FAELSCHUNG_PAPIER) then
+      BOption(116, Node112, 004);
+   NOption(114, Node100, 004);
+end
+
+procedure Node112 begin
+   item_caps_adjust(dude_obj, -RL_FAELSCHUNG_PAPIER);
+   call rl_nr_urkunde(haus, welt, RL_URKUNDE_FAELSCHUNG);
+   call rl_urkunde_da(mstr(117));
+end
+
+procedure Node113 begin
+   call rl_nr_urkunde(haus, welt, RL_URKUNDE_GRAB);
+   if (has_skill(dude_obj, SKILL_SNEAK) >= 40) then
+      call rl_urkunde_da(mstr(119));
+   else
+      call rl_urkunde_da(mstr(119) + " " + mstr(109));
+end
+
+// Die Urkunde ist da; mit dem Segen gehoert das Haus jetzt dem Spieler
+procedure rl_urkunde_da(variable text) begin
+   if (rl_nr_besitz(haus)) then begin
+      gehen := 1;
+      Reply(text + " " + mstr(197));
+      NOption(198, Node999, 004);
+   end else begin
+      Reply(text);
+      NOption(118, Node100, 004);
+   end
+end
+
+/* ------------------------------------------------------------------ */
+/* Die Familien                                                        */
+/* ------------------------------------------------------------------ */
+procedure Node120 begin
+   Reply(120);
+   call rl_familien_optionen;
+end
+
+procedure rl_familien_optionen begin
+   if (not rl_mordino_weg) then NOption(121, Node130, 004);
+   if (not rl_wright_weg) then NOption(122, Node140, 004);
+   if (not rl_salvatore_weg) then NOption(123, Node150, 004);
+   if (not rl_bishop_weg) then NOption(124, Node160, 004);
+   if (rl_made_man(RL_SEGEN_MORDINO) or rl_made_man(RL_SEGEN_WRIGHT)
+       or rl_made_man(RL_SEGEN_SALVATORE) or rl_made_man(RL_SEGEN_BISHOP)) then
+      GOption(125, Node170, 004);
+   NOption(126, Node180, 004);
+   NOption(114, Node100, 004);
+end
+
+procedure rl_segen_geben(variable familie) begin
+   pate := familie;
+   call rl_nr_segen(haus, welt, familie);
+   call Node190;
+end
+
+procedure Node130 begin
+   Reply(130);
+   if (has_skill(dude_obj, SKILL_SNEAK) >= 60) then
+      NOption(131, Node131, 004);
+   if (rl_kampfwert >= 60) then
+      NOption(132, Node132, 004);
+   NOption(139, Node120, 004);
+end
+
+procedure Node131 begin
+   call rl_haus_plus(haus, RL_NEW_RENO, RL_F_HITZE, 10);
+   call rl_segen_geben(RL_SEGEN_MORDINO);
+end
+
+procedure Node132 begin
+   call rl_haus_plus(haus, RL_NEW_RENO, RL_F_HITZE, 15);
+   call rl_segen_geben(RL_SEGEN_MORDINO);
+end
+
+procedure Node140 begin
+   Reply(140);
+   if (dude_perception >= 7) then
+      NOption(141, Node141, 004);
+   if (has_skill(dude_obj, SKILL_STEAL) >= 60) then
+      NOption(142, Node142, 004);
+   NOption(139, Node120, 004);
+end
+
+procedure Node141 begin
+   welt[RL_W_KITTY_WEISS] := 1;
+   call rl_segen_geben(RL_SEGEN_WRIGHT);
+end
+
+procedure Node142 begin
+   welt[RL_W_KITTY_WEISS] := 1;
+   call rl_segen_geben(RL_SEGEN_WRIGHT);
+end
+
+procedure Node150 begin
+   Reply(150);
+   if (rl_salvatore_vorleistung) then
+      GOption(152, Node152, 004);
+   if (rl_kampfwert >= 60) then
+      NOption(151, Node151, 004);
+   NOption(139, Node120, 004);
+end
+
+procedure Node151 begin
+   call rl_segen_geben(RL_SEGEN_SALVATORE);
+end
+
+procedure Node152 begin
+   call rl_segen_geben(RL_SEGEN_SALVATORE);
+end
+
+procedure Node160 begin
+   Reply(160);
+   NOption(161, Node161, 004);
+   if (has_skill(dude_obj, SKILL_LOCKPICK) >= 60) then
+      BOption(162, Node162, 004);
+   NOption(139, Node120, 004);
+end
+
+procedure Node161 begin
+   welt[RL_W_NR_BRIEF] := RL_BRIEF_UNTERWEGS;
+   Reply(163);
+   NOption(104, Node999, 004);
+end
+
+procedure Node162 begin
+   welt[RL_W_NR_BRIEF] := RL_BRIEF_GEOEFFNET;
+   call rl_haus_plus(haus, RL_NEW_RENO, RL_F_HITZE, 15);
+   Reply(164);
+   NOption(104, Node999, 004);
+end
+
+// Westin hat den Brief: Bishops Segen, E NCR +10
+procedure Node165 begin
+   if (welt[RL_W_NR_BRIEF] == RL_BRIEF_ABGEGEBEN_OFFEN) then
+      welt[RL_W_NR_BRIEF] := RL_BRIEF_ERLEDIGT_OFFEN;
+   else
+      welt[RL_W_NR_BRIEF] := RL_BRIEF_ERLEDIGT;
+   call rl_haus_plus(haus, RL_NCR, RL_F_EINFLUSS, 10);
+   if (welt[RL_W_NR_SEGEN] != RL_SEGEN_KEINER) then begin
+      Reply(167);          // ein anderer Pate war schneller
+      NOption(104, Node999, 004);
+      return;
+   end
+   pate := RL_SEGEN_BISHOP;
+   call rl_nr_segen(haus, welt, RL_SEGEN_BISHOP);
+   call Node190;
+end
+
+procedure Node168 begin
+   Reply(168);
+   NOption(114, Node100, 004);
+   NOption(104, Node999, 004);
+end
+
+// Made Man: Pagano weiss, zu wem der Spieler gehoert
+procedure Node170 begin
+   if (rl_made_man(RL_SEGEN_MORDINO)) then pate := RL_SEGEN_MORDINO;
+   else if (rl_made_man(RL_SEGEN_WRIGHT)) then pate := RL_SEGEN_WRIGHT;
+   else if (rl_made_man(RL_SEGEN_SALVATORE)) then pate := RL_SEGEN_SALVATORE;
+   else pate := RL_SEGEN_BISHOP;
+   call rl_segen_geben(pate);
+end
+
+/* ------------------------------------------------------------------ */
+/* Allein: die Eroeffnungsnacht                                        */
+/* ------------------------------------------------------------------ */
+procedure Node180 begin
+   if (welt[RL_W_NR_URKUNDE] == RL_URKUNDE_KEINE) then begin
+      Reply(181);
+      NOption(139, Node120, 004);
+      return;
+   end
+   Reply(180);
+   BOption(182, Node181, 004);
+   NOption(139, Node120, 004);
+end
+
+procedure Node181 begin
+   welt[RL_W_NR_EROEFFNUNG] := RL_EROEFFNUNG_KAMPF;
+   eroeffnung := 1;
+   Reply(183);
+   NOption(184, Node999, 004);
+end
+
+/* Der Segen ist da (pate 1..4). Mit der Urkunde gehoert das Haus dem Spieler. */
+procedure Node190 begin
+   variable text := mstr(190 + pate);
+   if (rl_nr_besitz(haus)) then begin
+      gehen := 1;
+      Reply(text + " " + mstr(197));
+      NOption(198, Node999, 004);
+   end else begin
+      Reply(text + " " + mstr(196));
+      NOption(114, Node100, 004);
+      NOption(104, Node999, 004);
+   end
+end
+
+procedure Node999 begin
+end

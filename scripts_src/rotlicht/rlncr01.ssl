@@ -43,4 +43,5 @@ procedure rl_figuren begin
    variable haus, welt;
    haus := rl_lade_haeuser;
    welt := rl_lade_welt;
+   welt[RL_W_HAUS_HIER] := RL_HAUS + 1;    // fuer die Angreifer (rl_kampf.h)
 end

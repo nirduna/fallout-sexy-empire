@@ -1,10 +1,12 @@
 /*
    rlangreifer.ssl - Angreifer bei einem Kampf im Haus (Umsetzung 5)
 
-   Tylers oder Laras Leute in "Ketten" Akt 4. Sie greifen an, sobald sie
-   erscheinen und wann immer der Spieler die Karte wieder betritt. Jeder Tote
-   zaehlt RL_W_ANGREIFER herunter; faellt der letzte, endet der Kampf
-   (rl_kampf_ende in rl_ketten.h). Ist der Kampf anders beendet, gehen sie.
+   Tylers oder Laras Leute in "Ketten" Akt 4 (Gosse), die Maenner ohne
+   Farben in der Eroeffnungsnacht (Strumpfband, Umsetzung 7). Sie greifen an,
+   sobald sie erscheinen und wann immer der Spieler die Karte wieder betritt.
+   Jeder Tote zaehlt die Angreifer ihres Hauses herunter; faellt der letzte,
+   endet der Kampf (rl_kampf.h). Ist der Kampf anders beendet, gehen sie.
+   Ihr Haus kennen sie aus RL_W_HAUS_HIER (vom Kartenskript gesetzt).
 
    Texte: text_src/english/dialog/rlangreifer.msg
 */
@@ -23,17 +25,28 @@ procedure destroy_p_proc;
 procedure talk_p_proc;
 procedure look_at_p_proc;
 procedure description_p_proc;
+procedure rl_laeuft;
 
 variable haus;
 variable welt;
 variable selbst_weg := 0;
+variable hier := -1;        // Haus dieser Innenkarte
+
+procedure rl_laeuft begin
+   if (welt == 0) then welt := rl_lade_welt;
+   if (haus == 0) then haus := rl_lade_haeuser;
+   if (hier < 0) then hier := rl_max(0, rl_hier(welt));
+   return (rl_angriff_typ(haus, welt, hier) != RL_ANGRIFF_KEINER);
+end
 
 procedure start begin
 end
 
 procedure map_enter_p_proc begin
    welt := rl_lade_welt;
-   if (welt[RL_W_ANGRIFF] == RL_ANGRIFF_KEINER) then begin
+   haus := rl_lade_haeuser;
+   hier := -1;
+   if (not rl_laeuft) then begin
       selbst_weg := 1;
       destroy_object(self_obj);
    end else begin
@@ -42,8 +55,7 @@ procedure map_enter_p_proc begin
 end
 
 procedure critter_p_proc begin
-   if (welt == 0) then welt := rl_lade_welt;
-   if ((welt[RL_W_ANGRIFF] != RL_ANGRIFF_KEINER) and (not combat_is_initialized)) then
+   if (rl_laeuft and (not combat_is_initialized)) then
       attack_setup(self_obj, dude_obj);
 end
 
@@ -51,9 +63,8 @@ procedure destroy_p_proc begin
    if (selbst_weg) then return;
    welt := rl_lade_welt;
    haus := rl_lade_haeuser;
-   if (welt[RL_W_ANGRIFF] == RL_ANGRIFF_KEINER) then return;
-   welt[RL_W_ANGREIFER] := welt[RL_W_ANGREIFER] - 1;
-   if (welt[RL_W_ANGREIFER] <= 0) then call rl_kampf_ende(haus, welt);
+   if (not rl_laeuft) then return;
+   call rl_angreifer_faellt(haus, welt, hier);
 end
 
 procedure talk_p_proc begin
@@ -67,5 +78,8 @@ end
 
 procedure description_p_proc begin
    script_overrides;
-   display_mstr(201);
+   if (rl_laeuft and (rl_angriff_typ(haus, welt, hier) == RL_ANGRIFF_EROEFFNUNG)) then
+      display_mstr(211);
+   else
+      display_mstr(201);
 end

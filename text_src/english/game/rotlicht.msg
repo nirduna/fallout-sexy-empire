@@ -48,3 +48,11 @@
 # Debug
 {190}{}{[Debug] Essie and Kolbe are here.}
 {191}{}{Red light self-test finished, see debug.log.}
+
+# New Reno and headquarters (Umsetzung 7)
+{150}{}{The widow Varga found out the deed is forged. She's waiting at the Garter, and she wants to talk about money.}
+{151}{}{The widow told all of Virgin Street that the Garter stands on a forged deed. The families are laughing. Some of them are taking notes.}
+{152}{}{The families are sitting down at the Garter. Asch is keeping a chair free for you.}
+{153}{}{Nobody sat at the table for us. The families decided without us.}
+{154}{}{Westin's people took Bishop's letter without a word. Pagano will want to know.}
+{155}{}{The Mordinos' contract is worthless now. There's nobody left who could sign for them.}

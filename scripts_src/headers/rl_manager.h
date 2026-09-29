@@ -16,6 +16,10 @@
      variable haus, welt, h   (Haus-Array, Welt-Array, Hausnummer)
      NAME                     (Skriptindex, fuer die .msg-Datei)
    und ruft nach end_dialogue das Makro RLM_NACH_DIALOG auf.
+   Optional: RLM_EXTRA_OPTIONEN, eigene Optionen im Hauptmenue (Umsetzung 7).
+
+   Madames ohne eigene Stimme fuer alles binden _rl_manager.inc ein (die
+   neutralen Texte) und schreiben nur ihre eigenen Saetze selbst.
 
    Einstieg in das Manager-Menue: call RLM_Start;
 */
@@ -120,6 +124,9 @@ procedure RLM_Start begin
        and (((welt[RL_W_KETTEN] >= RL_KETTEN_KETTE) and (welt[RL_W_KETTEN] <= RL_KETTEN_STURM))
             or (welt[RL_W_KETTEN] == RL_KETTEN_STILLER_KRIEG))) then
       NOption(600, RLM_Route, 004);
+#ifdef RLM_EXTRA_OPTIONEN
+   RLM_EXTRA_OPTIONEN
+#endif
 #ifdef RL_DEBUG
    NOption(195, RLM_DebugZimmer, 001);
    NOption(194, RLM_Abspann, 001);
@@ -615,6 +622,12 @@ procedure rlm_sonder_frei(variable sm) begin
       if ((h != RL_DEN) or (module bwand RL_MOD_RIEGEL_AUSSEN)) then return 0;
       return ((welt[RL_W_MARA_WEG] == RL_MARA_VERSTECKT)
               or ((welt[RL_W_KETTEN_ZWEIG] == RL_KETTEN_ZWEIG_FLUCHT) and (welt[RL_W_KETTEN] >= RL_KETTEN_KETTE)));
+   end
+   if (sm == RL_SM_JET_THEKE) then begin
+      // Nur mit Mordino-Pate oder Jet-Vertrag, nie unter Wrights Segen (Phase 2)
+      if (h != RL_NEW_RENO) then return 0;
+      if (welt[RL_W_NR_SEGEN] == RL_SEGEN_WRIGHT) then return 0;
+      return ((welt[RL_W_NR_SEGEN] == RL_SEGEN_MORDINO) or welt[RL_W_JET_VERTRAG]);
    end
    return 0;
 end

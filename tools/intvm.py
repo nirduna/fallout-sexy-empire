@@ -58,7 +58,7 @@ NAMEN = {
     0x8044: 'floor', 0x8045: 'not', 0x8046: 'negate',
     0x80A7: 'tile_contains_pid_obj', 0x80AA: 'has_skill', 0x80B4: 'random',
     0x80B6: 'move_to', 0x80B7: 'create_object_sid', 0x80B8: 'display_msg',
-    0x80B9: 'script_overrides', 0x80BC: 'self_obj', 0x80BD: 'source_obj',
+    0x80E3: 'set_obj_visibility', 0x80B9: 'script_overrides', 0x80BA: 'obj_is_carrying_obj_pid', 0x80BC: 'self_obj', 0x80BD: 'source_obj',
     0x80BE: 'target_obj', 0x80BF: 'dude_obj', 0x80C1: 'local_var', 0x80C2: 'set_local_var',
     0x80C3: 'map_var', 0x80C4: 'set_map_var', 0x80C5: 'global_var', 0x80C6: 'set_global_var',
     0x80CA: 'get_critter_stat', 0x80D4: 'tile_num', 0x80D5: 'tile_num_in_direction',
@@ -228,6 +228,8 @@ class Obj:
         self.stats = {}
         self.skills = {}
         self.kronkorken = 0
+        self.inventar = {}            # pid -> Anzahl (obj_is_carrying_obj_pid)
+        self.unsichtbar = False
         self.lvars = {}
         self.tot = False
         self.zerstoert = False
@@ -800,6 +802,23 @@ def _s_create_object_sid(vm, sp):
     vm.stack.append(o)
 
 
+def _s_gfade_out(vm, sp):
+    vm.pop()
+    sp.abgeblendet = True
+
+
+def _s_gfade_in(vm, sp):
+    vm.pop()
+    sp.abgeblendet = False
+
+
+def _s_set_obj_visibility(vm, sp):
+    unsichtbar = vm.pop_int()
+    o = vm.pop_obj()
+    if o:
+        o.unsichtbar = bool(unsichtbar)
+
+
 def _s_destroy_object(vm, sp):
     o = vm.pop_obj()
     if o is None:
@@ -940,6 +959,12 @@ def _s_game_time_sec(vm, sp):
 
 def _s_game_time(vm, sp):
     vm.stack.append(sp.zeit)
+
+
+def _s_carrying_pid(vm, sp):
+    pid = vm.pop_int()
+    o = vm.pop_obj()
+    vm.stack.append(o.inventar.get(pid, 0) if o else 0)
 
 
 def _s_caps_total(vm, sp):
@@ -1176,6 +1201,7 @@ SPIEL = {
     0x80B7: _s_create_object_sid,
     0x80B8: _s_display_msg,
     0x80B9: lambda vm, sp: setattr(vm, 'overrides', True),
+    0x80BA: _s_carrying_pid,
     0x80BC: lambda vm, sp: vm.stack.append(sp.self_obj or 0),
     0x80BD: lambda vm, sp: vm.stack.append(sp.source_obj or 0),
     0x80BE: lambda vm, sp: vm.stack.append(sp.target_obj or 0),
@@ -1207,8 +1233,9 @@ SPIEL = {
     0x811E: _s_gsay_reply,
     0x8121: _s_giq_option,
     0x8128: lambda vm, sp: vm.stack.append(1 if sp.kampf else 0),
-    0x8136: lambda vm, sp: vm.pop(),
-    0x8137: lambda vm, sp: vm.pop(),
+    0x8136: _s_gfade_out,
+    0x8137: _s_gfade_in,
+    0x80E3: _s_set_obj_visibility,
     0x8138: _s_caps_total,
     0x8139: _s_caps_adjust,
     0x8143: _s_attack_setup,
@@ -1307,6 +1334,7 @@ class Spiel:
         self.protokoll = []
         self.karten_wechsel = []
         self.angriffe = []
+        self.abgeblendet = False          # gfade_out ohne gfade_in: der Bildschirm bleibt schwarz
         self.arrays = {}
         self.naechstes_array = 1
         self.temp_arrays = set()
@@ -1499,12 +1527,17 @@ class Spiel:
             g.rufe('start')
 
     def betrete_karte(self, karte, erster=False):
+        """Reihenfolge wie in der Engine: zuerst das Kartenskript (beim Laden der
+        Karte), dann die globalen Skripte (sfall), dann alle Objekte."""
         self.karte = karte
         self.erster_besuch = erster
+        kartenskripte = [o for o in self.objekte if o.skript and o.pid == 0 and not o.zerstoert]
+        for o in kartenskripte:
+            o.skript.rufe('map_enter_p_proc', self_obj=o)
         for g in self.globale:
             g.rufe('map_enter_p_proc')
         for o in list(self.objekte):
-            if o.skript:
+            if o.skript and o not in kartenskripte:
                 o.skript.rufe('map_enter_p_proc', self_obj=o)
 
     def temp_freigeben(self):

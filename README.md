@@ -26,8 +26,9 @@ Konzept und Skripte für eine Addon-Modifikation für **Fallout 2** (sfall 4.x).
 | – | Prüfwerkzeug: Skripte ohne das Spiel ausführen und testen | fertig: [docs/pruefwerkzeug.md](docs/pruefwerkzeug.md) |
 | 5 | „Ketten“, Akt 2–5: Mara, Zuflucht, Route nach Süden, Lieferungen, Tylers Preis, Laras Sturm, vier Enden, Mara als Madame | umgesetzt, im Prüfwerkzeug getestet, Test im Spiel offen: [docs/umsetzung-5-ketten-akt2-5.md](docs/umsetzung-5-ketten-akt2-5.md) |
 | 6 | Technik für die weiteren Häuser: fünf Innenkarten, Eingänge in fünf Städten, Karten-Prüfungen gegen alle RPU-Stände | umgesetzt, geprüft, Test im Spiel offen: [docs/umsetzung-6-haeuser-technik.md](docs/umsetzung-6-haeuser-technik.md) |
+| 7 | New Reno: „Der Segen“ (Urkunde, vier Paten, Eröffnungsnacht), Madame Roz, Hauptquartier mit Consigliere und Familientreffen, Jet-Theke | umgesetzt, im Prüfwerkzeug getestet, Test im Spiel offen: [docs/umsetzung-7-new-reno.md](docs/umsetzung-7-new-reno.md) |
 
-Die übrigen Schritte 7–16 stehen im [Fahrplan](docs/fahrplan.md).
+Die übrigen Schritte 8–16 stehen im [Fahrplan](docs/fahrplan.md).
 
 ## Werkzeuge
 
