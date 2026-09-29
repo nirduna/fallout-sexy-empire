@@ -1737,6 +1737,242 @@ def test_erkundung_redding(u):
     print(f'      {gesamt} Dialogzustaende in Redding erkundet')
 
 
+# --------------------------------------------------------------------------
+# Umsetzung 9: Vault City, Ein Keller im Courtyard, Razzia, Akte
+
+VC = 3
+
+
+def kloake(u, sp=None):
+    """Die Kloake betreten (Kartenskript RLVCT01); liefert (sp, w)."""
+    k = u.k
+    sp = sp or u.neues_spiel()
+    if not sp.finde(k['SCRIPT_RLVCT01']):
+        sp.erzeuge(0, -1, 0, k['SCRIPT_RLVCT01'], 'Kartenskript RLVCT01')
+    sp.betrete_karte(u.cfg['RL_MAP_INDEX'] + VC)
+    sp.temp_freigeben()
+    return sp, Welt(sp, k)
+
+
+def _vc_uebernommen(u, sp=None, buerger=True):
+    k = u.k
+    sp, w = kloake(u, sp)
+    if buerger:
+        sp.gvars[k['GVAR_VAULT_CITIZEN']] = k['CITIZEN_REAL_CITIZEN']
+    rede(sp, figur(sp, k, 'RLHANNE'), ['buy the house', 'talk about the house', 'citizen of Vault City', None])
+    pruefe(w.haus(VC, 'RL_F_BESITZ') == 1, 'Kloake nicht uebernommen')
+    return sp, w
+
+
+def test_vc_uebernahme(u):
+    k = u.k
+    # Speech 60 und Buergerschaft
+    sp, w = kloake(u)
+    hanne = figur(sp, k, 'RLHANNE')
+    figur(sp, k, 'RLSORENSEN')
+    sp.dude.skills[k['SKILL_SPEECH']] = 60
+    rede(sp, hanne, ['[Speech]', None])
+    pruefe(w.welt('RL_W_VC_HANNE') == k['RL_HANNE_ANTEIL'] and w.haus(VC, 'RL_F_BESITZ') == 0, 'Hanne ohne Papiere')
+    v = rede(sp, hanne, [])
+    pruefe('need papers' in texte(v), 'Hanne will Papiere')
+    pruefe(not any('citizen' in o for o in v[0][1]), 'Buergerschaft ohne Buergerschaft angeboten')
+    sp.gvars[k['GVAR_VAULT_CITIZEN']] = k['CITIZEN_REAL_CITIZEN']
+    v = rede(sp, hanne, ['citizen of Vault City', 'how the cellar', None])
+    pruefe(w.haus(VC, 'RL_F_BESITZ') == 1 and w.welt('RL_W_VC_PAPIERE') == k['RL_PAPIERE_BUERGER'], 'Buergerschaft')
+    pruefe(w.haus(VC, 'RL_F_TRIBUTMOD') == 10 and w.haus(VC, 'RL_F_BESTECHUNG_MOD') == -50, 'Anteil 10 %, Schweigegeld -50')
+    pruefe(w.haus(VC, 'RL_F_PREISSTUFE') == k['RL_PREIS_GEHOBEN'] and w.haus(VC, 'RL_F_ZIMMER') == 2, 'Start gehoben, 2 Zimmer')
+    pruefe('Last week we had' in texte(v), 'Hanne als Madame')
+    # Gekauft und bei Sorensen bestochen
+    sp, w = kloake(u)
+    geld = sp.dude.kronkorken
+    rede(sp, figur(sp, k, 'RLHANNE'), ['buy the house', None])
+    sp.dude.skills[k['SKILL_BARTER']] = 40
+    v = rede(sp, figur(sp, k, 'RLSORENSEN'), ['papers', '[Barter]', None])
+    pruefe(w.haus(VC, 'RL_F_BESITZ') == 1 and sp.dude.kronkorken == geld - 2000
+           and w.welt('RL_W_VC_PAPIERE') == k['RL_PAPIERE_SORENSEN'], 'Sorensen')
+    pruefe(w.haus(VC, 'RL_F_TRIBUTMOD') == 0 and w.haus(VC, 'RL_F_BESTECHUNG_MOD') == 0, 'kein Anteil, volles Schweigegeld')
+    # Faelschung
+    sp, w = kloake(u)
+    sp.dude.skills[k['SKILL_SCIENCE']] = 60
+    rede(sp, figur(sp, k, 'RLHANNE'), ['[Science]', 'talk about the house', 'buy the house', None])
+    pruefe(w.welt('RL_W_VC_PAPIERE') == k['RL_PAPIERE_FAELSCHUNG'] and w.haus(VC, 'RL_F_HITZE') == 5, 'Faelschung H +5')
+    allgemein(sp, 'vc uebernahme')
+
+
+def test_vc_schweigegeld_und_wache(u):
+    k = u.k
+    sp, w = _vc_uebernommen(u)
+    w.setze_haus(VC, 'RL_F_KLASSE', 2)
+    sp.zufall_fest = 'max'
+    woche(sp)
+    pruefe(w.haus(VC, 'RL_F_BESTECHUNG_MOD') == 150, f'Schweigegeld Klasse 2: {w.haus(VC, "RL_F_BESTECHUNG_MOD")}')
+    hanne = figur(sp, k, 'RLHANNE')
+    v = rede(sp, hanne, ['eye at the gate'])
+    pruefe(not any('[Charisma]' in o for o in _optionen_bei(v, 'eye at the gate')), 'Charisma ohne CH 6')
+    sp.dude.stats[k['STAT_ch']] = 6
+    rede(sp, hanne, ['eye at the gate', '[Charisma]', None])
+    pruefe(w.welt('RL_W_VC_WACHE') == k['RL_WACHE_ANGEWORBEN'] and w.haus(VC, 'RL_F_BESTECHUNG_MOD') == 200, 'Wache +50')
+    woche(sp)
+    sp.zufall_fest = None
+    pruefe(w.haus(VC, 'RL_F_BESTECHUNG_MOD') == 200, 'bleibt')
+    allgemein(sp, 'schweigegeld')
+
+
+def test_vc_razzia(u):
+    k = u.k
+    # Ohne Warnung: sofort; freikaufen bei Sorensen
+    sp, w = _vc_uebernommen(u)
+    g = sp.globale[0]
+    w.setze_haus(VC, 'RL_F_PERSONAL', 4)
+    w.setze_haus(VC, 'RL_F_ZIMMER', 4)
+    g.rufe_mit('rl_vc_razzia_kommt')
+    pruefe(w.welt('RL_W_VC_GEFASST') == 2 and w.haus(VC, 'RL_F_PERSONAL') == 2 and w.haus(VC, 'RL_F_GESCHLOSSEN') == 1, 'Razzia')
+    pruefe(any('Corrections Center' in m for m in sp.meldungen), 'Meldung')
+    geld = sp.dude.kronkorken
+    v = rede(sp, figur(sp, k, 'RLSORENSEN'), ['Corrections Center. ($600)', None])
+    pruefe(w.welt('RL_W_VC_GEFASST') == 0 and w.haus(VC, 'RL_F_PERSONAL') == 4 and sp.dude.kronkorken == geld - 600, 'freigekauft')
+    # Befreien
+    g.rufe_mit('rl_vc_razzia_kommt')
+    sp.dude.skills[k['SKILL_SNEAK']] = 70
+    sp.dude.skills[k['SKILL_LOCKPICK']] = 70
+    h0 = w.haus(VC, 'RL_F_HITZE')
+    rede(sp, figur(sp, k, 'RLHANNE'), ['Corrections Center', 'break them out', None])
+    pruefe(w.welt('RL_W_VC_GEFASST') == 0 and w.haus(VC, 'RL_F_HITZE') == min(100, h0 + 30), 'befreit')
+    # Aufgeben: alle Haeuser leiden
+    g.rufe_mit('rl_vc_razzia_kommt')
+    w.setze_haus(VC, 'RL_F_MORAL', 60)
+    karma = sp.gvars.get(k['GVAR_PLAYER_REPUTATION'], 0)
+    rede(sp, figur(sp, k, 'RLHANNE'), ['Corrections Center', 'Let them go', None])
+    pruefe(w.welt('RL_W_VC_GEFASST') == 0 and w.haus(VC, 'RL_F_MORAL') == 30
+           and sp.gvars[k['GVAR_PLAYER_REPUTATION']] == karma - 10, 'aufgegeben')
+    allgemein(sp, 'razzia')
+
+
+def test_vc_razzia_angekuendigt(u):
+    k = u.k
+    for schliessen in (True, False):
+        sp, w = _vc_uebernommen(u)
+        g = sp.globale[0]
+        w.setze_welt('RL_W_VC_WACHE', k['RL_WACHE_ANGEWORBEN'])
+        w.setze_haus(VC, 'RL_F_PERSONAL', 2)
+        g.rufe_mit('rl_vc_razzia_kommt')
+        pruefe(w.welt('RL_W_VC_RAZZIA_WOCHE') > 0 and w.welt('RL_W_VC_GEFASST') == 0, 'angekuendigt')
+        pruefe(any('next week' in m for m in sp.meldungen), 'Meldung Warnung')
+        if schliessen:
+            rede(sp, figur(sp, k, 'RLHANNE'), ['Close the cellar', None])
+            pruefe(w.haus(VC, 'RL_F_GESCHLOSSEN') == 1, 'geschlossen')
+        sp.zufall_fest = 'max'
+        woche(sp)
+        sp.zufall_fest = None
+        if schliessen:
+            pruefe(w.welt('RL_W_VC_GEFASST') == 0 and any('empty cellar' in m for m in sp.meldungen), 'nichts gefunden')
+            pruefe(w.haus(VC, 'RL_F_KUNDEN') == 0 and w.haus(VC, 'RL_F_GESCHLOSSEN') == 0, 'eine Woche zu')
+        else:
+            pruefe(w.welt('RL_W_VC_GEFASST') == 1, 'gefasst')
+        pruefe(w.welt('RL_W_VC_RAZZIA_WOCHE') == 0, 'erledigt')
+        allgemein(sp, f'angekuendigt {schliessen}')
+
+
+def test_vc_akte_und_lynette(u):
+    k = u.k
+    sp, w = _vc_uebernommen(u)
+    hanne = figur(sp, k, 'RLHANNE')
+    sp.dude.kronkorken = 5000
+    rede(sp, hanne, ['build', 'only get in Vault City', 'The File', 'Build it', None])
+    pruefe(w.haus(VC, 'RL_F_BAU_ID') == k['RL_SONDER_BASIS'] + k['RL_SM_AKTE'] + 1, 'Baustelle Akte')
+    sp.zufall_fest = 'max'
+    woche(sp)
+    pruefe(w.haus(VC, 'RL_F_MODULE') & k['RL_MOD_AKTE'] and w.haus(VC, 'RL_F_HITZE') == 10, 'Akte fertig, H +10')
+    e = w.haus(VC, 'RL_F_EINFLUSS')
+    woche(sp)
+    sp.zufall_fest = None
+    pruefe(w.haus(VC, 'RL_F_EINFLUSS') == e + 2, 'E +2')
+    # Die Akte wird gefunden: sofort Razzia, Akte weg
+    g = sp.globale[0]
+    w.setze_haus(VC, 'RL_F_PERSONAL', 2)
+    sp.zufall_fest = 'min'
+    g.rufe_mit('rl_vc_woche', 999)
+    sp.zufall_fest = None
+    pruefe(w.welt('RL_W_VC_GEFASST') == 1 and not (w.haus(VC, 'RL_F_MODULE') & k['RL_MOD_AKTE']), 'Akte gefunden')
+    pruefe(any('found the File' in m for m in sp.meldungen), 'Meldung Akte')
+    # Lynette: mit der Akte enden die Razzien
+    sp, w = _vc_uebernommen(u)
+    w.setze_haus(VC, 'RL_F_MODULE', k['RL_MOD_AKTE'])
+    e = w.haus(VC, 'RL_F_EINFLUSS')
+    rede(sp, figur(sp, k, 'RLHANNE'), ['Use the File', None])
+    pruefe(w.welt('RL_W_VC_LYNETTE') == 1 and w.haus(VC, 'RL_F_EINFLUSS') == e + 20, 'Lynette')
+    w.setze_haus(VC, 'RL_F_PERSONAL', 2)
+    sp.globale[0].rufe_mit('rl_vc_razzia_kommt')
+    pruefe(w.welt('RL_W_VC_GEFASST') == 0 and w.welt('RL_W_VC_RAZZIA_WOCHE') == 0, 'keine Razzia mehr')
+    allgemein(sp, 'akte')
+
+
+def test_vc_pacht_und_sorensen(u):
+    k = u.k
+    sp, w = _vc_uebernommen(u)
+    so = figur(sp, k, 'RLSORENSEN')
+    w.setze_haus(VC, 'RL_F_ZIMMER', 3)
+    w.setze_haus(VC, 'RL_F_PERSONAL', 2)
+    loehne = w.haus(VC, 'RL_F_LOEHNE')
+    rede(sp, so, ['Lease me one', None])
+    pruefe(w.haus(VC, 'RL_F_ZWANG') == 1 and w.haus(VC, 'RL_F_PERSONAL') == 3 and w.haus(VC, 'RL_F_LOEHNE') == loehne + 50, 'Pacht')
+    v = rede(sp, so, [])
+    pruefe(not any('Lease me one' in o for o in v[0][1]), 'Pacht ohne freies Zimmer')
+    # Razzia: Die Gepachteten gehen als Zeugen zurueck
+    sp.globale[0].rufe_mit('rl_vc_razzia_kommt')
+    pruefe(w.haus(VC, 'RL_F_ZWANG') == 0 and w.haus(VC, 'RL_F_LOEHNE') == loehne, 'Zeugen zurueck')
+    # Zurueckgeben
+    rede(sp, so, ['Corrections', None])
+    w.setze_haus(VC, 'RL_F_PERSONAL', 1)
+    rede(sp, so, ['Lease me one', None])
+    rede(sp, so, ['Send the leased', None])
+    pruefe(w.haus(VC, 'RL_F_ZWANG') == 0 and w.haus(VC, 'RL_F_PERSONAL') == 1, 'zurueckgegeben')
+    # Die Wache ueber Sorensen: er ist erpressbar, freikaufen umsonst
+    rede(sp, so, ['Lean on one of the gate guards', None])
+    pruefe(w.welt('RL_W_VC_WACHE') == k['RL_WACHE_SORENSEN'] and w.welt('RL_W_VC_SORENSEN') & k['RL_SORENSEN_ERPRESSBAR'], 'Wache')
+    w.setze_welt('RL_W_VC_GEFASST', 2)
+    geld = sp.dude.kronkorken
+    rede(sp, so, ['Corrections Center. ($0)', None])
+    pruefe(sp.dude.kronkorken == geld and w.welt('RL_W_VC_GEFASST') == 0, 'umsonst')
+    # Sorensen tot: Hanne weiss es
+    sp, w = kloake(u)
+    sp.zerstoere(figur(sp, k, 'RLSORENSEN'))
+    v = rede(sp, figur(sp, k, 'RLHANNE'), ['Where would I get papers'])
+    pruefe('Sorensen is dead' in texte(v), 'Sorensen tot')
+    sp.betrete_karte(u.cfg['RL_MAP_INDEX'] + VC)
+    keine_figur(sp, k, 'RLSORENSEN')
+    allgemein(sp, 'pacht')
+
+
+def test_erkundung_vaultcity(u):
+    k = u.k
+    gesamt = 0
+    for skill in (0, 60):
+        sp, w = kloake(u)
+        for s in ('SKILL_SPEECH', 'SKILL_SCIENCE', 'SKILL_BARTER'):
+            sp.dude.skills[k[s]] = skill
+        if skill:
+            sp.gvars[k['GVAR_VAULT_CITIZEN']] = k['CITIZEN_REAL_CITIZEN']
+        gesamt += erkunde(sp, figur(sp, k, 'RLHANNE'), f'Hanne vorher {skill}')[1]
+        gesamt += erkunde(sp, figur(sp, k, 'RLSORENSEN'), f'Sorensen vorher {skill}')[1]
+    sp, w = _vc_uebernommen(u)
+    hanne = figur(sp, k, 'RLHANNE')
+    so = figur(sp, k, 'RLSORENSEN')
+    gesamt += erkunde(sp, hanne, 'Hanne Madame')[1]
+    w.setze_welt('RL_W_VC_RAZZIA_WOCHE', 99)
+    w.setze_welt('RL_W_VC_GEFASST', 2)
+    w.setze_haus(VC, 'RL_F_MODULE', k['RL_MOD_AKTE'])
+    w.setze_haus(VC, 'RL_F_ZWANG', 1)
+    w.setze_haus(VC, 'RL_F_PERSONAL', 1)
+    for skill in (0, 70):
+        sp.dude.skills[k['SKILL_SNEAK']] = skill
+        sp.dude.skills[k['SKILL_LOCKPICK']] = skill
+        sp.dude.stats[k['STAT_ch']] = 6 if skill else 4
+        gesamt += erkunde(sp, hanne, f'Hanne Krise {skill}')[1]
+        gesamt += erkunde(sp, so, f'Sorensen danach {skill}')[1]
+    print(f'      {gesamt} Dialogzustaende in Vault City erkundet')
+
+
 TESTS = [test_wirtschaft_paritaet, test_erkundung, test_eingang, test_prolog_wege, test_diebstahl_erwischt, test_ketten_annehmen,
          test_ketten_ablehnen, test_ketten_kein_geld, test_kolbe_stirbt, test_kolbe_kommt_zurueck,
          test_wochen, test_anwerbung_werben, test_anwerbung_zwingen, test_pferch_flucht_und_nachschub,
@@ -1747,7 +1983,9 @@ TESTS = [test_wirtschaft_paritaet, test_erkundung, test_eingang, test_prolog_weg
          test_nr_made_man_und_vanilla, test_nr_eroeffnungsnacht, test_nr_pagano_tot, test_nr_hauptquartier,
          test_nr_jet_theke, test_nr_tote_figuren, test_erkundung_newreno,
          test_red_lizenz_wege, test_red_schreiber_tot, test_red_waage, test_red_malamute,
-         test_red_marion_wanamingo, test_red_entzugsstube, test_erkundung_redding]
+         test_red_marion_wanamingo, test_red_entzugsstube, test_erkundung_redding,
+         test_vc_uebernahme, test_vc_schweigegeld_und_wache, test_vc_razzia, test_vc_razzia_angekuendigt,
+         test_vc_akte_und_lynette, test_vc_pacht_und_sorensen, test_erkundung_vaultcity]
 
 
 def main():

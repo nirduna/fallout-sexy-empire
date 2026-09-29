@@ -1,0 +1,149 @@
+/*
+   rlsorens.ssl - Amtsleiter Sorensen, Amenities Office (Vault City)
+
+   Umsetzung 9: der erste Stammkunde der Kloake, und er darf nie auffliegen
+   (Phase 3, Abschnitt 2.4).
+     - Papiere: Barter 40 und 500 $.
+     - Nach der Uebernahme: eine Wache am Tor draengen (dunkel: Sorensen ist
+       danach erpressbar), die Gefassten aus dem Corrections Center freikaufen
+       (300 $ je Person; erpressbar umsonst), Dienstboten-Pacht (Phase 4, 2.3:
+       50 $/Woche je Person, Zwangspersonal) und zurueckgeben.
+
+   Texte: text_src/english/dialog/rlsorens.msg
+*/
+
+#define SCRIPT_REALNAME "rlsorens"
+#define NAME                    SCRIPT_RLSORENSEN
+#include "define.h"
+#include "../headers/rotlicht.h"
+#include "command.h"
+
+procedure start;
+procedure talk_p_proc;
+procedure map_enter_p_proc;
+procedure destroy_p_proc;
+procedure look_at_p_proc;
+procedure description_p_proc;
+procedure Node100;
+procedure Node110;      // Papiere
+procedure Node111;      // bestochen
+procedure Node121;      // Wache draengen
+procedure Node132;      // freikaufen
+procedure Node141;      // Dienstboten pachten
+procedure Node146;      // zurueckgeben
+procedure Node999;
+procedure rl_freikauf_preis;
+
+variable haus;
+variable welt;
+variable selbst_weg := 0;
+
+#define RL_SORENSEN_KENNT           (4)
+
+procedure start begin
+end
+
+procedure map_enter_p_proc begin
+end
+
+procedure destroy_p_proc begin
+   if (selbst_weg) then return;
+   welt := rl_lade_welt;
+   welt[RL_W_VC_SORENSEN] := welt[RL_W_VC_SORENSEN] bwor RL_SORENSEN_TOT;
+end
+
+procedure look_at_p_proc begin
+   script_overrides;
+   display_mstr(300);
+end
+
+procedure description_p_proc begin
+   script_overrides;
+   display_mstr(301);
+end
+
+procedure talk_p_proc begin
+   haus := rl_lade_haeuser;
+   welt := rl_lade_welt;
+   start_gdialog(NAME, self_obj, 4, -1, -1);
+   gSay_Start;
+      call Node100;
+   gSay_End;
+   end_dialogue;
+end
+
+procedure rl_freikauf_preis begin
+   if (welt[RL_W_VC_SORENSEN] bwand RL_SORENSEN_ERPRESSBAR) then return 0;
+   return RL_FREIKAUF_PREIS * welt[RL_W_VC_GEFASST];
+end
+
+procedure Node100 begin
+   variable h := RL_VAULT_CITY;
+   if (welt[RL_W_VC_SORENSEN] bwand RL_SORENSEN_KENNT) then
+      Reply(102);
+   else begin
+      welt[RL_W_VC_SORENSEN] := welt[RL_W_VC_SORENSEN] bwor RL_SORENSEN_KENNT;
+      Reply(100);
+   end
+   if ((not rl_vc_besitz(haus)) and (welt[RL_W_VC_PAPIERE] == RL_PAPIERE_KEINE)) then
+      NOption(101, Node110, 004);
+   if (rl_vc_besitz(haus)) then begin
+      if (welt[RL_W_VC_WACHE] == RL_WACHE_KEINE) then
+         BOption(120, Node121, 004);
+      if ((welt[RL_W_VC_GEFASST] > 0) and rl_zahlbar(haus, h, rl_freikauf_preis)) then
+         NOption(mstr(130) + rl_freikauf_preis + mstr(131), Node132, 004);
+      if (haus[rl_idx(h, RL_F_PERSONAL)] < haus[rl_idx(h, RL_F_ZIMMER)]) then
+         BOption(140, Node141, 004);
+      if (haus[rl_idx(h, RL_F_ZWANG)] > 0) then
+         NOption(145, Node146, 004);
+   end
+   NOption(108, Node999, 004);
+   NLowOption(109, Node999);
+end
+
+procedure Node110 begin
+   Reply(110);
+   if ((has_skill(dude_obj, SKILL_BARTER) >= 40) and (dude_caps >= RL_SORENSEN_PREIS)) then
+      NOption(111, Node111, 004);
+   NOption(112, Node100, 004);
+end
+
+procedure Node111 begin
+   item_caps_adjust(dude_obj, -RL_SORENSEN_PREIS);
+   welt[RL_W_VC_PAPIERE] := RL_PAPIERE_SORENSEN;
+   call rl_vc_pruefen(haus, welt);
+   if (rl_vc_besitz(haus)) then
+      Reply(mstr(113) + " " + mstr(114));
+   else
+      Reply(113);
+   NOption(108, Node999, 004);
+end
+
+procedure Node121 begin
+   welt[RL_W_VC_WACHE] := RL_WACHE_SORENSEN;
+   welt[RL_W_VC_SORENSEN] := welt[RL_W_VC_SORENSEN] bwor RL_SORENSEN_ERPRESSBAR;
+   Reply(121);
+   NOption(108, Node999, 004);
+end
+
+procedure Node132 begin
+   call rl_zahlen(haus, RL_VAULT_CITY, rl_freikauf_preis);
+   call rl_vc_zurueck(haus, welt);
+   Reply(132);
+   NOption(108, Node999, 004);
+end
+
+procedure Node141 begin
+   call rl_vc_pacht(haus, 1);
+   Reply(141);
+   NOption(108, Node999, 004);
+end
+
+procedure Node146 begin
+   call rl_vc_pacht(haus, -haus[rl_idx(RL_VAULT_CITY, RL_F_ZWANG)]);
+   Reply(146);
+   NOption(108, Node999, 004);
+end
+
+procedure Node999 begin
+end

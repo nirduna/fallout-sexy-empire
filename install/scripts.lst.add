@@ -18,3 +18,5 @@ rlroz.int       ; Roz Mercer, Madame des Strumpfbands (Rotlicht)        # local_
 rlconsig.int    ; Leopold Asch, Consigliere im Hauptquartier (Rotlicht) # local_vars=0
 rlschreib.int   ; Ascortis Schreiber, Redding (Rotlicht)                # local_vars=0
 rlnell.int      ; Nell Harrow, Madame der Schlacke (Rotlicht)           # local_vars=0
+rlhanne.int     ; Hanne Voss, Wirtin der Kloake (Rotlicht)              # local_vars=0
+rlsorens.int    ; Amtsleiter Sorensen, Vault City (Rotlicht)            # local_vars=0

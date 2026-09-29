@@ -19,6 +19,8 @@
         misstrauische Familien.
     11. Redding (Umsetzung 8, rl_redding.h): gezinkte Waage und Revolte,
         Malamute Saloon, Marion als Schutzherr nach der Wanamingo-Mine.
+    12. Vault City (Umsetzung 9, rl_vaultcity.h): Schweigegeld je Hausklasse,
+        die Akte, angekuendigte und sofortige Razzien der Garde.
 
    sfall laedt alle gl*.int beim Spielstart. Die Wochenlogik laeuft nur
    auf lokalen Karten; Reisezeit auf der Weltkarte wird beim naechsten
@@ -65,6 +67,9 @@ procedure rl_auftrag_abschluss;
 procedure rl_nr_woche(variable woche);
 procedure rl_nr_brief;
 procedure rl_red_woche(variable woche);
+procedure rl_vc_woche(variable woche);
+procedure rl_vc_razzia_kommt;
+procedure rl_vc_razzia_meldung;
 #ifdef RL_DEBUG
 procedure rl_taste;
 procedure rl_debug_spawn;
@@ -157,6 +162,7 @@ procedure rl_tick begin
       call rl_ketten_woche(jetzt - wochen + 1);
       call rl_nr_woche(jetzt - wochen + 1);
       call rl_red_woche(jetzt - wochen + 1);
+      call rl_vc_woche(jetzt - wochen + 1);
       tyrann := 0;
       ausbeutung := 0;
       h := 0;
@@ -295,6 +301,12 @@ procedure rl_ereignis_wurf(variable h) begin
    ereignis := rl_ereignis_waehlen(h);
    if (ereignis == RL_EV_KEINS) then return;
 
+   // Vault City: Die Garde kommt nicht zur Madame, sie kommt ins Haus (Phase 4, 4.2)
+   if ((h == RL_VAULT_CITY) and (ereignis == RL_EV_RAZZIA)) then begin
+      call rl_vc_razzia_kommt;
+      return;
+   end
+
    // Kleine Ereignisse loest die Madame mit ihrer Fuehrung
    if (random(1, 100) <= haus[rl_idx(h, RL_F_FUEHRUNG)]) then begin
       if (ereignis == RL_EV_STOFF) then
@@ -398,6 +410,7 @@ procedure rl_ereignis_waehlen(variable h) begin
    if (moral < 40) then g[RL_EV_STOFF] := g[RL_EV_STOFF] * 3 / 2;
    // Razzia
    g[RL_EV_RAZZIA] := 5 + rl_stadt(h, RL_S_RISIKO) * 3 + haus[rl_idx(h, RL_F_HITZE)] / 2;
+   if ((h == RL_VAULT_CITY) and welt[RL_W_VC_LYNETTE]) then g[RL_EV_RAZZIA] := 0;   // Lynette haelt die Garde zurueck
    // Gewalttaetiger Freier
    g[RL_EV_FREIER] := 5;
    if (haus[rl_idx(h, RL_F_SICHERHEIT)] < rl_stadt(h, RL_S_RISIKO) * 20) then g[RL_EV_FREIER] := 15;
@@ -780,6 +793,54 @@ procedure rl_red_woche(variable woche) begin
    end
    if (welt[RL_W_MALAMUTE_WEG] == RL_MALAMUTE_BETEILIGUNG) then
       haus[rl_idx(h, RL_F_KASSE)] := haus[rl_idx(h, RL_F_KASSE)] + RL_MALAMUTE_ANTEIL_WOCHE;
+end
+
+/* ------------------------------------------------------------------ */
+/* Vault City (Umsetzung 9, rl_vaultcity.h)                            */
+/* ------------------------------------------------------------------ */
+procedure rl_vc_woche(variable woche) begin
+   variable h := RL_VAULT_CITY;
+   if (not rl_vc_besitz(haus)) then return;
+   call rl_vc_schweigegeld(haus, welt);
+
+   // Die Akte: Einfluss waechst, und irgendwann findet sie jemand
+   if (haus[rl_idx(h, RL_F_MODULE)] bwand RL_MOD_AKTE) then begin
+      call rl_haus_plus(haus, h, RL_F_EINFLUSS, 2);
+      if (random(1, 100) <= 3 + haus[rl_idx(h, RL_F_HITZE)] / 10) then begin
+         display_msg(rl_haus_name(h) + ": " + rl_text(173));
+         call rl_vc_razzia(haus, welt);
+         call rl_vc_razzia_meldung;
+      end
+   end
+
+   // Die angekuendigte Razzia: Wer den Keller geschlossen hat, verliert niemanden
+   if ((welt[RL_W_VC_RAZZIA_WOCHE] > 0) and (woche >= welt[RL_W_VC_RAZZIA_WOCHE])) then begin
+      welt[RL_W_VC_RAZZIA_WOCHE] := 0;
+      if (haus[rl_idx(h, RL_F_GESCHLOSSEN)] > 0) then
+         display_msg(rl_haus_name(h) + ": " + rl_text(172));
+      else begin
+         call rl_vc_razzia(haus, welt);
+         call rl_vc_razzia_meldung;
+      end
+   end
+end
+
+// Aus dem Ereigniswurf: angekuendigt (Wache, E >= 60) oder sofort
+procedure rl_vc_razzia_kommt begin
+   if (welt[RL_W_VC_LYNETTE]) then return;
+   if (rl_vc_warnung(haus, welt)) then begin
+      if (welt[RL_W_VC_RAZZIA_WOCHE] == 0) then begin
+         welt[RL_W_VC_RAZZIA_WOCHE] := rl_woche_jetzt + 1;
+         display_msg(rl_haus_name(RL_VAULT_CITY) + ": " + rl_text(171));
+      end
+      return;
+   end
+   call rl_vc_razzia(haus, welt);
+   call rl_vc_razzia_meldung;
+end
+
+procedure rl_vc_razzia_meldung begin
+   display_msg(rl_haus_name(RL_VAULT_CITY) + ": " + rl_text(170) + welt[RL_W_VC_GEFASST] + rl_text(174));
 end
 
 #ifdef RL_DEBUG

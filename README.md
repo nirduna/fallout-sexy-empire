@@ -28,8 +28,9 @@ Konzept und Skripte für eine Addon-Modifikation für **Fallout 2** (sfall 4.x).
 | 6 | Technik für die weiteren Häuser: fünf Innenkarten, Eingänge in fünf Städten, Karten-Prüfungen gegen alle RPU-Stände | umgesetzt, geprüft, Test im Spiel offen: [docs/umsetzung-6-haeuser-technik.md](docs/umsetzung-6-haeuser-technik.md) |
 | 7 | New Reno: „Der Segen“ (Urkunde, vier Paten, Eröffnungsnacht), Madame Roz, Hauptquartier mit Consigliere und Familientreffen, Jet-Theke | umgesetzt, im Prüfwerkzeug getestet, Test im Spiel offen: [docs/umsetzung-7-new-reno.md](docs/umsetzung-7-new-reno.md) |
 | 8 | Redding: „Ascortis Lizenz“ (vier Wege), Madame Nell, ehrliche oder gezinkte Waage mit Revolte, Entzugsstube, Malamute Saloon | umgesetzt, im Prüfwerkzeug getestet, Test im Spiel offen: [docs/umsetzung-8-redding.md](docs/umsetzung-8-redding.md) |
+| 9 | Vault City: „Ein Keller im Courtyard“, Hanne Voss und Sorensen, Schweigegeld, Razzia mit Dienstboten-Folge, Die Akte, Lynette | umgesetzt, im Prüfwerkzeug getestet, Test im Spiel offen: [docs/umsetzung-9-vault-city.md](docs/umsetzung-9-vault-city.md) |
 
-Die übrigen Schritte 9–16 stehen im [Fahrplan](docs/fahrplan.md).
+Die übrigen Schritte 10–16 stehen im [Fahrplan](docs/fahrplan.md).
 
 ## Werkzeuge
 

@@ -61,3 +61,10 @@
 {160}{}{Sheriff Marion found the rigged scale. By midnight the miners had torn the counter out of the floor. The Slag stays shut for three weeks, and Ascorti wants double.}
 {161}{}{The Malamute gave up the girls upstairs. Four weeks of our prices were more than they could stand.}
 {162}{}{The Wanamingo mine is clean. Sheriff Marion let it be known that the Slag is under his protection now.}
+
+# Vault City (Umsetzung 9)
+{170}{}{The Garde came down the cellar stairs at dawn. }
+{171}{}{A guard at the gate says the Garde is coming to the Courtyard next week. Hanne wants to talk.}
+{172}{}{The Garde searched the boarding house and found clean sheets and a locked, empty cellar. They left without a word.}
+{173}{}{Somebody found the File. The Garde came the same night.}
+{174}{}{ of our people are in the Corrections Center now. After that comes the Servant Allocation Center.}

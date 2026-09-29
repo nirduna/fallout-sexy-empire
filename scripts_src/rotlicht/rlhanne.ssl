@@ -1,0 +1,226 @@
+/*
+   rlhanne.ssl - Hanne Voss, Wirtin der Pension und Madame der Kloake (Vault City)
+
+   Umsetzung 9, "Ein Keller im Courtyard" (Phase 3, Abschnitt 2.4):
+     - Hanne gewinnen: Speech 60 (10 % Anteil fuer sie) oder 1.500 $.
+     - Papiere: Buergerschaft (Vanilla) oder Faelschung (Science 60) hier,
+       Bestechung bei Sorensen.
+   Danach fuehrt sie das Haus (Fuehrung 50, gemeinsames Manager-Menue) und
+   bietet an: die Wache am Tor (CH 6, 50 $/Woche), den Keller vor einer
+   angekuendigten Razzia schliessen, die Gefassten befreien oder aufgeben,
+   First Citizen Lynette mit der Akte unter Druck setzen.
+
+   Texte: text_src/english/dialog/rlhanne.msg (ihre Saetze) und
+   _rl_manager.inc (die neutralen Texte des Manager-Menues)
+*/
+
+#define SCRIPT_REALNAME "rlhanne"
+#define NAME                    SCRIPT_RLHANNE
+#include "define.h"
+#include "../headers/rotlicht.h"
+#include "command.h"
+
+procedure start;
+procedure talk_p_proc;
+procedure map_enter_p_proc;
+procedure destroy_p_proc;
+procedure look_at_p_proc;
+procedure description_p_proc;
+procedure Node700;      // vor der Uebernahme
+procedure Node710;      // wer in den Keller kommt
+procedure Node720;      // Speech: Anteil
+procedure Node721;      // gekauft
+procedure Node730;      // Buergerschaft
+procedure Node731;      // Faelschung
+procedure Node732;      // wo gibt es Papiere?
+procedure Node850;      // Keller schliessen
+procedure Node860;      // die Gefassten
+procedure Node861;      // befreien
+procedure Node862;      // aufgeben
+procedure Node870;      // Wache am Tor
+procedure Node871;      // angeworben
+procedure Node880;      // Lynette
+procedure Node999;
+procedure rl_hanne_weiter(variable text);
+
+variable haus;
+variable welt;
+variable h := RL_VAULT_CITY;
+variable selbst_weg := 0;
+
+#define RLM_EXTRA_OPTIONEN   if ((welt[RL_W_VC_RAZZIA_WOCHE] > 0) and (haus[rl_idx(h, RL_F_GESCHLOSSEN)] == 0)) then \
+                                NOption(850, Node850, 004);                                                        \
+                             if (welt[RL_W_VC_GEFASST] > 0) then NOption(860, Node860, 004);                       \
+                             if (welt[RL_W_VC_WACHE] == RL_WACHE_KEINE) then NOption(870, Node870, 004);           \
+                             if ((haus[rl_idx(h, RL_F_MODULE)] bwand RL_MOD_AKTE) and (welt[RL_W_VC_LYNETTE] == 0)) then \
+                                BOption(880, Node880, 004);
+
+#include "../headers/rl_manager.h"
+
+procedure start begin
+end
+
+procedure map_enter_p_proc begin
+end
+
+procedure destroy_p_proc begin
+   if (selbst_weg) then return;
+   welt := rl_lade_welt;
+   haus := rl_lade_haeuser;
+   welt[RL_W_VC_TOTE] := 1;
+   haus[rl_idx(RL_VAULT_CITY, RL_F_FUEHRUNG)] := RL_OHNE_HANNE_FUEHRUNG;
+end
+
+procedure look_at_p_proc begin
+   script_overrides;
+   display_mstr(200);
+end
+
+procedure description_p_proc begin
+   script_overrides;
+   display_mstr(201);
+end
+
+procedure talk_p_proc begin
+   haus := rl_lade_haeuser;
+   welt := rl_lade_welt;
+   start_gdialog(NAME, self_obj, 4, -1, -1);
+   gSay_Start;
+      if (rl_vc_besitz(haus)) then
+         call RLM_Start;
+      else
+         call Node700;
+   gSay_End;
+   end_dialogue;
+   RLM_NACH_DIALOG
+end
+
+/* ------------------------------------------------------------------ */
+/* Ein Keller im Courtyard                                             */
+/* ------------------------------------------------------------------ */
+procedure Node700 begin
+   if (welt[RL_W_VC_HANNE] != RL_HANNE_OFFEN) then
+      Reply(701);
+   else
+      Reply(700);
+   if (welt[RL_W_VC_HANNE] == RL_HANNE_OFFEN) then begin
+      NOption(702, Node710, 004);
+      if (has_skill(dude_obj, SKILL_SPEECH) >= 60) then
+         GOption(703, Node720, 004);
+      if (dude_caps >= RL_HANNE_PREIS) then
+         NOption(704, Node721, 004);
+   end
+   if (welt[RL_W_VC_PAPIERE] == RL_PAPIERE_KEINE) then begin
+      if (rl_vc_buerger) then
+         NOption(705, Node730, 004);
+      if (has_skill(dude_obj, SKILL_SCIENCE) >= 60) then
+         BOption(706, Node731, 004);
+      NOption(707, Node732, 004);
+   end
+   NOption(708, Node999, 004);
+   NLowOption(709, Node999);
+end
+
+procedure Node710 begin
+   Reply(710);
+   NOption(711, Node700, 004);
+end
+
+// Nach jedem Schritt: Ist beides da, gehoert die Kloake dem Spieler
+procedure rl_hanne_weiter(variable text) begin
+   call rl_vc_pruefen(haus, welt);
+   if (rl_vc_besitz(haus)) then begin
+      Reply(text + " " + mstr(790));
+      NOption(791, RLM_Start, 004);
+      NOption(708, Node999, 004);
+   end else begin
+      Reply(text);
+      NOption(711, Node700, 004);
+   end
+end
+
+procedure Node720 begin
+   welt[RL_W_VC_HANNE] := RL_HANNE_ANTEIL;
+   call rl_hanne_weiter(mstr(720));
+end
+
+procedure Node721 begin
+   item_caps_adjust(dude_obj, -RL_HANNE_PREIS);
+   welt[RL_W_VC_HANNE] := RL_HANNE_GEKAUFT;
+   call rl_hanne_weiter(mstr(721));
+end
+
+procedure Node730 begin
+   welt[RL_W_VC_PAPIERE] := RL_PAPIERE_BUERGER;
+   call rl_hanne_weiter(mstr(730));
+end
+
+procedure Node731 begin
+   welt[RL_W_VC_PAPIERE] := RL_PAPIERE_FAELSCHUNG;
+   call rl_hanne_weiter(mstr(731));
+end
+
+procedure Node732 begin
+   if (welt[RL_W_VC_SORENSEN] bwand RL_SORENSEN_TOT) then
+      Reply(733);
+   else
+      Reply(732);
+   NOption(711, Node700, 004);
+end
+
+/* ------------------------------------------------------------------ */
+/* Als Madame: Razzia, Gefasste, Wache, Lynette                         */
+/* ------------------------------------------------------------------ */
+procedure Node850 begin
+   haus[rl_idx(h, RL_F_GESCHLOSSEN)] := rl_max(haus[rl_idx(h, RL_F_GESCHLOSSEN)], 1);
+   Reply(851);
+   NOption(123, RLM_Start, 004);
+end
+
+procedure Node860 begin
+   Reply(mstr(863) + welt[RL_W_VC_GEFASST] + mstr(864));
+   if ((has_skill(dude_obj, SKILL_SNEAK) >= 70) and (has_skill(dude_obj, SKILL_LOCKPICK) >= 70)) then
+      NOption(865, Node861, 004);
+   BOption(866, Node862, 004);
+   NOption(123, RLM_Start, 004);
+end
+
+procedure Node861 begin
+   call rl_vc_zurueck(haus, welt);
+   call rl_haus_plus(haus, h, RL_F_HITZE, 30);
+   Reply(867);
+   NOption(123, RLM_Start, 004);
+end
+
+procedure Node862 begin
+   call rl_vc_aufgeben(haus, welt);
+   Reply(868);
+   NOption(123, RLM_Start, 004);
+end
+
+procedure Node870 begin
+   Reply(871);
+   if (dude_charisma >= 6) then
+      NOption(872, Node871, 004);
+   NOption(123, RLM_Start, 004);
+end
+
+procedure Node871 begin
+   welt[RL_W_VC_WACHE] := RL_WACHE_ANGEWORBEN;
+   call rl_vc_schweigegeld(haus, welt);
+   Reply(873);
+   NOption(123, RLM_Start, 004);
+end
+
+// Die Akte zeigt einen von Lynettes Verbuendeten im Rat: Die Razzien enden
+procedure Node880 begin
+   welt[RL_W_VC_LYNETTE] := 1;
+   welt[RL_W_VC_RAZZIA_WOCHE] := 0;
+   call rl_haus_plus(haus, h, RL_F_EINFLUSS, 20);
+   call rl_haus_plus(haus, h, RL_F_HITZE, 20);
+   Reply(881);
+   NOption(123, RLM_Start, 004);
+end
+
+procedure Node999 begin
+end

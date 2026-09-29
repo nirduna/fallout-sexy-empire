@@ -48,6 +48,8 @@
 #define SCRIPT_RLCONSIG             (RL_SCRIPT_BASE + 17)  // Leopold Asch, Consigliere im Hauptquartier
 #define SCRIPT_RLSCHREIBER          (RL_SCRIPT_BASE + 18)  // Ascortis Schreiber (Redding, Lizenz)
 #define SCRIPT_RLNELL               (RL_SCRIPT_BASE + 19)  // Nell Harrow, Madame der Schlacke
+#define SCRIPT_RLHANNE              (RL_SCRIPT_BASE + 20)  // Hanne Voss, Wirtin und Madame der Kloake
+#define SCRIPT_RLSORENSEN           (RL_SCRIPT_BASE + 21)  // Amtsleiter Sorensen, Stammkunde der Kloake
 
 /* ------------------------------------------------------------------ */
 /* Echte GVARs (Phase 6). Nur dort, wo die Engine sie verlangt:        */
@@ -245,6 +247,15 @@
 #define RL_W_RED_KENNT              (80)    // 1 = Nell kennt den Spieler
 #define RL_W_MARION_BONUS           (81)    // 1 = Sicherheit +10 durch Marion ist angewendet
 #define RL_W_ASCORTI                (82)    // 1 = Ascorti ist Feind (blossgestellt)
+// Vault City (Umsetzung 9, rl_vaultcity.h)
+#define RL_W_VC_HANNE               (83)    // RL_HANNE_*: wie Hanne gewonnen wurde
+#define RL_W_VC_PAPIERE             (84)    // RL_PAPIERE_*
+#define RL_W_VC_WACHE               (85)    // RL_WACHE_*: ein Auge am Tor
+#define RL_W_VC_SORENSEN            (86)    // Bits RL_SORENSEN_*
+#define RL_W_VC_GEFASST             (87)    // Personal im Corrections Center
+#define RL_W_VC_RAZZIA_WOCHE        (88)    // angekuendigte Razzia (Woche), 0 = keine
+#define RL_W_VC_LYNETTE             (89)    // 1 = Lynette ist mit der Akte unter Druck gesetzt: keine Razzien
+#define RL_W_VC_TOTE                (90)    // 1 = Hanne ist tot
 
 #define RL_PROLOG_OFFEN             (0)
 #define RL_PROLOG_LAEUFT            (1)
@@ -772,6 +783,7 @@ end
 #include "rl_haeuser.h"
 #include "rl_newreno.h"
 #include "rl_redding.h"
+#include "rl_vaultcity.h"
 #include "rl_kampf.h"
 
 #endif

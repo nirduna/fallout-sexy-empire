@@ -634,6 +634,8 @@ procedure rlm_sonder_frei(variable sm) begin
    end
    if (sm == RL_SM_WAAGE) then
       return ((h == RL_REDDING) and not rlm_gekauft(RL_M_RED_GOLDWAAGE));
+   if (sm == RL_SM_AKTE) then
+      return (h == RL_VAULT_CITY);
    return 0;
 end
 
