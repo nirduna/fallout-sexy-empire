@@ -8,3 +8,5 @@
 {532}{}{The same brass scale, with a weight inside the pan that nobody sees. Every miner pays a little more gold than he owes. Revenue +15%, karma -2 a week, heat +10. If Sheriff Marion finds it, the miners will tear the place apart. Rules out the honest scale.}
 {433}{}{The File}
 {533}{}{A locked drawer and a ledger with every citizen who comes down the stairs, the date, the hour and what he asked for. Influence in Vault City +2 a week, heat +10. If the Garde ever finds it, they come the same night.}
+{434}{}{The Registry}
+{534}{}{A registration desk and a filing cabinet with clean papers and examination dates for everyone who works here. Halves the effect of decency campaigns and counts as proof of order before the Council. Upkeep +$25/week.}

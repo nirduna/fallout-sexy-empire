@@ -63,13 +63,14 @@ def simulate(city, weeks=12, staff_q=60, furnishing=50, rep=55, moral=50,
              upgrade_levels=4, fixed_wages=310, city_mod=100,
              rooms=None, side_per_client=0, moral_bonus=0,
              forced_staff=False, forcing=False, staff=None, forced_labor=0,
-             price_mod=0, bribe_mod=0, closed=False):
+             price_mod=0, bribe_mod=0, closed=False, risk_mod=0):
     """forced_staff: Gezwungene im Haus (Moral hoechstens 50, Phase 4 Abschnitt 2.2);
     forcing: der Anwerber zwingt gerade (Karma -3/Woche, Hitze +5/Woche statt -5);
     staff/forced_labor: Arbeitende insgesamt und davon Zwangspersonal hinter dem
     Riegel aussen, das ohne Anteil arbeitet (Umsetzung 4, Karma -5/Woche).
     price_mod: Preisaufschlag in % (gezinkte Waage, Umsetzung 8); bribe_mod:
-    Abweichung vom Schmiergeld der Stadt ($/Woche); closed: Haus geschlossen."""
+    Abweichung vom Schmiergeld der Stadt ($/Woche); closed: Haus geschlossen;
+    risk_mod: Abweichung vom Grundrisiko (NCR ohne Lizenz, Umsetzung 10)."""
     c = CITIES[city]
     p_mult, demand_by_wealth, rep_tick = PRICE_TIERS[price_tier]
     p_mult = p_mult * (100 + price_mod) // 100
@@ -84,7 +85,7 @@ def simulate(city, weeks=12, staff_q=60, furnishing=50, rep=55, moral=50,
         q_eff = staff_q * (40 + 8 * moral // 10) // 100
         score = (50 * q_eff + 30 * furnishing + 20 * rep) // 100
         attr = 40 + score * 2                             # Attraktivitaet in %
-        threat = c["risk"] * 20 + heat
+        threat = (c["risk"] + risk_mod) * 20 + heat
         sec = 100 if security >= threat else max(60, 100 - (threat - security) // 2)
         # Schrittweise teilen, aber mit zwei Nachkommastellen bis zum Schluss:
         # Das Gesamtprodukt wuerde in SSL (32 Bit) ueberlaufen, die Zwischen-

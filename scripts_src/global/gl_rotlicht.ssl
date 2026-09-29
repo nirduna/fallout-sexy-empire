@@ -21,6 +21,8 @@
         Malamute Saloon, Marion als Schutzherr nach der Wanamingo-Mine.
     12. Vault City (Umsetzung 9, rl_vaultcity.h): Schweigegeld je Hausklasse,
         die Akte, angekuendigte und sofortige Razzien der Garde.
+    13. NCR (Umsetzung 10, rl_ncr.h): Lizenz und Auflage, Vortis' Leute und die
+        Rangers, "Die Reinen" in fuenf Akten, Lex Neun.
 
    sfall laedt alle gl*.int beim Spielstart. Die Wochenlogik laeuft nur
    auf lokalen Karten; Reisezeit auf der Weltkarte wird beim naechsten
@@ -70,6 +72,9 @@ procedure rl_red_woche(variable woche);
 procedure rl_vc_woche(variable woche);
 procedure rl_vc_razzia_kommt;
 procedure rl_vc_razzia_meldung;
+procedure rl_ncr_woche(variable woche);
+procedure rl_ncr_lizenz_kommt;
+procedure rl_reine_ende_meldung;
 #ifdef RL_DEBUG
 procedure rl_taste;
 procedure rl_debug_spawn;
@@ -145,6 +150,7 @@ procedure rl_tick begin
    if (cur_map_index == MAP_DEN_BUSINESS) then call rl_gosse_eingang;
    call rl_eingaenge;
    call rl_prolog_nachlauf;
+   call rl_ncr_lizenz_kommt;       // auch, wenn noch kein Haus gehoert (Wartezeit der Lizenz)
    if (welt[RL_W_AKTIV] == 0) then return;
    call rl_ketten_tick;
 
@@ -163,6 +169,7 @@ procedure rl_tick begin
       call rl_nr_woche(jetzt - wochen + 1);
       call rl_red_woche(jetzt - wochen + 1);
       call rl_vc_woche(jetzt - wochen + 1);
+      call rl_ncr_woche(jetzt - wochen + 1);
       tyrann := 0;
       ausbeutung := 0;
       h := 0;
@@ -246,8 +253,16 @@ procedure rl_welt_modifikatoren begin
        or (global_var(GVAR_VAULT_GECKO_PLANT) >= PLANT_FIXED_PLUS_KNOWN)) then m := 10;
    haus[rl_idx(RL_VAULT_CITY, RL_F_STADTMOD)] := m + global_boom;
 
-   // NCR: Liga fuer eine reine Republik
+   // NCR: Liga fuer eine reine Republik. Lex Neun gilt nur fuer Haeuser mit fairem
+   // Anteil, ohne Zwangsarbeit und mit Untersuchungen; sonst kommt Calloway zurueck.
    m := get_array([0, -15, -5, -10, 20, 0, 0], welt[RL_W_LIGA]);
+   if ((welt[RL_W_LIGA] == RL_LIGA_LEX_NEUN)
+       and ((haus[rl_idx(RL_NCR, RL_F_ANTEIL)] != RL_ANTEIL_FAIR) or (haus[rl_idx(RL_NCR, RL_F_ZWANG)] > 0)
+            or ((haus[rl_idx(RL_NCR, RL_F_MODULE)] bwand RL_MOD_KRANKENSTUBE) == 0))) then
+      m := -15;
+   if ((m < 0) and (haus[rl_idx(RL_NCR, RL_F_MODULE)] bwand RL_MOD_REGISTRATUR)) then
+      m := m / 2;                                                    // Registratur: halbe Wirkung
+   if (rl_woche_jetzt < welt[RL_W_REINE_BRAND_WOCHE]) then m := m - 40;   // abgebrannt
    haus[rl_idx(RL_NCR, RL_F_STADTMOD)] := m + global_boom;
 
    // San Francisco: Hubologen
@@ -290,7 +305,7 @@ procedure rl_ereignis_wurf(variable h) begin
    variable chance, bedrohung, ereignis;
 
    if (haus[rl_idx(h, RL_F_GESCHLOSSEN)] > 0) then return;     // geschlossen: niemand da
-   bedrohung := rl_stadt(h, RL_S_RISIKO) * 20 + haus[rl_idx(h, RL_F_HITZE)];
+   bedrohung := (rl_stadt(h, RL_S_RISIKO) + haus[rl_idx(h, RL_F_RISIKO_MOD)]) * 20 + haus[rl_idx(h, RL_F_HITZE)];
    chance := 10 + haus[rl_idx(h, RL_F_HITZE)] / 5
            + rl_max(0, bedrohung - haus[rl_idx(h, RL_F_SICHERHEIT)]) / 2;
    if (haus[rl_idx(h, RL_F_MORAL)] < 40) then chance := chance + 10;
@@ -409,11 +424,18 @@ procedure rl_ereignis_waehlen(variable h) begin
    if ((h == RL_REDDING) and rl_red_entzug(haus)) then g[RL_EV_STOFF] := g[RL_EV_STOFF] / 2;   // Entzugsstube
    if (moral < 40) then g[RL_EV_STOFF] := g[RL_EV_STOFF] * 3 / 2;
    // Razzia
-   g[RL_EV_RAZZIA] := 5 + rl_stadt(h, RL_S_RISIKO) * 3 + haus[rl_idx(h, RL_F_HITZE)] / 2;
-   if ((h == RL_VAULT_CITY) and welt[RL_W_VC_LYNETTE]) then g[RL_EV_RAZZIA] := 0;   // Lynette haelt die Garde zurueck
+   g[RL_EV_RAZZIA] := 5 + (rl_stadt(h, RL_S_RISIKO) + haus[rl_idx(h, RL_F_RISIKO_MOD)]) * 3 + haus[rl_idx(h, RL_F_HITZE)] / 2;
+   if (h == RL_VAULT_CITY) then begin
+      // Siegt die Liga oder wird sie Verbuendete, uebernimmt Lynette ihre Linie; zerbricht sie, verliert Lynette eine Stimme
+      if ((welt[RL_W_LIGA] == RL_LIGA_LEX_NEUN) or (welt[RL_W_LIGA] == RL_LIGA_VERBOT)) then
+         g[RL_EV_RAZZIA] := g[RL_EV_RAZZIA] * 3 / 2;
+      else if (welt[RL_W_LIGA] == RL_LIGA_ZERSCHLAGEN) then
+         g[RL_EV_RAZZIA] := g[RL_EV_RAZZIA] / 2;
+      if (welt[RL_W_VC_LYNETTE]) then g[RL_EV_RAZZIA] := 0;          // Lynette haelt die Garde zurueck
+   end
    // Gewalttaetiger Freier
    g[RL_EV_FREIER] := 5;
-   if (haus[rl_idx(h, RL_F_SICHERHEIT)] < rl_stadt(h, RL_S_RISIKO) * 20) then g[RL_EV_FREIER] := 15;
+   if (haus[rl_idx(h, RL_F_SICHERHEIT)] < (rl_stadt(h, RL_S_RISIKO) + haus[rl_idx(h, RL_F_RISIKO_MOD)]) * 20) then g[RL_EV_FREIER] := 15;
    // Seuche nur ohne Krankenstube
    if ((module bwand RL_MOD_KRANKENSTUBE) == 0) then g[RL_EV_SEUCHE] := 8;
    // Griff in die Kasse
@@ -841,6 +863,103 @@ end
 
 procedure rl_vc_razzia_meldung begin
    display_msg(rl_haus_name(RL_VAULT_CITY) + ": " + rl_text(170) + welt[RL_W_VC_GEFASST] + rl_text(174));
+end
+
+/* ------------------------------------------------------------------ */
+/* NCR (Umsetzung 10, rl_ncr.h)                                        */
+/* ------------------------------------------------------------------ */
+
+// Die Lizenz nach der Wartezeit: Die Traenke oeffnet
+procedure rl_ncr_lizenz_kommt begin
+   if ((welt[RL_W_NCR_LIZENZ_WOCHE] > 0) and (rl_woche_jetzt >= welt[RL_W_NCR_LIZENZ_WOCHE])
+       and not rl_ncr_besitz(haus)) then begin
+      call rl_ncr_eroeffnen(haus, welt);
+      display_msg(rl_haus_name(RL_NCR) + ": " + rl_text(180));
+   end
+end
+
+procedure rl_ncr_woche(variable woche) begin
+   variable h := RL_NCR, il, akt, fertig;
+   if (not rl_ncr_besitz(haus)) then return;
+
+   // Lizenz und Auflage: illegal heisst Risiko 1 -> 4
+   il := rl_ncr_illegal(haus, welt);
+   if (il) then haus[rl_idx(h, RL_F_RISIKO_MOD)] := RL_ILLEGAL_RISIKO;
+   else haus[rl_idx(h, RL_F_RISIKO_MOD)] := 0;
+   if ((il == 2) and (welt[RL_W_NCR_LEGAL] != 2)) then
+      display_msg(rl_haus_name(h) + ": " + rl_text(181));
+   else if ((il == 0) and (welt[RL_W_NCR_LEGAL] == 2)) then
+      display_msg(rl_haus_name(h) + ": " + rl_text(182));
+   welt[RL_W_NCR_LEGAL] := il;
+
+   // Vortis' Leute: Die Rangers finden sie
+   if ((haus[rl_idx(h, RL_F_ZWANG)] > 0) and (welt[RL_W_NCR_ENTZOGEN] == 0)
+       and (random(1, 100) <= 5 + haus[rl_idx(h, RL_F_HITZE)] / 10)) then begin
+      call rl_ncr_rangers_razzia(haus, welt);
+      display_msg(rl_haus_name(h) + ": " + rl_text(195));
+   end
+
+   // Vortis zahlt Schweigegeld, solange er frei ist
+   if ((welt[RL_W_REINE_AKT4] == RL_AKT4_ERPRESST) and (welt[RL_W_VORTIS] != RL_VORTIS_VERHAFTET)) then
+      haus[rl_idx(h, RL_F_KASSE)] := haus[rl_idx(h, RL_F_KASSE)] + RL_VORTIS_SCHWEIGEGELD;
+
+   // Die Reinen
+   akt := welt[RL_W_REINE];
+   if (akt == RL_REINE_OFFEN) then begin
+      if ((welt[RL_W_REINE_WOCHE] > 0) and (woche >= welt[RL_W_REINE_WOCHE])) then begin
+         welt[RL_W_REINE] := RL_REINE_FLUGBLAETTER;
+         welt[RL_W_REINE_WOCHE] := woche;
+         welt[RL_W_LIGA] := RL_LIGA_KAMPAGNE;
+         display_msg(rl_haus_name(h) + ": " + rl_text(183));
+      end
+   end else if (akt == RL_REINE_FLUGBLAETTER) then begin
+      fertig := ((welt[RL_W_REINE_AKT1] != RL_AKT1_OFFEN) and (welt[RL_W_REINE_AKT1] != RL_AKT1_GESCHICHTE));
+      if ((fertig and (woche >= welt[RL_W_REINE_WOCHE] + RL_REINE_ABSTAND))
+          or (woche >= welt[RL_W_REINE_WOCHE] + RL_REINE_FRIST)) then begin
+         welt[RL_W_REINE] := RL_REINE_ANHOERUNG;
+         welt[RL_W_REINE_WOCHE] := woche;
+         display_msg(rl_haus_name(h) + ": " + rl_text(184));
+      end
+   end else if (akt == RL_REINE_ANHOERUNG) then begin
+      fertig := (welt[RL_W_REINE_ANHOERUNG] != RL_ANHOERUNG_OFFEN);
+      if ((fertig and (woche >= welt[RL_W_REINE_WOCHE] + RL_REINE_ABSTAND))
+          or (woche >= welt[RL_W_REINE_WOCHE] + RL_REINE_FRIST)) then begin
+         if (not fertig) then begin
+            welt[RL_W_REINE_ANHOERUNG] := RL_ANHOERUNG_VERLOREN;
+            display_msg(rl_haus_name(h) + ": " + rl_text(196));
+         end
+         welt[RL_W_REINE] := RL_REINE_FEUER;
+         welt[RL_W_REINE_WOCHE] := woche;
+         welt[RL_W_REINE_BRAND] := RL_BRAND_BRENNT;
+         display_msg(rl_haus_name(h) + ": " + rl_text(185));
+      end
+   end else if (akt == RL_REINE_FEUER) then begin
+      // Wer nicht loescht, verliert das Obergeschoss fuer vier Wochen
+      if ((welt[RL_W_REINE_BRAND] == RL_BRAND_BRENNT) and (woche >= welt[RL_W_REINE_WOCHE] + 1)) then begin
+         welt[RL_W_REINE_BRAND] := RL_BRAND_ABGEBRANNT;
+         welt[RL_W_REINE_BRAND_WOCHE] := woche + RL_BRAND_WOCHEN;
+         call rl_haus_plus(haus, h, RL_F_MORAL, -10);
+         display_msg(rl_haus_name(h) + ": " + rl_text(186));
+      end
+      // Ohne Beweise geht die Linie zu Ende
+      if (woche >= welt[RL_W_REINE_WOCHE] + RL_REINE_FRIST) then begin
+         call rl_reine_ende(haus, welt);
+         call rl_reine_ende_meldung;
+      end
+   end else if (akt == RL_REINE_BEWEISE) then begin
+      if (woche >= welt[RL_W_REINE_WOCHE] + RL_REINE_FRIST) then begin
+         call rl_reine_ende(haus, welt);
+         call rl_reine_ende_meldung;
+      end
+   end
+end
+
+procedure rl_reine_ende_meldung begin
+   variable e := welt[RL_W_REINE], n := 193;
+   if (e == RL_REINE_MUSTERHAUS) then n := 188;
+   else if (e == RL_REINE_DISKREDITIERUNG) then n := 189;
+   else if (e == RL_REINE_VERBOT) then n := 192;
+   display_msg(rl_haus_name(RL_NCR) + ": " + rl_text(n));
 end
 
 #ifdef RL_DEBUG

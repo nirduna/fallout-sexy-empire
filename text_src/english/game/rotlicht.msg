@@ -68,3 +68,18 @@
 {172}{}{The Garde searched the boarding house and found clean sheets and a locked, empty cellar. They left without a word.}
 {173}{}{Somebody found the File. The Garde came the same night.}
 {174}{}{ of our people are in the Corrections Center now. After that comes the Servant Allocation Center.}
+
+# NCR (Umsetzung 10)
+{180}{}{The license came: "Licensed Establishment No. 9 of the Republic." Dora is painting the number over the door.}
+{181}{}{A health inspector came, found no infirmary, and wrote the Trough up. Until there's an infirmary, the license is suspended.}
+{182}{}{An infirmary and clean papers: The Trough is licensed again.}
+{183}{}{Leaflets all over the Bazaar: CLOSE THE PENS, CLOSE THE HOUSES. The League for a Pure Republic has a picket line in front of the Trough.}
+{184}{}{The Council will hear a decency law that would revoke every license in the Republic. Dora wants to talk.}
+{185}{}{The Trough is burning. Somebody threw a firebomb through the back window.}
+{186}{}{Nobody put out the fire in time. The upper floor is gone. It'll take a month before the Trough is what it was.}
+{188}{}{The decency law passed with an exception everyone calls Lex Nine: registered houses with fair shares, examinations and no forced labor may stay open. The unlicensed ones close. Ruth Calloway checks the Trough's books every month.}
+{189}{}{The League for a Pure Republic is finished. Nobody hands out leaflets in the Bazaar anymore, and nobody asks what happened to its people.}
+{192}{}{The decency law passed without exceptions. The Trough has no license now. It keeps working, the way everything illegal in the Republic keeps working.}
+{193}{}{The decency law failed in the Council. The League still hands out leaflets, but fewer people take them.}
+{195}{}{The Rangers raided the Trough and freed everyone Vortis sold you. The license is gone, and the Rangers will not forget your name.}
+{196}{}{The Council heard the decency law without us. Nobody spoke for the Trough.}

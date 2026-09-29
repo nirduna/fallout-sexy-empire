@@ -29,8 +29,9 @@ Konzept und Skripte für eine Addon-Modifikation für **Fallout 2** (sfall 4.x).
 | 7 | New Reno: „Der Segen“ (Urkunde, vier Paten, Eröffnungsnacht), Madame Roz, Hauptquartier mit Consigliere und Familientreffen, Jet-Theke | umgesetzt, im Prüfwerkzeug getestet, Test im Spiel offen: [docs/umsetzung-7-new-reno.md](docs/umsetzung-7-new-reno.md) |
 | 8 | Redding: „Ascortis Lizenz“ (vier Wege), Madame Nell, ehrliche oder gezinkte Waage mit Revolte, Entzugsstube, Malamute Saloon | umgesetzt, im Prüfwerkzeug getestet, Test im Spiel offen: [docs/umsetzung-8-redding.md](docs/umsetzung-8-redding.md) |
 | 9 | Vault City: „Ein Keller im Courtyard“, Hanne Voss und Sorensen, Schweigegeld, Razzia mit Dienstboten-Folge, Die Akte, Lynette | umgesetzt, im Prüfwerkzeug getestet, Test im Spiel offen: [docs/umsetzung-9-vault-city.md](docs/umsetzung-9-vault-city.md) |
+| 10 | NCR: „Etablissement Nr. 9“ (vier Wege, Auflage), Madame Dora, Vortis' Angebot, „Die Reinen“ mit Ruth Calloway in fünf Akten, Registratur | umgesetzt, im Prüfwerkzeug getestet, Test im Spiel offen: [docs/umsetzung-10-ncr.md](docs/umsetzung-10-ncr.md) |
 
-Die übrigen Schritte 10–16 stehen im [Fahrplan](docs/fahrplan.md).
+Die übrigen Schritte 11–16 stehen im [Fahrplan](docs/fahrplan.md).
 
 ## Werkzeuge
 

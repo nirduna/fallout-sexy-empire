@@ -480,7 +480,7 @@ def test_wirtschaft_paritaet(u):
                  personal=rng.randint(1, 10), bonus=rng.randint(0, 3),
                  gezwungen=rng.choice([0, 0, 1, 2]), anwerber=rng.randrange(3),
                  pmod=rng.choice([0, 0, 15, rng.randint(0, 40)]), bmod=rng.choice([0, 0, -75, 50, 400]),
-                 zu=rng.random() < 0.1)
+                 zu=rng.random() < 0.1, rmod=rng.choice([0, 0, 3]))
         c['zwang'] = rng.choice([0, 0, min(2, c['personal'])])
         for i in range(k['RL_FELDER']):
             sp.arrays[hid].werte[i] = 0
@@ -491,7 +491,7 @@ def test_wirtschaft_paritaet(u):
                       RL_F_STADTMOD=c['smod'], RL_F_MODUL_STADTMOD=c['mmod'], RL_F_ZIMMER=c['zimmer'],
                       RL_F_PERSONAL=c['personal'], RL_F_MORALBONUS=c['bonus'],
                       RL_F_GEZWUNGEN=c['gezwungen'], RL_F_ANWERBER=c['anwerber'], RL_F_ZWANG=c['zwang'],
-                      RL_F_PREISMOD=c['pmod'], RL_F_BESTECHUNG_MOD=c['bmod'], RL_F_GESCHLOSSEN=1 if c['zu'] else 0,
+                      RL_F_PREISMOD=c['pmod'], RL_F_BESTECHUNG_MOD=c['bmod'], RL_F_GESCHLOSSEN=1 if c['zu'] else 0, RL_F_RISIKO_MOD=c['rmod'],
                       RL_F_MODULE=(k['RL_MOD_KONTOR'] if c['kontor'] else 0)
                       | (k['RL_MOD_KRANKENSTUBE'] if c['kranken'] else 0))
         for f, v in felder.items():
@@ -510,7 +510,7 @@ def test_wirtschaft_paritaet(u):
             city_mod=100 + c['smod'] + c['mmod'], rooms=min(c['zimmer'], c['personal']),
             side_per_client=c['neben'], moral_bonus=c['bonus'], forced_staff=c['gezwungen'] > 0,
             forcing=c['anwerber'] == k['RL_ANWERBER_ZWINGEN'], staff=c['personal'],
-            forced_labor=c['zwang'], price_mod=c['pmod'], bribe_mod=c['bmod'], closed=c['zu'])
+            forced_labor=c['zwang'], price_mod=c['pmod'], bribe_mod=c['bmod'], closed=c['zu'], risk_mod=c['rmod'])
         soll = [(r[3], r[6]) for r in rows]
         pruefe(ist == soll, f'Fall {fall} {c}: Skript {ist[:4]} ... Simulator {soll[:4]} ...')
         pruefe(sp.gvars.get(karma_gvar, 0) == karma, f'Fall {fall}: Karma {sp.gvars.get(karma_gvar)} statt {karma}')
@@ -1973,6 +1973,307 @@ def test_erkundung_vaultcity(u):
     print(f'      {gesamt} Dialogzustaende in Vault City erkundet')
 
 
+# --------------------------------------------------------------------------
+# Umsetzung 10: NCR, Etablissement Nr. 9, Vortis, Die Reinen
+
+NCR = 4
+
+
+def traenke(u, sp=None):
+    """Die Traenke betreten (Kartenskript RLNCR01); liefert (sp, w)."""
+    k = u.k
+    sp = sp or u.neues_spiel()
+    if not sp.finde(k['SCRIPT_RLNCR01']):
+        sp.erzeuge(0, -1, 0, k['SCRIPT_RLNCR01'], 'Kartenskript RLNCR01')
+    betrete_traenke(u, sp)
+    return sp, Welt(sp, k)
+
+
+def betrete_traenke(u, sp):
+    sp.betrete_karte(u.cfg['RL_MAP_INDEX'] + NCR)
+    sp.temp_freigeben()
+
+
+def _ncr_offen(u, sp=None):
+    """Mit Westins Fuersprache sofort eroeffnet."""
+    k = u.k
+    sp, w = traenke(u, sp)
+    sp.dude.skills[k['SKILL_SPEECH']] = 60
+    rede(sp, figur(sp, k, 'RLGRIEVE'), ['Westin will vouch', None])
+    pruefe(w.haus(NCR, 'RL_F_BESITZ') == 1, 'Traenke nicht eroeffnet')
+    sp.dude.skills[k['SKILL_SPEECH']] = 20
+    return sp, w
+
+
+def ruhige_woche(sp, n=1):
+    """Wochen ohne Zufallsereignisse (jeder Wurf am oberen Rand)."""
+    sp.zufall_fest = 'max'
+    woche(sp, n)
+    sp.zufall_fest = None
+
+
+def test_ncr_lizenz_wege(u):
+    k = u.k
+    # Dienstweg: 3 Wochen, auch ohne ein anderes Haus
+    sp, w = traenke(u)
+    geld = sp.dude.kronkorken
+    v = rede(sp, figur(sp, k, 'RLGRIEVE'), ['license for Number Nine'])
+    pruefe('$500' in texte(v), 'Gebuehr 500')
+    rede(sp, figur(sp, k, 'RLGRIEVE'), ['license for Number Nine', 'File the application', None])
+    pruefe(sp.dude.kronkorken == geld - 500 and w.welt('RL_W_NCR_LIZENZ') == k['RL_LIZENZ_NCR_DIENSTWEG'], 'beantragt')
+    v = rede(sp, figur(sp, k, 'RLGRIEVE'), [])
+    pruefe('3 week(s)' in texte(v), f'Wartezeit: {texte(v)}')
+    ruhige_woche(sp, 2)
+    pruefe(w.haus(NCR, 'RL_F_BESITZ') == 0, 'zu frueh')
+    ruhige_woche(sp)
+    pruefe(w.haus(NCR, 'RL_F_BESITZ') == 1 and any('Licensed Establishment' in m for m in sp.meldungen), 'Lizenz da')
+    betrete_traenke(u, sp)
+    keine_figur(sp, k, 'RLGRIEVE')
+    dora = figur(sp, k, 'RLDORA')
+    v = rede(sp, dora, ['how the house'])
+    pruefe('Dora Quist' in texte(v) and 'Last week we had' in texte(v), 'Dora')
+    # Bishop-Pate: halber Preis; beschleunigt
+    sp, w = traenke(u)
+    w.setze_welt('RL_W_NR_SEGEN', k['RL_SEGEN_BISHOP'])
+    sp.dude.skills[k['SKILL_BARTER']] = 40
+    geld = sp.dude.kronkorken
+    rede(sp, figur(sp, k, 'RLGRIEVE'), ['license for Number Nine', '[Barter]', None])
+    pruefe(sp.dude.kronkorken == geld - 550 and w.welt('RL_W_NCR_LIZENZ') == k['RL_LIZENZ_NCR_SCHNELL'], 'beschleunigt')
+    pruefe(w.haus(NCR, 'RL_F_HITZE') == 5, 'H +5')
+    ruhige_woche(sp)
+    pruefe(w.haus(NCR, 'RL_F_BESITZ') == 1, 'nach einer Woche')
+    # Westin: sofort, 5 % Anteil
+    sp, w = _ncr_offen(u)
+    pruefe(w.haus(NCR, 'RL_F_TRIBUTMOD') == 5 and w.welt('RL_W_NCR_LIZENZ') == k['RL_LIZENZ_NCR_WESTIN'], 'Westin')
+    keine_figur(sp, k, 'RLGRIEVE')
+    figur(sp, k, 'RLDORA')
+    # Westin tot: keine Fuersprache
+    sp, w = traenke(u)
+    sp.gvars[k['GVAR_NEWRENO_SNUFF_WESTIN']] = k['bit_2']
+    sp.dude.skills[k['SKILL_SPEECH']] = 60
+    v = rede(sp, figur(sp, k, 'RLGRIEVE'), [])
+    pruefe(not any('Westin' in o for o in v[0][1]), 'Westin tot')
+    # Ohne Lizenz: illegal, die Reinen sofort
+    sp, w = traenke(u)
+    rede(sp, figur(sp, k, 'RLGRIEVE'), ['without your paper', 'Let them come', None])
+    pruefe(w.haus(NCR, 'RL_F_BESITZ') == 1 and w.haus(NCR, 'RL_F_RISIKO_MOD') == 3 and w.haus(NCR, 'RL_F_HITZE') == 30, 'illegal')
+    pruefe(w.welt('RL_W_REINE') == k['RL_REINE_FLUGBLAETTER'], 'Reine sofort')
+    ruhige_woche(sp)
+    pruefe(w.haus(NCR, 'RL_F_RISIKO_MOD') == 3, 'bleibt illegal')
+    allgemein(sp, 'ncr lizenz')
+
+
+def test_ncr_auflage(u):
+    k = u.k
+    sp, w = _ncr_offen(u)
+    ruhige_woche(sp, 3)
+    pruefe(w.haus(NCR, 'RL_F_RISIKO_MOD') == 0, 'noch legal')
+    ruhige_woche(sp)
+    pruefe(w.haus(NCR, 'RL_F_RISIKO_MOD') == 3 and any('license is suspended' in m for m in sp.meldungen), 'Auflage')
+    w.setze_haus(NCR, 'RL_F_MODULE', k['RL_MOD_KRANKENSTUBE'])
+    ruhige_woche(sp)
+    pruefe(w.haus(NCR, 'RL_F_RISIKO_MOD') == 0 and any('licensed again' in m for m in sp.meldungen), 'wieder legal')
+    allgemein(sp, 'auflage')
+
+
+def test_ncr_vortis(u):
+    k = u.k
+    sp, w = _ncr_offen(u)
+    dora = figur(sp, k, 'RLDORA')
+    rede(sp, dora, ['how the house', None])
+    w.setze_haus(NCR, 'RL_F_ZIMMER', 4)
+    geld = sp.dude.kronkorken
+    rede(sp, dora, ['Vortis sent a man', None])
+    pruefe(w.haus(NCR, 'RL_F_ZWANG') == 1 and sp.dude.kronkorken == geld - 200, 'Vortis-Personal')
+    sp.zufall_fest = 'min'
+    sp.globale[0].rufe_mit('rl_ncr_woche', 999)
+    sp.zufall_fest = None
+    pruefe(w.haus(NCR, 'RL_F_ZWANG') == 0 and w.welt('RL_W_NCR_ENTZOGEN') == 1
+           and w.welt('RL_W_RANGERS') == k['RL_RANGERS_FEIND'], 'Rangers-Razzia')
+    pruefe(any('Rangers raided' in m for m in sp.meldungen), 'Meldung Rangers')
+    ruhige_woche(sp)
+    pruefe(w.haus(NCR, 'RL_F_RISIKO_MOD') == 3, 'Lizenz entzogen')
+    # Vortis ist Feind (die Gilde faellt): kein Angebot
+    w.setze_welt('RL_W_VORTIS', k['RL_VORTIS_FEIND'])
+    v = rede(sp, dora, [])
+    pruefe(not any('Vortis' in o for o in v[0][1]), 'Vortis als Feind bietet nichts an')
+    allgemein(sp, 'vortis')
+
+
+def _reine_akt(sp, w, k, akt, wochen=6):
+    for _ in range(wochen):
+        if w.welt('RL_W_REINE') == k[akt]:
+            return
+        ruhige_woche(sp)
+    pruefe(w.welt('RL_W_REINE') == k[akt], f'{akt} nicht erreicht ({w.welt("RL_W_REINE")})')
+
+
+def test_reine_musterhaus(u):
+    k = u.k
+    sp, w = _ncr_offen(u)
+    w.setze_welt('RL_W_MARA_WEG', k['RL_MARA_SICHER'])
+    _reine_akt(sp, w, k, 'RL_REINE_FLUGBLAETTER')
+    pruefe(w.welt('RL_W_LIGA') == k['RL_LIGA_KAMPAGNE'] and any('CLOSE THE PENS' in m for m in sp.meldungen), 'Akt 1')
+    betrete_traenke(u, sp)
+    cal = figur(sp, k, 'RLCALLOWAY')
+    v = rede(sp, cal, [])
+    pruefe(not any('[Speech]' in o for o in v[0][1]), 'Speech ohne Skill')
+    sp.dude.skills[k['SKILL_SPEECH']] = 60
+    v = rede(sp, cal, ['[Speech]', None])
+    pruefe('Mara' in texte(v) and w.welt('RL_W_REINE_AKT1') == k['RL_AKT1_MARA']
+           and w.welt('RL_W_LIGA') == k['RL_LIGA_GEBREMST'], 'Mara buergt')
+    _reine_akt(sp, w, k, 'RL_REINE_ANHOERUNG')
+    dora = figur(sp, k, 'RLDORA')
+    rede(sp, dora, ['how the house', None])
+    sp.dude.skills[k['SKILL_SPEECH']] = 80
+    rede(sp, dora, ['League', 'speak before the Council', None])
+    pruefe(w.welt('RL_W_REINE_ANHOERUNG') == k['RL_ANHOERUNG_GEWONNEN'], 'Anhoerung')
+    _reine_akt(sp, w, k, 'RL_REINE_FEUER')
+    pruefe(w.welt('RL_W_REINE_BRAND') == k['RL_BRAND_BRENNT'], 'Feuer')
+    sp.dude.skills[k['SKILL_REPAIR']] = 60
+    sp.dude.skills[k['SKILL_SCIENCE']] = 60
+    rede(sp, dora, ['League', '[Repair]', 'Go on', '[Science]', 'What do we do', 'Give it to the Rangers', None])
+    pruefe(w.welt('RL_W_REINE_BRAND') == k['RL_BRAND_GELOESCHT'] and w.welt('RL_W_VORTIS') == k['RL_VORTIS_VERHAFTET'], 'Rangers')
+    w.setze_haus(NCR, 'RL_F_MORAL', 60)
+    pruefe(w.welt('RL_W_REINE') in (k['RL_REINE_MUSTERHAUS'], k['RL_REINE_GESCHEITERT']), 'Ende')
+    # Musterhaus nur mit Moral >= 60: noch einmal mit hoher Moral
+    sp2, w2 = _ncr_offen(u)
+    w2.setze_welt('RL_W_REINE', k['RL_REINE_BEWEISE'])
+    w2.setze_welt('RL_W_REINE_BEWEIS', k['RL_BEWEIS_VORTIS'])
+    w2.setze_haus(NCR, 'RL_F_MORAL', 60)
+    d2 = figur(sp2, k, 'RLDORA')
+    rede(sp2, d2, ['how the house', None])
+    v = rede(sp2, d2, ['League', 'Give it to the Rangers', None])
+    pruefe(w2.welt('RL_W_REINE') == k['RL_REINE_MUSTERHAUS'] and w2.welt('RL_W_LIGA') == k['RL_LIGA_LEX_NEUN'], 'Musterhaus')
+    pruefe('Lex Nine' in texte(v), 'Text Lex Neun')
+    # Lex Neun: +20 % nur mit fairem Anteil, Krankenstube, ohne Zwang
+    ruhige_woche(sp2)
+    pruefe(w2.haus(NCR, 'RL_F_STADTMOD') == -15, f'Lex Neun verletzt: {w2.haus(NCR, "RL_F_STADTMOD")}')
+    w2.setze_haus(NCR, 'RL_F_ANTEIL', k['RL_ANTEIL_FAIR'])
+    w2.setze_haus(NCR, 'RL_F_MODULE', k['RL_MOD_KRANKENSTUBE'])
+    ruhige_woche(sp2)
+    pruefe(w2.haus(NCR, 'RL_F_STADTMOD') == 20, f'Lex Neun: {w2.haus(NCR, "RL_F_STADTMOD")}')
+    betrete_traenke(u, sp2)
+    keine_figur(sp2, k, 'RLCALLOWAY')
+    allgemein(sp, 'musterhaus')
+    allgemein(sp2, 'musterhaus 2')
+
+
+def test_reine_verbot(u):
+    k = u.k
+    sp, w = traenke(u)
+    rede(sp, figur(sp, k, 'RLGRIEVE'), ['without your paper', 'Let them come', None])
+    _reine_akt(sp, w, k, 'RL_REINE_FLUGBLAETTER')
+    _reine_akt(sp, w, k, 'RL_REINE_ANHOERUNG')
+    _reine_akt(sp, w, k, 'RL_REINE_FEUER')
+    pruefe(w.welt('RL_W_REINE_ANHOERUNG') == k['RL_ANHOERUNG_VERLOREN'] and any('without us' in m for m in sp.meldungen), 'verloren')
+    ruhige_woche(sp)
+    pruefe(w.welt('RL_W_REINE_BRAND') == k['RL_BRAND_ABGEBRANNT'], 'abgebrannt')
+    ruhige_woche(sp)
+    pruefe(w.haus(NCR, 'RL_F_STADTMOD') <= -40, f'Brand-Abzug {w.haus(NCR, "RL_F_STADTMOD")}')
+    _reine_akt(sp, w, k, 'RL_REINE_VERBOT', 8)
+    pruefe(w.welt('RL_W_LIGA') == k['RL_LIGA_VERBOT'] and any('without exceptions' in m for m in sp.meldungen), 'Verbot')
+    allgemein(sp, 'verbot')
+
+
+def test_reine_diskreditierung(u):
+    k = u.k
+    sp, w = _ncr_offen(u)
+    w.setze_haus(NCR, 'RL_F_ZIMMER', 4)
+    _reine_akt(sp, w, k, 'RL_REINE_FLUGBLAETTER')
+    dora = figur(sp, k, 'RLDORA')
+    rede(sp, dora, ['how the house', None])
+    sp.dude.skills[k['SKILL_UNARMED_COMBAT']] = 60
+    karma = sp.gvars.get(k['GVAR_PLAYER_REPUTATION'], 0)
+    rede(sp, dora, ['League', '[Unarmed]', None])
+    pruefe(w.welt('RL_W_REINE_AKT1') == k['RL_AKT1_STREIKPOSTEN'] and w.welt('RL_W_LIGA') == 0
+           and sp.gvars[k['GVAR_PLAYER_REPUTATION']] == karma - 5, 'Streikposten')
+    _reine_akt(sp, w, k, 'RL_REINE_ANHOERUNG')
+    # Maertyrer: -10 auf die Rede; Stimmen kaufen mit Skandal
+    sp.dude.skills[k['SKILL_SPEECH']] = 80
+    v = rede(sp, dora, ['League'])
+    pruefe(not any('speak before the Council' in o for o in _optionen_bei(v, 'League')), 'Maertyrer')
+    sp.dude.skills[k['SKILL_BARTER']] = 70               # Maertyrer: -10
+    h0 = w.haus(NCR, 'RL_F_HITZE')
+    sp.zufall_folge = [1]
+    rede(sp, dora, ['League', 'Buy enough votes', None])
+    pruefe(w.welt('RL_W_REINE_ANHOERUNG') == k['RL_ANHOERUNG_GEWONNEN'] and w.haus(NCR, 'RL_F_HITZE') >= h0 + 25, 'Skandal')
+    _reine_akt(sp, w, k, 'RL_REINE_FEUER')
+    sp.dude.stats[k['STAT_ch']] = 6
+    rede(sp, dora, ['League', 'ask around the Bazaar', 'What do we do', 'Keep it', None])
+    pruefe(w.welt('RL_W_REINE') == k['RL_REINE_DISKREDITIERUNG'] and w.welt('RL_W_LIGA') == k['RL_LIGA_ZERSCHLAGEN'], 'Diskreditierung')
+    kasse = w.haus(NCR, 'RL_F_KASSE')
+    ruhige_woche(sp)
+    pruefe(w.haus(NCR, 'RL_F_KASSE') == kasse + 150 + w.haus(NCR, 'RL_F_GEWINN'), 'Vortis zahlt')
+    karma = sp.gvars.get(k['GVAR_PLAYER_REPUTATION'], 0)
+    rede(sp, dora, ['never speaks again', None])
+    pruefe(w.welt('RL_W_NCR_TOTE') & k['RL_NCR_TOT_CALLOWAY'] and w.welt('RL_W_RANGERS') == k['RL_RANGERS_FEIND']
+           and sp.gvars[k['GVAR_PLAYER_REPUTATION']] == karma - 30, 'Calloway tot')
+    # Tyrannen-Zweig: ein radikaler Fluegel der Liga
+    sp, w = _ncr_offen(u)
+    w.setze_welt('RL_W_KETTEN_ZWEIG', k['RL_KETTEN_ZWEIG_TYRANN'])
+    w.setze_welt('RL_W_LIEFERUNGEN', 1)
+    w.setze_welt('RL_W_REINE', k['RL_REINE_FEUER'])
+    w.setze_welt('RL_W_REINE_WOCHE', 999)
+    dora = figur(sp, k, 'RLDORA')
+    rede(sp, dora, ['how the house', None])
+    sp.dude.skills[k['SKILL_SCIENCE']] = 60
+    v = rede(sp, dora, ['League', '[Science]', 'What do we do'])
+    pruefe(w.welt('RL_W_REINE_BEWEIS') == k['RL_BEWEIS_FLUEGEL'] and 'no clean side' in texte(v), 'Fluegel')
+    pruefe(not any('Vortis will pay' in o for o in _optionen_bei(v, 'What do we do')), 'kein Vortis-Schweigegeld')
+    allgemein(sp, 'diskreditierung')
+
+
+def test_reine_calloway_mara_gedraengt(u):
+    k = u.k
+    sp, w = _ncr_offen(u)
+    w.setze_welt('RL_W_MARA_WEG', k['RL_MARA_CALLOWAY'])
+    _reine_akt(sp, w, k, 'RL_REINE_FLUGBLAETTER')
+    betrete_traenke(u, sp)
+    sp.dude.skills[k['SKILL_SPEECH']] = 60
+    v = rede(sp, figur(sp, k, 'RLCALLOWAY'), ['[Speech]', None])
+    pruefe('asked' in texte(v) and w.welt('RL_W_LIGA') == k['RL_LIGA_KAMPAGNE'], 'Mara bei Calloway')
+    # Registratur halbiert die Kampagne
+    w.setze_haus(NCR, 'RL_F_MODULE', k['RL_MOD_REGISTRATUR'])
+    ruhige_woche(sp)
+    pruefe(w.haus(NCR, 'RL_F_STADTMOD') == -7, f'Registratur: {w.haus(NCR, "RL_F_STADTMOD")}')
+    allgemein(sp, 'calloway')
+
+
+def test_erkundung_ncr(u):
+    k = u.k
+    gesamt = 0
+    for skill in (0, 60):
+        sp, w = traenke(u)
+        for s in ('SKILL_SPEECH', 'SKILL_BARTER'):
+            sp.dude.skills[k[s]] = skill
+        gesamt += erkunde(sp, figur(sp, k, 'RLGRIEVE'), f'Grieve {skill}')[1]
+    sp, w = _ncr_offen(u)
+    dora = figur(sp, k, 'RLDORA')
+    gesamt += erkunde(sp, dora, 'Dora erstes Gespraech')[1]
+    rede(sp, dora, ['how the house', None])
+    w.setze_haus(NCR, 'RL_F_ZIMMER', 5)
+    w.setze_haus(NCR, 'RL_F_MODULE', k['RL_MOD_VIP'] | k['RL_MOD_REGISTRATUR'] | k['RL_MOD_KRANKENSTUBE'])
+    for akt in ('RL_REINE_FLUGBLAETTER', 'RL_REINE_ANHOERUNG', 'RL_REINE_FEUER', 'RL_REINE_BEWEISE', 'RL_REINE_DISKREDITIERUNG'):
+        w.setze_welt('RL_W_REINE', k[akt])
+        w.setze_welt('RL_W_REINE_BRAND', k['RL_BRAND_BRENNT'])
+        w.setze_welt('RL_W_REINE_BEWEIS', k['RL_BEWEIS_VORTIS'])
+        for skill in (0, 80):
+            for s in ('SKILL_SPEECH', 'SKILL_BARTER', 'SKILL_UNARMED_COMBAT', 'SKILL_REPAIR', 'SKILL_TRAPS',
+                      'SKILL_SCIENCE', 'SKILL_SNEAK', 'SKILL_LOCKPICK'):
+                sp.dude.skills[k[s]] = skill
+            gesamt += erkunde(sp, dora, f'Dora {akt} {skill}')[1]
+    for akt in ('RL_REINE_FLUGBLAETTER', 'RL_REINE_ANHOERUNG'):
+        w.setze_welt('RL_W_REINE', k[akt])
+        betrete_traenke(u, sp)
+        for mara in ('RL_MARA_KEINE', 'RL_MARA_SICHER', 'RL_MARA_CALLOWAY'):
+            w.setze_welt('RL_W_MARA_WEG', k[mara])
+            w.setze_welt('RL_W_NCR_KENNT', 1)
+            sp.dude.skills[k['SKILL_SPEECH']] = 60
+            gesamt += erkunde(sp, figur(sp, k, 'RLCALLOWAY'), f'Calloway {akt} {mara}')[1]
+    print(f'      {gesamt} Dialogzustaende in der NCR erkundet')
+
+
 TESTS = [test_wirtschaft_paritaet, test_erkundung, test_eingang, test_prolog_wege, test_diebstahl_erwischt, test_ketten_annehmen,
          test_ketten_ablehnen, test_ketten_kein_geld, test_kolbe_stirbt, test_kolbe_kommt_zurueck,
          test_wochen, test_anwerbung_werben, test_anwerbung_zwingen, test_pferch_flucht_und_nachschub,
@@ -1985,7 +2286,9 @@ TESTS = [test_wirtschaft_paritaet, test_erkundung, test_eingang, test_prolog_weg
          test_red_lizenz_wege, test_red_schreiber_tot, test_red_waage, test_red_malamute,
          test_red_marion_wanamingo, test_red_entzugsstube, test_erkundung_redding,
          test_vc_uebernahme, test_vc_schweigegeld_und_wache, test_vc_razzia, test_vc_razzia_angekuendigt,
-         test_vc_akte_und_lynette, test_vc_pacht_und_sorensen, test_erkundung_vaultcity]
+         test_vc_akte_und_lynette, test_vc_pacht_und_sorensen, test_erkundung_vaultcity,
+         test_ncr_lizenz_wege, test_ncr_auflage, test_ncr_vortis, test_reine_musterhaus, test_reine_verbot,
+         test_reine_diskreditierung, test_reine_calloway_mara_gedraengt, test_erkundung_ncr]
 
 
 def main():

@@ -1,0 +1,155 @@
+/*
+   rlgrieve.ssl - Inspektorin Marta Grieve, Lizenzamt des NCR-Rats
+
+   Umsetzung 10, "Etablissement Nr. 9" (Phase 3, Abschnitt 2.5). Der Rat
+   spricht nicht selbst (Fahrplan, Grundsatz 1); die Inspektorin sitzt in der
+   leeren Nr. 9 und nimmt Antraege an. Die vier Wege stehen in rl_ncr.h.
+
+   Texte: text_src/english/dialog/rlgrieve.msg
+*/
+
+#define SCRIPT_REALNAME "rlgrieve"
+#define NAME                    SCRIPT_RLGRIEVE
+#include "define.h"
+#include "../headers/rotlicht.h"
+#include "command.h"
+
+procedure start;
+procedure talk_p_proc;
+procedure map_enter_p_proc;
+procedure destroy_p_proc;
+procedure look_at_p_proc;
+procedure description_p_proc;
+procedure Node100;
+procedure Node110;      // der Dienstweg
+procedure Node111;      // beantragt
+procedure Node112;      // beschleunigt
+procedure Node120;      // Westin
+procedure Node130;      // ohne Lizenz?
+procedure Node131;      // ohne Lizenz
+procedure Node999;
+
+variable haus;
+variable welt;
+variable gehen := 0;
+variable selbst_weg := 0;
+
+procedure start begin
+end
+
+procedure map_enter_p_proc begin
+   haus := rl_lade_haeuser;
+   if (rl_ncr_besitz(haus)) then begin
+      selbst_weg := 1;
+      destroy_object(self_obj);
+   end
+end
+
+procedure destroy_p_proc begin
+   if (selbst_weg) then return;
+   welt := rl_lade_welt;
+   welt[RL_W_NCR_TOTE] := welt[RL_W_NCR_TOTE] bwor RL_NCR_TOT_GRIEVE;
+end
+
+procedure look_at_p_proc begin
+   script_overrides;
+   display_mstr(300);
+end
+
+procedure description_p_proc begin
+   script_overrides;
+   display_mstr(301);
+end
+
+procedure talk_p_proc begin
+   haus := rl_lade_haeuser;
+   welt := rl_lade_welt;
+   start_gdialog(NAME, self_obj, 4, -1, -1);
+   gSay_Start;
+      call Node100;
+   gSay_End;
+   end_dialogue;
+   if (gehen) then begin
+      gehen := 0;
+      gfade_out(600);
+      set_obj_visibility(self_obj, 1);
+      selbst_weg := 1;
+      call rl_ncr_figuren(haus, welt);
+      gfade_in(600);
+      destroy_object(self_obj);      // beendet das Skript: muss zuletzt stehen
+   end
+end
+
+procedure Node100 begin
+   if (welt[RL_W_NCR_LIZENZ_WOCHE] > 0) then begin
+      Reply(mstr(104) + rl_max(1, welt[RL_W_NCR_LIZENZ_WOCHE] - rl_woche_jetzt) + mstr(107));
+      NOption(105, Node999, 004);
+      NLowOption(106, Node999);
+      return;
+   end
+   Reply(100);
+   NOption(101, Node110, 004);
+   if ((has_skill(dude_obj, SKILL_SPEECH) >= 60) and rl_westin_lebt) then
+      GOption(102, Node120, 004);
+   BOption(103, Node130, 004);
+   NOption(105, Node999, 004);
+   NLowOption(106, Node999);
+end
+
+procedure Node110 begin
+   variable preis := rl_ncr_lizenzpreis(welt);
+   Reply(mstr(110) + preis + mstr(117));
+   if (dude_caps >= preis) then
+      NOption(mstr(111) + preis + mstr(118), Node111, 004);
+   if ((has_skill(dude_obj, SKILL_BARTER) >= 40) and (dude_caps >= preis + RL_NCR_BESCHLEUNIGT)) then
+      NOption(112, Node112, 004);
+   NOption(113, Node100, 004);
+end
+
+procedure Node111 begin
+   item_caps_adjust(dude_obj, -rl_ncr_lizenzpreis(welt));
+   welt[RL_W_NCR_LIZENZ] := RL_LIZENZ_NCR_DIENSTWEG;
+   welt[RL_W_NCR_LIZENZ_WOCHE] := rl_woche_jetzt + 3;
+   call rl_haus_plus(haus, RL_NCR, RL_F_EINFLUSS, 5);
+   Reply(114);
+   NOption(105, Node999, 004);
+end
+
+procedure Node112 begin
+   item_caps_adjust(dude_obj, -(rl_ncr_lizenzpreis(welt) + RL_NCR_BESCHLEUNIGT));
+   welt[RL_W_NCR_LIZENZ] := RL_LIZENZ_NCR_SCHNELL;
+   welt[RL_W_NCR_LIZENZ_WOCHE] := rl_woche_jetzt + 1;
+   call rl_haus_plus(haus, RL_NCR, RL_F_HITZE, 5);
+   Reply(115);
+   NOption(105, Node999, 004);
+end
+
+// Westins Fuersprache: sofort, dafuer VIP-Vorrechte und 5 % Anteil
+procedure Node120 begin
+   welt[RL_W_NCR_LIZENZ] := RL_LIZENZ_NCR_WESTIN;
+   call rl_haus_plus(haus, RL_NCR, RL_F_EINFLUSS, 10);
+   call rl_ncr_eroeffnen(haus, welt);
+   haus[rl_idx(RL_NCR, RL_F_TRIBUTMOD)] := haus[rl_idx(RL_NCR, RL_F_TRIBUTMOD)] + 5;
+   gehen := 1;
+   Reply(mstr(120) + " " + mstr(190));
+   NOption(191, Node999, 004);
+end
+
+procedure Node130 begin
+   Reply(130);
+   BOption(131, Node131, 004);
+   NOption(113, Node100, 004);
+end
+
+procedure Node131 begin
+   welt[RL_W_NCR_LIZENZ] := RL_LIZENZ_NCR_OHNE;
+   call rl_ncr_eroeffnen(haus, welt);
+   call rl_haus_plus(haus, RL_NCR, RL_F_HITZE, 30);
+   haus[rl_idx(RL_NCR, RL_F_RISIKO_MOD)] := RL_ILLEGAL_RISIKO;
+   gehen := 1;
+   Reply(mstr(132) + " " + mstr(190));
+   NOption(191, Node999, 004);
+end
+
+procedure Node999 begin
+end

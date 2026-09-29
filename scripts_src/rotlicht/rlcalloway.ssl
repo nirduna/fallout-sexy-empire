@@ -1,0 +1,110 @@
+/*
+   rlcalloway.ssl - Ruth Calloway, Liga fuer eine reine Republik (NCR)
+
+   Umsetzung 10, "Die Reinen" Akt 1 und 2 (Phase 3, Abschnitt 3.3). Sie ist
+   vor zehn Jahren aus den Pferchen der Den geflohen, und in vielem hat sie
+   recht. Mit Speech 60 erzaehlt sie ihre Geschichte. Hat der Spieler Mara
+   gerettet, buergt Mara fuer ihn: Die Kampagne faellt auf -5 %. Ist Mara zu
+   Calloway gegangen, weil der Spieler sie gedraengt hat, hoert sie nicht zu.
+
+   Texte: text_src/english/dialog/rlcalloway.msg
+*/
+
+#define SCRIPT_REALNAME "rlcalloway"
+#define NAME                    SCRIPT_RLCALLOWAY
+#include "define.h"
+#include "../headers/rotlicht.h"
+#include "command.h"
+
+procedure start;
+procedure talk_p_proc;
+procedure map_enter_p_proc;
+procedure destroy_p_proc;
+procedure look_at_p_proc;
+procedure description_p_proc;
+procedure Node100;
+procedure Node110;      // ihre Geschichte
+procedure Node999;
+
+variable haus;
+variable welt;
+variable selbst_weg := 0;
+
+#define RL_NCR_KENNT_CALLOWAY       (2)
+
+procedure start begin
+end
+
+procedure map_enter_p_proc begin
+   welt := rl_lade_welt;
+   if ((welt[RL_W_REINE] != RL_REINE_FLUGBLAETTER) and (welt[RL_W_REINE] != RL_REINE_ANHOERUNG)) then begin
+      selbst_weg := 1;
+      destroy_object(self_obj);
+   end
+end
+
+// Calloway tot, mitten in der Kampagne: Die Liga hat eine Maertyrerin, die Rangers ermitteln
+procedure destroy_p_proc begin
+   if (selbst_weg) then return;
+   welt := rl_lade_welt;
+   haus := rl_lade_haeuser;
+   welt[RL_W_NCR_TOTE] := welt[RL_W_NCR_TOTE] bwor RL_NCR_TOT_CALLOWAY;
+   welt[RL_W_REINE_AKT1] := RL_AKT1_STREIKPOSTEN;
+   call rl_haus_plus(haus, RL_NCR, RL_F_HITZE, 40);
+   if (welt[RL_W_RANGERS] != RL_RANGERS_VERBUENDET) then welt[RL_W_RANGERS] := RL_RANGERS_FEIND;
+end
+
+procedure look_at_p_proc begin
+   script_overrides;
+   display_mstr(300);
+end
+
+procedure description_p_proc begin
+   script_overrides;
+   display_mstr(301);
+end
+
+procedure talk_p_proc begin
+   haus := rl_lade_haeuser;
+   welt := rl_lade_welt;
+   start_gdialog(NAME, self_obj, 4, -1, -1);
+   gSay_Start;
+      call Node100;
+   gSay_End;
+   end_dialogue;
+end
+
+procedure Node100 begin
+   if (welt[RL_W_REINE] == RL_REINE_ANHOERUNG) then
+      Reply(120);
+   else if (welt[RL_W_NCR_KENNT] bwand RL_NCR_KENNT_CALLOWAY) then
+      Reply(102);
+   else
+      Reply(100);
+   if ((welt[RL_W_REINE] == RL_REINE_FLUGBLAETTER) and ((welt[RL_W_NCR_KENNT] bwand RL_NCR_KENNT_CALLOWAY) == 0)
+       and (has_skill(dude_obj, SKILL_SPEECH) >= 60)) then
+      GOption(101, Node110, 004);
+   NOption(103, Node999, 004);
+   NLowOption(104, Node999);
+end
+
+procedure Node110 begin
+   welt[RL_W_NCR_KENNT] := welt[RL_W_NCR_KENNT] bwor RL_NCR_KENNT_CALLOWAY;
+   if (welt[RL_W_MARA_WEG] == RL_MARA_CALLOWAY) then
+      Reply(mstr(110) + " " + mstr(113));
+   else if (rl_ncr_mara_buergt(welt)) then begin
+      Reply(mstr(110) + " " + mstr(111));
+      if ((welt[RL_W_REINE_AKT1] == RL_AKT1_OFFEN) or (welt[RL_W_REINE_AKT1] == RL_AKT1_GESCHICHTE)) then begin
+         welt[RL_W_REINE_AKT1] := RL_AKT1_MARA;
+         welt[RL_W_REINE_WOCHE] := rl_woche_jetzt;
+         welt[RL_W_LIGA] := RL_LIGA_GEBREMST;
+      end
+   end else begin
+      Reply(mstr(110) + " " + mstr(112));
+      if (welt[RL_W_REINE_AKT1] == RL_AKT1_OFFEN) then welt[RL_W_REINE_AKT1] := RL_AKT1_GESCHICHTE;
+   end
+   NOption(103, Node999, 004);
+end
+
+procedure Node999 begin
+end

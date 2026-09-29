@@ -50,6 +50,9 @@
 #define SCRIPT_RLNELL               (RL_SCRIPT_BASE + 19)  // Nell Harrow, Madame der Schlacke
 #define SCRIPT_RLHANNE              (RL_SCRIPT_BASE + 20)  // Hanne Voss, Wirtin und Madame der Kloake
 #define SCRIPT_RLSORENSEN           (RL_SCRIPT_BASE + 21)  // Amtsleiter Sorensen, Stammkunde der Kloake
+#define SCRIPT_RLGRIEVE             (RL_SCRIPT_BASE + 22)  // Inspektorin Grieve, Lizenzamt der NCR
+#define SCRIPT_RLDORA               (RL_SCRIPT_BASE + 23)  // Dora Quist, Madame der Traenke
+#define SCRIPT_RLCALLOWAY           (RL_SCRIPT_BASE + 24)  // Ruth Calloway, Liga fuer eine reine Republik
 
 /* ------------------------------------------------------------------ */
 /* Echte GVARs (Phase 6). Nur dort, wo die Engine sie verlangt:        */
@@ -138,6 +141,7 @@
 #define RL_F_BESTECHUNG_MOD         (38)    // Abweichung vom Schmiergeld der Stadt in $/Woche (Lizenz, Schweigegeld)
 #define RL_F_PREISMOD               (39)    // Aufschlag auf den Preis in % (gezinkte Waage)
 #define RL_F_GESCHLOSSEN            (40)    // Wochen, die das Haus noch geschlossen ist (Revolte, Seuche)
+#define RL_F_RISIKO_MOD             (41)    // Abweichung vom Grundrisiko der Stadt (NCR ohne Lizenz: +3)
 
 // Anwerber (Phase 4, Abschnitt 2.2). Eine Person je RL_ANWERB_PUNKTE Punkte:
 // Werben 2/Woche (Anstaendiges Haus 4), Zwingen 4/Woche, Zulauf ab Moral 75 +1.
@@ -161,6 +165,7 @@
 #define RL_MOD_LEINE                (64)    // "An der Leine halten": Jet statt Lohn (Phase 4)
 #define RL_MOD_ZUFLUCHT             (128)   // Die Zuflucht: versteckte Kammer (Den, Ketten Akt 2)
 #define RL_MOD_WAAGE_GEZINKT        (256)   // Redding: die gezinkte Goldwaage (Umsetzung 8)
+#define RL_MOD_REGISTRATUR          (512)   // NCR: saubere Papiere, halbiert die Kampagnen (Umsetzung 10)
 
 // Welt-Felder (aeltere Spielstaende mit weniger Feldern werden beim Laden erweitert)
 #define RL_WELT_FELDER              (160)
@@ -256,6 +261,21 @@
 #define RL_W_VC_RAZZIA_WOCHE        (88)    // angekuendigte Razzia (Woche), 0 = keine
 #define RL_W_VC_LYNETTE             (89)    // 1 = Lynette ist mit der Akte unter Druck gesetzt: keine Razzien
 #define RL_W_VC_TOTE                (90)    // 1 = Hanne ist tot
+// NCR (Umsetzung 10, rl_ncr.h); Aktstand der Reinen in RL_W_REINE, Kampagne in RL_W_LIGA
+#define RL_W_NCR_LIZENZ             (91)    // RL_LIZENZ_NCR_*
+#define RL_W_NCR_LIZENZ_WOCHE       (92)    // Woche, in der die Lizenz kommt (Wartezeit), 0 = keine
+#define RL_W_NCR_OFFEN_WOCHE        (93)    // Woche der Eroeffnung (Auflage Krankenstube)
+#define RL_W_NCR_ENTZOGEN           (94)    // 1 = Lizenz nach der Rangers-Razzia entzogen
+#define RL_W_REINE_WOCHE            (95)    // Woche, in der der aktuelle Akt begann oder beginnt
+#define RL_W_REINE_AKT1             (96)    // RL_AKT1_*
+#define RL_W_REINE_ANHOERUNG        (97)    // RL_ANHOERUNG_*
+#define RL_W_REINE_BRAND            (98)    // RL_BRAND_*
+#define RL_W_REINE_BRAND_WOCHE      (99)    // bis zu dieser Woche fehlt das Obergeschoss
+#define RL_W_REINE_BEWEIS           (100)   // RL_BEWEIS_*
+#define RL_W_REINE_AKT4             (101)   // RL_AKT4_*
+#define RL_W_NCR_TOTE               (102)   // Bits RL_NCR_TOT_*
+#define RL_W_NCR_KENNT              (103)   // 1 = Dora kennt den Spieler, 2 = Calloway hat erzaehlt
+#define RL_W_NCR_LEGAL              (104)   // zuletzt gemeldeter Stand: 0 legal, sonst illegal (Meldungen)
 
 #define RL_PROLOG_OFFEN             (0)
 #define RL_PROLOG_LAEUFT            (1)
@@ -608,7 +628,7 @@ procedure rl_rechne_woche(variable haus, variable h, variable stadt) begin
    attraktiv := 40 + score * 2;
 
    // Sicherheit gegen Bedrohung
-   bedrohung := rl_stadt(stadt, RL_S_RISIKO) * 20 + hitze;
+   bedrohung := (rl_stadt(stadt, RL_S_RISIKO) + haus[rl_idx(h, RL_F_RISIKO_MOD)]) * 20 + hitze;
    if (sicherheit >= bedrohung) then
       sicher_faktor := 100;
    else
@@ -784,6 +804,7 @@ end
 #include "rl_newreno.h"
 #include "rl_redding.h"
 #include "rl_vaultcity.h"
+#include "rl_ncr.h"
 #include "rl_kampf.h"
 
 #endif

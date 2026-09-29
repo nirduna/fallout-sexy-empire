@@ -1,0 +1,340 @@
+/*
+   rldora.ssl - Dora Quist, Madame der Traenke (NCR, Etablissement Nr. 9)
+
+   Umsetzung 10: Dora kommt mit der Eroeffnung. Sie hat zwanzig Jahre fuer
+   Karawanen gekocht und kennt jeden Treiber zwischen Redding und dem Hub.
+   Fuehrung 50. Das gemeinsame Manager-Menue (rl_manager.h) und:
+     - "Die Reinen": Gegenkampagne, Streikposten, die Anhoerung, das Feuer,
+       die Ermittlung und die Beweise (Akte 1-4, rl_ncr.h). Das Gespraech
+       mit Calloway selbst fuehrt der Spieler bei ihr (rlcalloway.ssl).
+     - Vortis' Angebot (Tyrannen-Route): 200 $ je Person aus dem Pferch.
+     - Nach der Diskreditierung: Calloway zum Schweigen bringen.
+
+   Texte: text_src/english/dialog/rldora.msg (ihre Saetze) und
+   _rl_manager.inc (die neutralen Texte des Manager-Menues)
+*/
+
+#define SCRIPT_REALNAME "rldora"
+#define NAME                    SCRIPT_RLDORA
+#include "define.h"
+#include "../headers/rotlicht.h"
+#include "command.h"
+
+procedure start;
+procedure talk_p_proc;
+procedure map_enter_p_proc;
+procedure destroy_p_proc;
+procedure look_at_p_proc;
+procedure description_p_proc;
+procedure Node800;      // erste Begegnung
+procedure Node850;      // die Liga: nach Akt
+procedure Node851;      // Akt 1
+procedure Node852;      // Gegenkampagne
+procedure Node853;      // Streikposten
+procedure Node855;      // Akt 2
+procedure Node856;      // Rede vor dem Rat
+procedure Node857;      // Stimmen kaufen
+procedure Node858;      // Westin
+procedure Node859;      // Westin erpresst
+procedure Node860;      // ohne uns
+procedure Node862;      // Akt 3
+procedure Node863;      // geloescht
+procedure Node864;      // ermittelt
+procedure Node866;      // Akt 4
+procedure Node867;      // den Rangers
+procedure Node868;      // Vortis erpressen
+procedure Node869;      // der Liga anhaengen
+procedure Node880;      // Vortis' Angebot
+procedure Node890;      // Calloway zum Schweigen bringen
+procedure Node999;
+procedure rl_anhoerung(variable text);
+procedure rl_ende_text;
+
+variable haus;
+variable welt;
+variable h := RL_NCR;
+variable selbst_weg := 0;
+
+#define RL_NCR_KENNT_DORA           (1)
+#define RL_NCR_VORTIS_KUNDE         (4)     // Bit in RL_W_NCR_KENNT: bei Vortis gekauft
+
+#define RLM_EXTRA_OPTIONEN   if ((welt[RL_W_REINE] >= RL_REINE_FLUGBLAETTER) and (welt[RL_W_REINE] <= RL_REINE_BEWEISE)) then \
+                                NOption(850, Node850, 004);                                                                      \
+                             if ((welt[RL_W_VORTIS] == 0) and (haus[rl_idx(h, RL_F_PERSONAL)] < haus[rl_idx(h, RL_F_ZIMMER)]) \
+                                 and rl_zahlbar(haus, h, RL_VORTIS_PREIS)) then                                                  \
+                                BOption(880, Node880, 004);                                                                      \
+                             if ((welt[RL_W_REINE] == RL_REINE_DISKREDITIERUNG)                                                  \
+                                 and ((welt[RL_W_NCR_TOTE] bwand RL_NCR_TOT_CALLOWAY) == 0)) then                                \
+                                BOption(890, Node890, 004);
+
+#include "../headers/rl_manager.h"
+
+procedure start begin
+end
+
+procedure map_enter_p_proc begin
+   haus := rl_lade_haeuser;
+   if (not rl_ncr_besitz(haus)) then begin
+      selbst_weg := 1;
+      destroy_object(self_obj);
+   end
+end
+
+procedure destroy_p_proc begin
+   if (selbst_weg) then return;
+   welt := rl_lade_welt;
+   haus := rl_lade_haeuser;
+   welt[RL_W_NCR_TOTE] := welt[RL_W_NCR_TOTE] bwor RL_NCR_TOT_DORA;
+   haus[rl_idx(RL_NCR, RL_F_FUEHRUNG)] := RL_OHNE_DORA_FUEHRUNG;
+end
+
+procedure look_at_p_proc begin
+   script_overrides;
+   display_mstr(200);
+end
+
+procedure description_p_proc begin
+   script_overrides;
+   display_mstr(201);
+end
+
+procedure talk_p_proc begin
+   haus := rl_lade_haeuser;
+   welt := rl_lade_welt;
+   start_gdialog(NAME, self_obj, 4, -1, -1);
+   gSay_Start;
+      if ((welt[RL_W_NCR_KENNT] bwand RL_NCR_KENNT_DORA) == 0) then
+         call Node800;
+      else
+         call RLM_Start;
+   gSay_End;
+   end_dialogue;
+   RLM_NACH_DIALOG
+end
+
+procedure Node800 begin
+   welt[RL_W_NCR_KENNT] := welt[RL_W_NCR_KENNT] bwor RL_NCR_KENNT_DORA;
+   Reply(800);
+   NOption(801, RLM_Start, 004);
+   NOption(115, RLM_Ende, 004);
+   NLowOption(116, RLM_Kasse);
+end
+
+/* ------------------------------------------------------------------ */
+/* Die Reinen (Phase 3, Abschnitt 3.3)                                 */
+/* ------------------------------------------------------------------ */
+procedure Node850 begin
+   variable akt := welt[RL_W_REINE];
+   if (akt == RL_REINE_FLUGBLAETTER) then call Node851;
+   else if (akt == RL_REINE_ANHOERUNG) then call Node855;
+   else if (akt == RL_REINE_FEUER) then call Node862;
+   else call Node866;
+end
+
+// Akt 1: Flugblaetter. Reden mit Calloway geht nur bei ihr.
+procedure Node851 begin
+   variable a1 := welt[RL_W_REINE_AKT1];
+   if ((a1 != RL_AKT1_OFFEN) and (a1 != RL_AKT1_GESCHICHTE)) then begin
+      Reply(870);
+      NOption(123, RLM_Start, 004);
+      return;
+   end
+   Reply(851);
+   if (has_skill(dude_obj, SKILL_BARTER) >= 60) then
+      NOption(871, Node852, 004);
+   if (has_skill(dude_obj, SKILL_UNARMED_COMBAT) >= 60) then
+      BOption(872, Node853, 004);
+   NOption(123, RLM_Start, 004);
+end
+
+procedure Node852 begin
+   welt[RL_W_REINE_AKT1] := RL_AKT1_GEGENKAMPAGNE;
+   welt[RL_W_REINE_WOCHE] := rl_woche_jetzt;
+   welt[RL_W_LIGA] := RL_LIGA_GEGENKAMPAGNE;
+   call rl_haus_plus(haus, h, RL_F_HITZE, 5);
+   Reply(873);
+   NOption(123, RLM_Start, 004);
+end
+
+procedure Node853 begin
+   welt[RL_W_REINE_AKT1] := RL_AKT1_STREIKPOSTEN;
+   welt[RL_W_REINE_WOCHE] := rl_woche_jetzt;
+   welt[RL_W_LIGA] := RL_LIGA_KEINE;
+   call rl_haus_plus(haus, h, RL_F_HITZE, 10);
+   rl_karma(-5);
+   Reply(874);
+   NOption(123, RLM_Start, 004);
+end
+
+// Akt 2: die Anhoerung
+procedure Node855 begin
+   variable b := rl_reine_bonus(haus, welt);
+   if (welt[RL_W_REINE_ANHOERUNG] != RL_ANHOERUNG_OFFEN) then begin
+      Reply(875);
+      NOption(123, RLM_Start, 004);
+      return;
+   end
+   Reply(855);
+   if (has_skill(dude_obj, SKILL_SPEECH) + b >= 80) then
+      GOption(876, Node856, 004);
+   if ((has_skill(dude_obj, SKILL_BARTER) + b >= 60) and rl_zahlbar(haus, h, RL_STIMMEN_PREIS)) then
+      NOption(877, Node857, 004);
+   if (rl_westin_lebt) then begin
+      if (has_skill(dude_obj, SKILL_SPEECH) + b >= 60) then
+         NOption(878, Node858, 004);
+      if (haus[rl_idx(h, RL_F_MODULE)] bwand RL_MOD_VIP) then
+         BOption(879, Node859, 004);
+   end
+   NOption(881, Node860, 004);
+   NOption(123, RLM_Start, 004);
+end
+
+procedure rl_anhoerung(variable text) begin
+   welt[RL_W_REINE_WOCHE] := rl_woche_jetzt;
+   Reply(text);
+   NOption(123, RLM_Start, 004);
+end
+
+procedure Node856 begin
+   welt[RL_W_REINE_ANHOERUNG] := RL_ANHOERUNG_GEWONNEN;
+   call rl_anhoerung(mstr(882));
+end
+
+// Stimmen kaufen: wirkt, aber mit 20 % fliegt es auf
+procedure Node857 begin
+   call rl_zahlen(haus, h, RL_STIMMEN_PREIS);
+   welt[RL_W_REINE_ANHOERUNG] := RL_ANHOERUNG_GEWONNEN;
+   if (random(1, 100) <= 20) then begin
+      call rl_haus_plus(haus, h, RL_F_HITZE, 30);
+      call rl_anhoerung(mstr(883) + " " + mstr(884));
+   end else
+      call rl_anhoerung(mstr(883));
+end
+
+procedure Node858 begin
+   welt[RL_W_REINE_ANHOERUNG] := RL_ANHOERUNG_GEWONNEN;
+   call rl_anhoerung(mstr(885));
+end
+
+procedure Node859 begin
+   welt[RL_W_REINE_ANHOERUNG] := RL_ANHOERUNG_GEWONNEN;
+   call rl_haus_plus(haus, h, RL_F_HITZE, 10);
+   rl_karma(-5);
+   call rl_anhoerung(mstr(886));
+end
+
+procedure Node860 begin
+   welt[RL_W_REINE_ANHOERUNG] := RL_ANHOERUNG_VERLOREN;
+   call rl_anhoerung(mstr(887));
+end
+
+// Akt 3: das Feuer und die Ermittlung
+procedure Node862 begin
+   variable tyrann;
+   if (welt[RL_W_REINE_BRAND] == RL_BRAND_BRENNT) then begin
+      Reply(862);
+      if (has_skill(dude_obj, SKILL_REPAIR) >= 60) then
+         GOption(888, Node863, 004);
+      if (has_skill(dude_obj, SKILL_TRAPS) >= 60) then
+         GOption(889, Node863, 004);
+   end else
+      Reply(891);
+   if (has_skill(dude_obj, SKILL_SCIENCE) >= 60) then
+      NOption(892, Node864, 004);
+   if ((has_skill(dude_obj, SKILL_SPEECH) >= 60) or (dude_charisma >= 6)) then
+      NOption(893, Node864, 004);
+   if ((has_skill(dude_obj, SKILL_SNEAK) >= 60) and (has_skill(dude_obj, SKILL_LOCKPICK) >= 60)) then
+      NOption(894, Node864, 004);
+   NOption(123, RLM_Start, 004);
+end
+
+procedure Node863 begin
+   welt[RL_W_REINE_BRAND] := RL_BRAND_GELOESCHT;
+   Reply(895);
+   NOption(123, Node862, 004);
+end
+
+// Wer hat gelegt? Vortis, oder im Tyrannen-Zweig ein radikaler Fluegel der Liga
+procedure Node864 begin
+   if (((welt[RL_W_KETTEN_ZWEIG] == RL_KETTEN_ZWEIG_TYRANN) and (welt[RL_W_LIEFERUNGEN] > 0))
+       or (welt[RL_W_NCR_KENNT] bwand RL_NCR_VORTIS_KUNDE)) then begin
+      welt[RL_W_REINE_BEWEIS] := RL_BEWEIS_FLUEGEL;
+      Reply(897);
+   end else begin
+      welt[RL_W_REINE_BEWEIS] := RL_BEWEIS_VORTIS;
+      Reply(896);
+   end
+   call rl_reine_weiter(welt, RL_REINE_BEWEISE);
+   NOption(898, Node866, 004);
+end
+
+// Akt 4: die Beweise
+procedure Node866 begin
+   if (welt[RL_W_REINE_BEWEIS] == RL_BEWEIS_FLUEGEL) then
+      Reply(900);
+   else
+      Reply(899);
+   NOption(901, Node867, 004);
+   if (welt[RL_W_REINE_BEWEIS] == RL_BEWEIS_VORTIS) then
+      BOption(902, Node868, 004);
+   if (has_skill(dude_obj, SKILL_SCIENCE) >= 60) then
+      BOption(903, Node869, 004);
+   NOption(123, RLM_Start, 004);
+end
+
+procedure Node867 begin
+   welt[RL_W_REINE_AKT4] := RL_AKT4_RANGERS;
+   if (welt[RL_W_REINE_BEWEIS] == RL_BEWEIS_VORTIS) then
+      welt[RL_W_VORTIS] := RL_VORTIS_VERHAFTET;
+   call rl_reine_ende(haus, welt);
+   call rl_ende_text;
+end
+
+procedure Node868 begin
+   welt[RL_W_REINE_AKT4] := RL_AKT4_ERPRESST;
+   call rl_haus_plus(haus, h, RL_F_HITZE, 10);
+   rl_karma(-30);
+   call rl_reine_ende(haus, welt);
+   call rl_ende_text;
+end
+
+procedure Node869 begin
+   welt[RL_W_REINE_AKT4] := RL_AKT4_ANGEHAENGT;
+   rl_karma(-30);
+   call rl_reine_ende(haus, welt);
+   call rl_ende_text;
+end
+
+// Akt 5: Dora erzaehlt, wie es ausgeht
+procedure rl_ende_text begin
+   variable e := welt[RL_W_REINE];
+   if (e == RL_REINE_MUSTERHAUS) then Reply(904);
+   else if (e == RL_REINE_DISKREDITIERUNG) then Reply(905);
+   else if (e == RL_REINE_GESCHEITERT) then Reply(906);
+   else Reply(907);
+   NOption(123, RLM_Start, 004);
+end
+
+/* ------------------------------------------------------------------ */
+/* Vortis' Angebot (Phase 2/4, Tyrannen-Route)                         */
+/* ------------------------------------------------------------------ */
+procedure Node880 begin
+   call rl_zahlen(haus, h, RL_VORTIS_PREIS);
+   call rl_zwang_dazu(haus, h, 1);
+   welt[RL_W_NCR_KENNT] := welt[RL_W_NCR_KENNT] bwor RL_NCR_VORTIS_KUNDE;
+   Reply(908);
+   NOption(123, RLM_Start, 004);
+end
+
+// Nach der Diskreditierung: Calloway stirbt (H +40, die Rangers ermitteln)
+procedure Node890 begin
+   welt[RL_W_NCR_TOTE] := welt[RL_W_NCR_TOTE] bwor RL_NCR_TOT_CALLOWAY;
+   call rl_haus_plus(haus, h, RL_F_HITZE, 40);
+   rl_karma(-30);
+   if (welt[RL_W_RANGERS] != RL_RANGERS_VERBUENDET) then welt[RL_W_RANGERS] := RL_RANGERS_FEIND;
+   Reply(909);
+   NOption(123, RLM_Start, 004);
+end
+
+procedure Node999 begin
+end

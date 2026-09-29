@@ -20,3 +20,6 @@ rlschreib.int   ; Ascortis Schreiber, Redding (Rotlicht)                # local_
 rlnell.int      ; Nell Harrow, Madame der Schlacke (Rotlicht)           # local_vars=0
 rlhanne.int     ; Hanne Voss, Wirtin der Kloake (Rotlicht)              # local_vars=0
 rlsorens.int    ; Amtsleiter Sorensen, Vault City (Rotlicht)            # local_vars=0
+rlgrieve.int    ; Inspektorin Grieve, Lizenzamt der NCR (Rotlicht)      # local_vars=0
+rldora.int      ; Dora Quist, Madame der Traenke (Rotlicht)             # local_vars=0
+rlcalloway.int  ; Ruth Calloway, Liga fuer eine reine Republik (Rotlicht) # local_vars=0
