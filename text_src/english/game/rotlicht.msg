@@ -120,3 +120,29 @@
 {230}{}{Tyler is gone. Nobody collects for looking the other way anymore.}
 {232}{}{Marcus is dead. Broken Hills closes its gates to anyone who works for you, and every town along the road hears why.}
 {233}{}{Marcus has heard what you are. Your runners take the long way around Broken Hills now.}
+{234}{}{Kitty made one of ours an offer. The madam wants a word with you.}
+
+# Events (Umsetzung 15)
+{238}{}{The soldiers are back. Drunker this time, and they remember the door.}
+{239}{}{The Brotherhood came back with more men and took the deserter away in irons.}
+{240}{}{The one on Jet took too much. Nobody was there to stop her.}
+{241}{}{Nobody stopped it in time. One of ours is dead.}
+{242}{}{The sickness spread. The house is closed for two weeks.}
+{243}{}{More money went missing from the till. A lot more.}
+{244}{}{One of the people behind the bolt tried to run. They found the body in the ravine.}
+{245}{}{Two more are gone. Nobody knows where.}
+{246}{}{Nobody talks about the dead girl anymore. That is worse than talking.}
+{247}{}{The robbers' trail has gone cold. The money is gone.}
+{248}{}{Vesper sings with her back to the room now.}
+{249}{}{Abigail didn't wait for you. The councilman's name is on every wall in Vault City, and hers is next to it.}
+{250}{}{The League's inspectors checked the rooms, the shares and the doctor's book. They left without a word, which is the best they ever say.}
+{251}{}{The League's inspectors found what they were looking for. The house has lost its Lex Nine exemption.}
+{252}{}{The guild's men searched the Gutter from cellar to roof. They found nothing and left angry.}
+{253}{}{The guild's men found the runaways and dragged them out in chains. Metzger knows now whose side you are on.}
+{254}{}{They came, counted the guns in the hall, and left. Nobody in New Reno thinks the Garter is weak anymore.}
+{255}{}{A family's men wrecked the bar and two rooms and left a message: next time, the girls. The repairs cost $200.}
+{256}{}{Marion searched the Slag and found honest scales and nothing else. He tipped his hat on the way out.}
+{257}{}{Marion found what he was looking for. The miners know now who cheated them.}
+{258}{}{The police checked every paper and every door. Everything was in order.}
+{259}{}{The police found the house without valid papers. The fine is $500.}
+{260}{}{A raid is coming next week. The madam wants a word with you.}

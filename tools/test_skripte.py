@@ -537,12 +537,27 @@ def test_erkundung(u):
     faelle.append(('Pferch', sp, e, ko))
     sp2 = copy.deepcopy(sp)
     faelle.append(('Pferch, Essie reagiert', sp2, *[o for o in sp2.objekte if o.name in ('Essie',)], None))
-    for krise in range(1, 8):
-        sp, e, ko, w = prolog(u, 'bezahlt')
-        rede(sp, e, ['Go on', 'Later'])
-        w.setze_haus(0, 'RL_F_KRISE', krise)
-        w.setze_haus(0, 'RL_F_KASSE', 500)
-        faelle.append((f'Krise {krise}', sp, e, None))
+    for krise in range(1, k['RL_EV_ANZAHL']):
+        for alles in (False, True):
+            sp, e, ko, w = prolog(u, 'bezahlt')
+            rede(sp, e, ['Go on', 'Later'])
+            w.setze_haus(0, 'RL_F_KRISE', krise)
+            w.setze_haus(0, 'RL_F_KASSE', 500)
+            if alles:
+                # Jede Option auf einmal sichtbar: passt das Krisenmenue noch ins Fenster?
+                for name in list(k.roh):
+                    wert = k.get(name) if name.startswith('SKILL_') else None
+                    if isinstance(wert, int) and 0 <= wert < 18:
+                        sp.dude.skills[wert] = 100
+                sp.dude.stats[k['STAT_ch']] = 10
+                sp.dude.stats[k['STAT_iq']] = 10
+                sp.dude.kronkorken = 5000
+                sp.dude.inventar[k['PID_JET_ANTIDOTE']] = 1
+                w.setze_welt('RL_W_TOD_GEWALT', 1)
+                w.setze_welt('RL_W_RANGERS', k['RL_RANGERS_KONTAKT'])
+                w.setze_haus(RED, 'RL_F_BESITZ', 1)
+                w.setze_haus(RED, 'RL_F_GEKAUFT', 1 << k['RL_M_RED_ENTZUGSSTUBE'])
+            faelle.append((f'Krise {krise}' + (' alles' if alles else ''), sp, e, None))
     sp, e, ko, w = prolog(u, 'bezahlt')
     rede(sp, e, ['Go on', 'Later'])
     sp.dude.kronkorken = 0
@@ -2482,6 +2497,9 @@ def test_virgin_gebuehr_und_kitty(u):
     w.setze_haus(NR, 'RL_F_MORAL', 40)
     personal = w.haus(NR, 'RL_F_PERSONAL')
     ruhige_woche(sp, 4)
+    pruefe(w.haus(NR, 'RL_F_KRISE') == k['RL_EV_ABWERBUNG'] and any('made one of ours an offer' in m for m in sp.meldungen),
+           'Abwerbung als Krise')
+    ruhige_woche(sp, 3)
     pruefe(w.haus(NR, 'RL_F_PERSONAL') < personal and any("Kitty's Claw" in m for m in sp.meldungen), 'Abwerbung')
     # Die Kralle beenden: ueber Nell
     sp, w = _red_uebernommen(u, sp)
@@ -2940,6 +2958,225 @@ def test_laeuferroute(u):
     allgemein(sp, 'laeuferroute')
 
 
+# --------------------------------------------------------------------------
+# Umsetzung 15: Ereignisse vollstaendig
+
+def _krise(sp, w, h, typ, wochen=0):
+    w.setze_haus(h, 'RL_F_KRISE', typ)
+    w.setze_haus(h, 'RL_F_KRISENWOCHEN', wochen)
+
+
+def test_ereignisse_soldaten(u):
+    k = u.k
+    sp, e, ko, w = _gosse_bereit(u)
+    ruhige_woche(sp)
+    # Vor dem Fall der Enklave kommen keine Soldaten in die Gosse
+    sp.zufall_fest = None
+    pruefe(all(sp.globale[0].rufe_mit('rl_ereignis_waehlen', 0) != k['RL_EV_SOLDATEN'] for _ in range(300)),
+           'Soldaten in der Gosse vor dem Fall der Enklave')
+    # Bezahlen: Sie gehen, und in der Haelfte der Faelle kommen sie in vier Wochen wieder
+    _krise(sp, w, 0, k['RL_EV_SOLDATEN'])
+    sp.zufall_folge = [1]
+    rede(sp, e, ["there's a problem", 'drink somewhere else', None])
+    pruefe(w.haus(0, 'RL_F_KRISE') == 0 and w.welt('RL_W_SOLDATEN_HAUS') == 1, 'bezahlt, sie kommen wieder')
+    ruhige_woche(sp, 4)
+    pruefe(w.haus(0, 'RL_F_KRISE') == k['RL_EV_SOLDATEN'] and any('soldiers are back' in m for m in sp.meldungen),
+           'die Soldaten sind zurueck')
+    # Unter den Tisch trinken (Bar II, Barter 50) und die Ruestung nehmen
+    w.setze_haus(0, 'RL_F_GEKAUFT', w.haus(0, 'RL_F_GEKAUFT') | (1 << k['RL_M_BAR_2']))
+    sp.dude.skills[k['SKILL_BARTER']] = 50
+    karma = sp.gvars.get(k['GVAR_PLAYER_REPUTATION'], 0)
+    rede(sp, e, ["there's a problem", 'under the table', 'Take one suit', None])
+    pruefe(sp.dude.inventar.get(k['PID_POWERED_ARMOR'], 0) == 1 and sp.gvars[k['GVAR_PLAYER_REPUTATION']] == karma - 5
+           and w.haus(0, 'RL_F_KRISE') == 0, 'Ruestung genommen')
+    # Anwerben: ein Deserteur an der Tuer, spaeter kommt die Brotherhood
+    _krise(sp, w, 0, k['RL_EV_SOLDATEN'])
+    sp.dude.skills[k['SKILL_SPEECH']] = 90
+    sicher = w.haus(0, 'RL_F_SICHERHEIT')
+    rede(sp, e, ["there's a problem", 'Offer one of them a job', None])
+    pruefe(w.haus(0, 'RL_F_SICHERHEIT') == sicher + 50 and w.welt('RL_W_DESERTEUR') == 1, 'Deserteur')
+    _krise(sp, w, 0, k['RL_EV_BUNKER'])
+    rede(sp, e, ["there's a problem", 'Hand the deserter over', None])
+    pruefe(w.haus(0, 'RL_F_SICHERHEIT') == sicher and w.welt('RL_W_DESERTEUR') == 0, 'ausgeliefert')
+    # Kaempfen: Teile fuer 300 $, Leichen fuer den Totengraeber, H +20
+    _krise(sp, w, 0, k['RL_EV_SOLDATEN'])
+    sp.dude.skills[k['SKILL_SMALL_GUNS']] = 80
+    geld, hitze = sp.dude.kronkorken, w.haus(0, 'RL_F_HITZE')
+    rede(sp, e, ["there's a problem", 'By force', None])
+    pruefe(sp.dude.kronkorken == geld + 300 and w.haus(0, 'RL_F_HITZE') == hitze + 20
+           and w.welt('RL_W_GEWALT_HAUS') == 1, 'Kampf')
+    # Nicht geloest: Nach drei Wochen stirbt jemand; danach Rache moeglich
+    _krise(sp, w, 0, k['RL_EV_SOLDATEN'], 2)
+    personal = w.haus(0, 'RL_F_PERSONAL')
+    sp.globale[0].rufe_mit('rl_krise_woche', 0)
+    pruefe(w.haus(0, 'RL_F_KRISE') == k['RL_EV_TOD'] and w.haus(0, 'RL_F_PERSONAL') == personal - 1
+           and any('One of ours is dead' in m for m in sp.meldungen), 'Tod im Haus')
+    hitze = w.haus(0, 'RL_F_HITZE')
+    rede(sp, e, ["there's a problem", 'Find whoever did this', None])
+    pruefe(w.haus(0, 'RL_F_HITZE') == hitze + 10 and w.haus(0, 'RL_F_KRISE') == 0, 'Rache')
+    allgemein(sp, 'soldaten')
+
+
+def test_ereignisse_razzia(u):
+    k = u.k
+    # Die Gosse: Mara versteckt, keine Zuflucht; einmal fortgeschafft, einmal gefunden
+    for verstecken in (True, False):
+        sp, e, ko, w = _gosse_bereit(u)
+        ruhige_woche(sp)
+        w.setze_welt('RL_W_MARA_WEG', k['RL_MARA_VERSTECKT'])
+        _krise(sp, w, 0, k['RL_EV_RAZZIA'])
+        sp.dude.skills[k['SKILL_SNEAK']] = 60
+        if verstecken:
+            rede(sp, e, ["there's a problem", 'runaways out', None])
+        sp.globale[0].rufe_mit('rl_krise_woche', 0)
+        if verstecken:
+            pruefe(w.welt('RL_W_MARA_WEG') == k['RL_MARA_VERSTECKT'] and any('found nothing' in m for m in sp.meldungen),
+                   'Gosse: nichts gefunden')
+        else:
+            pruefe(w.welt('RL_W_MARA_WEG') == k['RL_MARA_VERSCHLEPPT'] and w.welt('RL_W_METZGER') == k['RL_METZGER_FEIND'],
+                   'Gosse: verschleppt')
+        pruefe(w.haus(0, 'RL_F_KRISE') == 0 and w.welt('RL_W_RAZZIA_VERSTECKT') == 0, 'Razzia vorbei')
+        allgemein(sp, 'razzia gosse')
+    # New Reno: der "Besuch" einer Familie
+    sp, w = _nr_uebernommen(u, 'Salvatore')
+    roz = figur(sp, k, 'RLROZ')
+    rede(sp, roz, ['how the house', None])
+    _krise(sp, w, NR, k['RL_EV_RAZZIA'])
+    kasse, einfluss = w.haus(NR, 'RL_F_KASSE'), w.haus(NR, 'RL_F_EINFLUSS')
+    sp.globale[0].rufe_mit('rl_krise_woche', NR)
+    pruefe(w.haus(NR, 'RL_F_KASSE') == kasse - 200 and w.haus(NR, 'RL_F_EINFLUSS') == max(0, einfluss - 10),
+           'NR: Schaden')
+    _krise(sp, w, NR, k['RL_EV_RAZZIA'])
+    sp.dude.kronkorken += 200
+    rede(sp, roz, ["problem", 'extra guns', None])
+    kasse = w.haus(NR, 'RL_F_KASSE')
+    sp.globale[0].rufe_mit('rl_krise_woche', NR)
+    pruefe(w.haus(NR, 'RL_F_KASSE') == kasse and any('counted the guns' in m for m in sp.meldungen), 'NR: verteidigt')
+    allgemein(sp, 'razzia nr')
+    # Redding: Marion und die gezinkte Waage
+    sp, w = _red_uebernommen(u)
+    nell = figur(sp, k, 'RLNELL')
+    rede(sp, nell, ['how the house', None])
+    w.setze_haus(RED, 'RL_F_MODULE', w.haus(RED, 'RL_F_MODULE') | k['RL_MOD_WAAGE_GEZINKT'])
+    w.setze_haus(RED, 'RL_F_PREISMOD', w.haus(RED, 'RL_F_PREISMOD') + 15)
+    _krise(sp, w, RED, k['RL_EV_RAZZIA'])
+    rede(sp, nell, ["problem", 'honest scale', None])
+    sp.globale[0].rufe_mit('rl_krise_woche', RED)
+    pruefe(not (w.haus(RED, 'RL_F_MODULE') & k['RL_MOD_WAAGE_GEZINKT']) and w.haus(RED, 'RL_F_GESCHLOSSEN') == 0
+           and any('honest scales' in m for m in sp.meldungen), 'Redding: Waage getauscht')
+    w.setze_haus(RED, 'RL_F_MODULE', w.haus(RED, 'RL_F_MODULE') | k['RL_MOD_WAAGE_GEZINKT'])
+    _krise(sp, w, RED, k['RL_EV_RAZZIA'])
+    sp.globale[0].rufe_mit('rl_krise_woche', RED)
+    pruefe(w.haus(RED, 'RL_F_GESCHLOSSEN') > 0, 'Redding: Revolte')
+    allgemein(sp, 'razzia redding')
+    # NCR: Zwangspersonal versteckt oder von den Rangers befreit
+    for verstecken in (True, False):
+        sp, w = _ncr_offen(u)
+        dora = figur(sp, k, 'RLDORA')
+        rede(sp, dora, ['how the house', None])
+        w.setze_haus(NCR, 'RL_F_ZWANG', 1)
+        w.setze_haus(NCR, 'RL_F_PERSONAL', w.haus(NCR, 'RL_F_PERSONAL') + 1)
+        _krise(sp, w, NCR, k['RL_EV_RAZZIA'])
+        if verstecken:
+            sp.dude.skills[k['SKILL_SNEAK']] = 60
+            rede(sp, dora, ["problem", "Hide Vortis", None])
+        sp.globale[0].rufe_mit('rl_krise_woche', NCR)
+        pruefe((w.welt('RL_W_NCR_ENTZOGEN') == 0) == verstecken, f'NCR: Rangers {verstecken}')
+        allgemein(sp, 'razzia ncr')
+
+
+def test_ereignisse_weitere(u):
+    k = u.k
+    sp, e, ko, w = _gosse_bereit(u)
+    ruhige_woche(sp)
+    # Sucht ohne Behandlung: Ueberdosis ab der zweiten Woche (25 %)
+    _krise(sp, w, 0, k['RL_EV_STOFF'], 1)
+    sp.zufall_folge = [1]
+    sp.globale[0].rufe_mit('rl_krise_woche', 0)
+    pruefe(w.haus(0, 'RL_F_KRISE') == k['RL_EV_TOD'] and not (w.welt('RL_W_TOD_GEWALT') & 1)
+           and any('took too much' in m for m in sp.meldungen), 'Ueberdosis')
+    v = rede(sp, e, ["there's a problem"])
+    pruefe(not any('Find whoever' in o for o in _optionen_bei(v, "there's a problem")), 'keine Rache nach Ueberdosis')
+    moral = w.haus(0, 'RL_F_MORAL')
+    rede(sp, e, ["there's a problem", 'Bury her', None])
+    pruefe(w.haus(0, 'RL_F_MORAL') == moral + 5, 'Beerdigung')
+    # Seuche: das Haus zwei Wochen schliessen
+    _krise(sp, w, 0, k['RL_EV_SEUCHE'])
+    rede(sp, e, ["there's a problem", 'Close the house', None])
+    pruefe(w.haus(0, 'RL_F_GESCHLOSSEN') == 2 and w.haus(0, 'RL_F_KRISE') == 0, 'Seuche')
+    w.setze_haus(0, 'RL_F_GESCHLOSSEN', 0)
+    # Griff in die Kasse: IN 7 findet das Geld
+    _krise(sp, w, 0, k['RL_EV_KASSE'])
+    sp.dude.stats[k['STAT_iq']] = 7
+    kasse = w.haus(0, 'RL_F_KASSE')
+    rede(sp, e, ["there's a problem", 'Go through the books', None])
+    pruefe(w.haus(0, 'RL_F_KASSE') == kasse + 100, 'Kasse')
+    # Flucht aus dem Pferch: nach drei Wochen stirbt jemand auf der Flucht
+    w.setze_haus(0, 'RL_F_ZWANG', 1)
+    _krise(sp, w, 0, k['RL_EV_FLUCHT'], 2)
+    zwang = w.haus(0, 'RL_F_ZWANG')
+    sp.globale[0].rufe_mit('rl_krise_woche', 0)
+    pruefe(w.haus(0, 'RL_F_KRISE') == k['RL_EV_TOD'] and w.haus(0, 'RL_F_ZWANG') == zwang - 1, 'Tod auf der Flucht')
+    _krise(sp, w, 0, 0)
+    # Stammkunde mit Geheimnis: kostet keine Kunden, das Schweigen bringt 200 $
+    w.setze_haus(0, 'RL_F_MODULE', w.haus(0, 'RL_F_MODULE') | k['RL_MOD_VIP'])
+    sp2 = copy.deepcopy(sp)
+    _krise(sp2, Welt(sp2, k), 0, k['RL_EV_FREIER'])
+    ruhige_woche(sp2)
+    _krise(sp, w, 0, k['RL_EV_STAMMKUNDE'])
+    ruhige_woche(sp)
+    pruefe(w.haus(0, 'RL_F_KUNDEN') > Welt(sp2, k).haus(0, 'RL_F_KUNDEN'),
+           f'Stammkunde kostet Kunden: {w.haus(0, "RL_F_KUNDEN")} / {Welt(sp2, k).haus(0, "RL_F_KUNDEN")}')
+    geld = sp.dude.kronkorken
+    rede(sp, e, ["there's a problem", 'Sell him his silence', None])
+    pruefe(sp.dude.kronkorken == geld + 200, 'Geheimnis verkauft')
+    allgemein(sp, 'weitere gosse')
+    # Ueberfall auf die Laeufer: die Spur verfolgen
+    sp, w = _nr_uebernommen(u, 'Salvatore')
+    sp, w = _red_uebernommen(u, sp)
+    betrete_strumpfband(u, sp)
+    roz = figur(sp, k, 'RLROZ')
+    rede(sp, roz, ['how the house', None])
+    w.setze_haus(RED, 'RL_F_KASSE', 500)
+    w.setze_haus(RED, 'RL_F_HITZE', 100)
+    sp.zufall_folge = [1]
+    sp.globale[0].rufe_mit('rl_laeufer')
+    pruefe(w.haus(NR, 'RL_F_KRISE') == k['RL_EV_UEBERFALL'] and w.welt('RL_W_UEBERFALL_BETRAG') == 500, 'Ueberfall')
+    sp.dude.skills[k['SKILL_OUTDOORSMAN']] = 60
+    hq = w.welt('RL_W_HQ_KASSE')
+    rede(sp, roz, ["problem", "robbers' trail", None])
+    pruefe(w.welt('RL_W_HQ_KASSE') == hq + 500 and w.haus(NR, 'RL_F_KRISE') == 0, 'Spur verfolgt')
+    # Ghul im Haus: Vesper verliert Loyalitaet, wenn niemand eingreift
+    w.setze_welt('RL_W_VESPER_STAND', k['RL_TS_DA'])
+    w.setze_welt('RL_W_VESPER_LOYAL', 80)
+    _krise(sp, w, NR, k['RL_EV_GHUL'])
+    rede(sp, roz, ["problem", 'bouncer handle it', None])
+    pruefe(w.welt('RL_W_VESPER_LOYAL') == 60, 'Vesper -20')
+    allgemein(sp, 'weitere nr')
+    # Der Richter: Abigail vergiftet ihn
+    sp, w = _vc_uebernommen(u)
+    hanne = figur(sp, k, 'RLHANNE')
+    w.setze_welt('RL_W_ABIGAIL', k['RL_TS_DA'])
+    w.setze_welt('RL_W_ABIGAIL_LOYAL', 50)
+    _krise(sp, w, VC, k['RL_EV_RICHTER'])
+    karma = sp.gvars.get(k['GVAR_PLAYER_REPUTATION'], 0)
+    rede(sp, hanne, ["problem", 'syringe', None])
+    pruefe(sp.gvars[k['GVAR_PLAYER_REPUTATION']] == karma - 20 and w.welt('RL_W_ABIGAIL_LOYAL') == 60
+           and w.welt('RL_W_GEWALT_HAUS') == VC + 1, 'Richter vergiftet')
+    allgemein(sp, 'richter')
+    # Inspektion der Liga durchgefallen: Die Ausnahme der Lex Neun ist weg
+    sp, w = _ncr_offen(u)
+    w.setze_welt('RL_W_LIGA', k['RL_LIGA_LEX_NEUN'])
+    w.setze_haus(NCR, 'RL_F_ANTEIL', k['RL_ANTEIL_FAIR'])
+    w.setze_haus(NCR, 'RL_F_MODULE', w.haus(NCR, 'RL_F_MODULE') | k['RL_MOD_KRANKENSTUBE'])
+    ruhige_woche(sp)
+    pruefe(w.haus(NCR, 'RL_F_STADTMOD') == 20, f'Lex Neun +20: {w.haus(NCR, "RL_F_STADTMOD")}')
+    w.setze_welt('RL_W_EREIGNIS_FLAGS', k['RL_EF_LEX_VERWIRKT'])
+    ruhige_woche(sp)
+    pruefe(w.haus(NCR, 'RL_F_STADTMOD') == -15, f'Lex Neun verwirkt: {w.haus(NCR, "RL_F_STADTMOD")}')
+    allgemein(sp, 'inspektion')
+
+
 TESTS = [test_wirtschaft_paritaet, test_erkundung, test_eingang, test_prolog_wege, test_diebstahl_erwischt, test_ketten_annehmen,
          test_ketten_ablehnen, test_ketten_kein_geld, test_kolbe_stirbt, test_kolbe_kommt_zurueck,
          test_wochen, test_anwerbung_werben, test_anwerbung_zwingen, test_pferch_flucht_und_nachschub,
@@ -2958,7 +3195,8 @@ TESTS = [test_wirtschaft_paritaet, test_erkundung, test_eingang, test_prolog_weg
          test_sf_duldung, test_sf_schmuggelkammer, test_sf_hubologen, test_erkundung_sanfran,
          test_virgin_gebuehr_und_kitty, test_virgin_dealer_und_nacht, test_virgin_umarmung_und_vanilla,
          test_erkundung_virgin, test_talent_vesper, test_talent_abigail, test_talent_talus, test_talent_julian,
-         test_jobs_den, test_jobs_staedte, test_jobs_buecher_bei_jade, test_laeuferroute]
+         test_jobs_den, test_jobs_staedte, test_jobs_buecher_bei_jade, test_laeuferroute,
+         test_ereignisse_soldaten, test_ereignisse_razzia, test_ereignisse_weitere]
 
 
 def main():

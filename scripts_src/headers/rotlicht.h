@@ -319,6 +319,15 @@
 #define RL_W_ERPRESSUNG             (134)   // 1 = gestohlene Buecher eines Rivalen (einmal verwendbar)
 #define RL_W_GEWALT_HAUS            (135)   // Haus + 1 mit einem gewaltsamen Vorfall (fuer den Totengraeber)
 #define RL_W_HQ_UNTERWEGS           (136)   // Geld der Laeufer auf dem Umweg um Broken Hills
+// Ereignisse (Umsetzung 15, rl_ereignisse.h)
+#define RL_W_SOLDATEN_HAUS          (137)   // Haus + 1, in das die Soldaten zurueckkommen
+#define RL_W_SOLDATEN_WOCHE         (138)   // ... in dieser Woche
+#define RL_W_DESERTEUR              (139)   // Haus + 1, in dem der Deserteur arbeitet
+#define RL_W_DESERTEUR_WOCHE        (140)   // seit wann (Besuch aus dem Bunker fruehestens 4 Wochen spaeter)
+#define RL_W_UEBERFALL_BETRAG       (141)   // was die Raeuber den Laeufern abgenommen haben
+#define RL_W_TOD_GEWALT             (142)   // Bits je Haus: der Tod kam durch Gewalt (Rache moeglich)
+#define RL_W_EREIGNIS_FLAGS         (143)   // Bits RL_EF_*
+#define RL_W_RAZZIA_VERSTECKT       (144)   // Bits je Haus: Beweise vor der angekuendigten Razzia beseitigt
 
 #define RL_PROLOG_OFFEN             (0)
 #define RL_PROLOG_LAEUFT            (1)
@@ -421,6 +430,16 @@
 #define RL_EV_KASSE                 (6)
 #define RL_EV_FLUCHT                (7)
 #define RL_EV_VERGELTUNG            (8)     // Metzgers Vergeltung ("Der stille Krieg", Phase 4)
+// Umsetzung 15 (rl_ereignisse.h)
+#define RL_EV_TOD                   (9)     // Tod im Haus
+#define RL_EV_STAMMKUNDE            (10)    // Stammkunde mit Geheimnis (VIP-Trakt)
+#define RL_EV_INSPEKTION            (11)    // Inspektion der Liga (wird sofort entschieden)
+#define RL_EV_ABWERBUNG             (12)    // Kitty wirbt ab
+#define RL_EV_UEBERFALL             (13)    // Ueberfall auf die Laeufer
+#define RL_EV_GHUL                  (14)    // Ghul im Haus (Vesper)
+#define RL_EV_RICHTER               (15)    // Der Richter (Abigail)
+#define RL_EV_BUNKER                (16)    // Besuch aus dem Bunker (der Deserteur)
+#define RL_EV_ANZAHL                (17)
 
 // Stadtwerte (rl_stadt)
 #define RL_S_KUNDEN                 (0)
@@ -695,8 +714,8 @@ procedure rl_rechne_woche(variable haus, variable h, variable stadt) begin
    if (haus[rl_idx(h, RL_F_BAU_ID)] and (haus[rl_idx(h, RL_F_BAU_WOCHEN)] > 0)) then
       kunden := kunden * 50 / 100;
 
-   // Offene Krise: -20 % Kunden je Woche, hoechstens -60 % (Phase 4)
-   if (haus[rl_idx(h, RL_F_KRISE)] != RL_EV_KEINS) then begin
+   // Offene Krise: -20 % Kunden je Woche, hoechstens -60 % (Phase 4); ein Stammkunde mit Geheimnis ist keine
+   if ((haus[rl_idx(h, RL_F_KRISE)] != RL_EV_KEINS) and (haus[rl_idx(h, RL_F_KRISE)] != RL_EV_STAMMKUNDE)) then begin
       krise_faktor := 100 - 20 * rl_min(3, haus[rl_idx(h, RL_F_KRISENWOCHEN)] + 1);
       kunden := kunden * krise_faktor / 100;
    end
@@ -854,6 +873,7 @@ end
 #include "rl_virgin.h"
 #include "rl_talente.h"
 #include "rl_jobs.h"
+#include "rl_ereignisse.h"
 #include "rl_kampf.h"
 
 #endif

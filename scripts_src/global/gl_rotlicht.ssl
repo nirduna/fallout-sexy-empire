@@ -31,6 +31,9 @@
         Hills, Ankunft, Loyalitaet, Rueckfall, Verrat, Abschied.
     17. Jobs und Laeuferroute (Umsetzung 14, rl_jobs.h): Tyler und der
         Polizist, Schutzgeld, Marcus sperrt oder hilft, der Umweg der Laeufer.
+    18. Ereignisse vollstaendig (Umsetzung 15, rl_ereignisse.h): Razzien je
+        Stadt, Eskalation je Krise, Tod im Haus, die Soldaten kommen wieder,
+        Abwerbung und Ueberfall als Krisen, Inspektion der Liga.
 
    sfall laedt alle gl*.int beim Spielstart. Die Wochenlogik laeuft nur
    auf lokalen Karten; Reisezeit auf der Weltkarte wird beim naechsten
@@ -92,6 +95,8 @@ procedure rl_talent_weg(variable wer, variable text);
 procedure rl_jobs_woche;
 procedure rl_marcus_pruefen;
 procedure rl_jobs_reise;
+procedure rl_krise_woche(variable h);
+procedure rl_ereignisse_woche(variable woche);
 #ifdef RL_DEBUG
 procedure rl_taste;
 procedure rl_debug_spawn;
@@ -193,6 +198,7 @@ procedure rl_tick begin
       call rl_virgin_woche(jetzt - wochen + 1);
       call rl_kitty_woche(jetzt - wochen + 1);
       call rl_talente_woche(jetzt - wochen + 1);
+      call rl_ereignisse_woche(jetzt - wochen + 1);
       tyrann := 0;
       ausbeutung := 0;
       h := 0;
@@ -215,17 +221,10 @@ procedure rl_tick begin
                end
             end
             call rl_personalwechsel(h);
-            if (haus[rl_idx(h, RL_F_KRISE)] != RL_EV_KEINS) then begin
-               haus[rl_idx(h, RL_F_KRISENWOCHEN)] := haus[rl_idx(h, RL_F_KRISENWOCHEN)] + 1;
-               // Nach drei Wochen ohne Loesung eskaliert die Krise (Phase 4, Abschnitt 4.1)
-               if (haus[rl_idx(h, RL_F_KRISENWOCHEN)] == 3) then begin
-                  haus[rl_idx(h, RL_F_MORAL)] := rl_max(0, haus[rl_idx(h, RL_F_MORAL)] - 10);
-                  haus[rl_idx(h, RL_F_RUF)] := rl_max(0, haus[rl_idx(h, RL_F_RUF)] - 10);
-                  display_msg(rl_haus_name(h) + ": " + rl_text(111));
-               end
-            end else begin
+            if (haus[rl_idx(h, RL_F_KRISE)] != RL_EV_KEINS) then
+               call rl_krise_woche(h);
+            else
                call rl_ereignis_wurf(h);
-            end
          end
          h := h + 1;
       end
@@ -280,6 +279,7 @@ procedure rl_welt_modifikatoren begin
    m := get_array([0, -15, -5, -10, 20, 0, 0], welt[RL_W_LIGA]);
    if ((welt[RL_W_LIGA] == RL_LIGA_LEX_NEUN)
        and ((haus[rl_idx(RL_NCR, RL_F_ANTEIL)] != RL_ANTEIL_FAIR) or (haus[rl_idx(RL_NCR, RL_F_ZWANG)] > 0)
+            or (welt[RL_W_EREIGNIS_FLAGS] bwand RL_EF_LEX_VERWIRKT)
             or ((haus[rl_idx(RL_NCR, RL_F_MODULE)] bwand RL_MOD_KRANKENSTUBE) == 0))) then
       m := -15;
    if ((m < 0) and (haus[rl_idx(RL_NCR, RL_F_MODULE)] bwand RL_MOD_REGISTRATUR)) then
@@ -354,6 +354,11 @@ procedure rl_laeufer begin
          chance := rl_min(25, haus[rl_idx(h, RL_F_HITZE)] / 4) * faktor / 100;
          if (random(1, 100) <= chance) then begin
             display_msg(rl_haus_name(h) + ": " + rl_text(112) + haus[rl_idx(h, RL_F_KASSE)] + rl_text(113));
+            // Die Spur der Raeuber: eine Krise im Hauptquartier (Phase 4, 4.3)
+            if (rl_krise_setzen(haus, RL_NEW_RENO, RL_EV_UEBERFALL)) then
+               welt[RL_W_UEBERFALL_BETRAG] := haus[rl_idx(h, RL_F_KASSE)];
+            else if (haus[rl_idx(RL_NEW_RENO, RL_F_KRISE)] == RL_EV_UEBERFALL) then
+               welt[RL_W_UEBERFALL_BETRAG] := welt[RL_W_UEBERFALL_BETRAG] + haus[rl_idx(h, RL_F_KASSE)];
          end else if (faktor == 125) then begin
             welt[RL_W_HQ_UNTERWEGS] := welt[RL_W_HQ_UNTERWEGS] + haus[rl_idx(h, RL_F_KASSE)];   // eine Woche spaeter
          end else begin
@@ -381,6 +386,12 @@ procedure rl_ereignis_wurf(variable h) begin
    ereignis := rl_ereignis_waehlen(h);
    if (ereignis == RL_EV_KEINS) then return;
 
+   // Die Inspektion der Liga wird sofort entschieden (Phase 4, 4.3)
+   if (ereignis == RL_EV_INSPEKTION) then begin
+      display_msg(rl_haus_name(h) + ": " + rl_text(rl_inspektion(haus, welt, h)));
+      return;
+   end
+
    // San Francisco: Die Inspektoren der Shi suchen die Schmuggelkammer (Phase 4, 4.2)
    if ((h == RL_SAN_FRAN) and (ereignis == RL_EV_RAZZIA) and (haus[rl_idx(h, RL_F_MODULE)] bwand RL_MOD_SCHMUGGEL)) then begin
       call rl_sf_razzia(haus, welt);
@@ -390,6 +401,24 @@ procedure rl_ereignis_wurf(variable h) begin
 
    // Talus erledigt gewalttaetige Freier selbst (Phase 4, 3.3)
    if ((ereignis == RL_EV_FREIER) and (h == rl_talus_haus(welt))) then return;
+
+   // Razzien in der Den, in New Reno, Redding und der NCR: angekuendigt eine Woche vorher, sonst sofort
+   if ((ereignis == RL_EV_RAZZIA) and rl_razzia_stadt(h)) then begin
+      if (rl_razzia_angekuendigt(haus, welt, h)) then begin
+         call rl_krise_setzen(haus, h, RL_EV_RAZZIA);
+         display_msg(rl_haus_name(h) + ": " + rl_text(260));
+      end else
+         display_msg(rl_haus_name(h) + ": " + rl_text(rl_razzia_ausfuehren(haus, welt, h)));
+      return;
+   end
+
+   // Die Soldaten und die Ereignisse aus Umsetzung 15 kann die Madame nicht allein loesen
+   if ((ereignis == RL_EV_SOLDATEN) or (ereignis >= RL_EV_TOD)) then begin
+      if (ereignis == RL_EV_RICHTER) then welt[RL_W_EREIGNIS_FLAGS] := welt[RL_W_EREIGNIS_FLAGS] bwor RL_EF_RICHTER;
+      call rl_krise_setzen(haus, h, ereignis);
+      display_msg(rl_haus_name(h) + ": " + rl_text(115));
+      return;
+   end
 
    // Vault City: Die Garde kommt nicht zur Madame, sie kommt ins Haus (Phase 4, 4.2)
    if ((h == RL_VAULT_CITY) and (ereignis == RL_EV_RAZZIA)) then begin
@@ -485,10 +514,13 @@ procedure rl_ereignis_waehlen(variable h) begin
    variable moral := haus[rl_idx(h, RL_F_MORAL)];
    variable module := haus[rl_idx(h, RL_F_MODULE)];
 
-   g := temp_array(8, 0);
-   // Soldaten ohne Krieg: selten, nach dem Fall der Enklave dreimal so oft
-   g[RL_EV_SOLDATEN] := 3;
-   if (Fallout2_enclave_destroyed) then g[RL_EV_SOLDATEN] := 9;
+   g := temp_array(RL_EV_ANZAHL, 0);
+   // Soldaten ohne Krieg: vor dem Fall der Enklave nur im Strumpfband mit Salvatore
+   // als Paten und in der Bilge, danach dreimal so oft und in jedem Haus (Phase 4, 4.2)
+   if (Fallout2_enclave_destroyed) then
+      g[RL_EV_SOLDATEN] := 9;
+   else if (((h == RL_NEW_RENO) and (welt[RL_W_NR_SEGEN] == RL_SEGEN_SALVATORE)) or (h == RL_SAN_FRAN)) then
+      g[RL_EV_SOLDATEN] := 3;
    // Der Stoff
    g[RL_EV_STOFF] := 10;
    if ((h == RL_REDDING) and (haus[rl_idx(h, RL_F_STADTMOD)] < 0)) then g[RL_EV_STOFF] := g[RL_EV_STOFF] * 2;
@@ -530,10 +562,19 @@ procedure rl_ereignis_waehlen(variable h) begin
    // Flucht
    if ((moral < RL_FLUCHT_MORAL) or haus[rl_idx(h, RL_F_ZWANG)] or (haus[rl_idx(h, RL_F_GEZWUNGEN)] > 0)) then
       g[RL_EV_FLUCHT] := 20;
+   // Weitere Ereignisse (Umsetzung 15)
+   if (module bwand RL_MOD_VIP) then g[RL_EV_STAMMKUNDE] := 5;
+   if ((h == RL_NCR) and (welt[RL_W_LIGA] == RL_LIGA_LEX_NEUN)
+       and ((welt[RL_W_EREIGNIS_FLAGS] bwand RL_EF_LEX_VERWIRKT) == 0)) then g[RL_EV_INSPEKTION] := 6;
+   if ((h == RL_NEW_RENO) and (welt[RL_W_VESPER_STAND] == RL_TS_DA)) then g[RL_EV_GHUL] := 4;
+   if ((h == RL_VAULT_CITY) and (welt[RL_W_ABIGAIL] == RL_TS_DA) and (module bwand RL_MOD_VIP)
+       and ((welt[RL_W_EREIGNIS_FLAGS] bwand RL_EF_RICHTER) == 0)) then g[RL_EV_RICHTER] := 6;
+   if ((welt[RL_W_DESERTEUR] == h + 1) and (rl_woche_jetzt >= welt[RL_W_DESERTEUR_WOCHE] + 4)) then
+      g[RL_EV_BUNKER] := 5;
 
    summe := 0;
    i := 1;
-   while (i < 8) do begin
+   while (i < RL_EV_ANZAHL) do begin
       summe := summe + g[i];
       i := i + 1;
    end
@@ -541,7 +582,7 @@ procedure rl_ereignis_waehlen(variable h) begin
 
    wurf := random(1, summe);
    i := 1;
-   while (i < 8) do begin
+   while (i < RL_EV_ANZAHL) do begin
       wurf := wurf - g[i];
       if (wurf <= 0) then return i;
       i := i + 1;
@@ -1151,7 +1192,10 @@ procedure rl_kitty_woche(variable woche) begin
    welt[RL_W_KITTY_ABWERBUNG] := woche;
    while (h < RL_ANZAHL_HAEUSER) do begin
       if (haus[rl_idx(h, RL_F_BESITZ)] and (haus[rl_idx(h, RL_F_MORAL)] < 60)) then begin
-         if (rl_personal_verlust(haus, h, RL_VERLUST_ABGANG) >= 0) then
+         // Ein Angebot, auf das die Madame reagieren kann (Phase 4, 4.3); in einer Krise geht die Person sofort
+         if (rl_krise_setzen(haus, h, RL_EV_ABWERBUNG)) then
+            display_msg(rl_haus_name(h) + ": " + rl_text(234));
+         else if (rl_personal_verlust(haus, h, RL_VERLUST_ABGANG) >= 0) then
             display_msg(rl_haus_name(h) + ": " + rl_text(208));
       end
       h := h + 1;
@@ -1223,8 +1267,8 @@ procedure rl_talente_woche(variable woche) begin
 
    // Talus: kommt an; geht, sobald in seinem Haus jemand hinter einem Riegel sitzt
    if (welt[RL_W_TALUS] == RL_TS_UNTERWEGS) then begin
-      h := welt[RL_W_TALUS_HAUS] - 1;
-      if ((h >= 0) and haus[rl_idx(h, RL_F_BESITZ)]) then begin
+      h := rl_max(0, welt[RL_W_TALUS_HAUS] - 1);
+      if (haus[rl_idx(h, RL_F_BESITZ)] and (welt[RL_W_TALUS_HAUS] > 0)) then begin
          welt[RL_W_TALUS] := RL_TS_DA;
          call rl_talent_anwenden(haus, welt, RL_TALENT_TALUS, 1);
          display_msg(rl_haus_name(h) + ": " + rl_text(217));
@@ -1332,6 +1376,108 @@ procedure rl_jobs_woche begin
       h := h + 1;
    end
    return schutz;
+end
+
+/* ------------------------------------------------------------------ */
+/* Ereignisse vollstaendig (Umsetzung 15, rl_ereignisse.h)             */
+/* ------------------------------------------------------------------ */
+
+/* Eine Woche Krise: Die angekuendigte Razzia kommt, Sucht wird zur
+   Ueberdosis, nach drei Wochen eskaliert die Krise je nach Art (Phase 4, 4.1). */
+procedure rl_krise_woche(variable h) begin
+   variable k := haus[rl_idx(h, RL_F_KRISE)], w;
+   w := haus[rl_idx(h, RL_F_KRISENWOCHEN)] + 1;
+   haus[rl_idx(h, RL_F_KRISENWOCHEN)] := w;
+
+   if ((k == RL_EV_RAZZIA) and rl_razzia_stadt(h)) then begin
+      haus[rl_idx(h, RL_F_KRISE)] := RL_EV_KEINS;
+      haus[rl_idx(h, RL_F_KRISENWOCHEN)] := 0;
+      display_msg(rl_haus_name(h) + ": " + rl_text(rl_razzia_ausfuehren(haus, welt, h)));
+      return;
+   end
+   // Sucht ohne Behandlung: ab der zweiten Woche jede Woche 25 % Ueberdosis
+   if ((k == RL_EV_STOFF) and (w >= 2)) then begin
+      if (random(1, 100) <= 25) then begin
+         call rl_tod_im_haus(haus, welt, h, 0, 0);
+         display_msg(rl_haus_name(h) + ": " + rl_text(240));
+         return;
+      end
+   end
+   if (w != 3) then return;
+
+   if ((k == RL_EV_SOLDATEN) or (k == RL_EV_FREIER)) then begin
+      // Eine Person aus dem Personal stirbt: Moral -20, Ruf -10
+      call rl_tod_im_haus(haus, welt, h, 1, 0);
+      call rl_haus_plus(haus, h, RL_F_MORAL, -10);
+      call rl_haus_plus(haus, h, RL_F_RUF, -10);
+      display_msg(rl_haus_name(h) + ": " + rl_text(241));
+   end else if (k == RL_EV_SEUCHE) then begin
+      haus[rl_idx(h, RL_F_KRISE)] := RL_EV_KEINS;
+      haus[rl_idx(h, RL_F_GESCHLOSSEN)] := rl_max(haus[rl_idx(h, RL_F_GESCHLOSSEN)], 2);
+      call rl_haus_plus(haus, h, RL_F_MORAL, -10);
+      display_msg(rl_haus_name(h) + ": " + rl_text(242));
+   end else if (k == RL_EV_KASSE) then begin
+      haus[rl_idx(h, RL_F_KRISE)] := RL_EV_KEINS;
+      haus[rl_idx(h, RL_F_KASSE)] := haus[rl_idx(h, RL_F_KASSE)] - 300;
+      display_msg(rl_haus_name(h) + ": " + rl_text(243));
+   end else if (k == RL_EV_FLUCHT) then begin
+      if (haus[rl_idx(h, RL_F_ZWANG)] > 0) then begin
+         call rl_tod_im_haus(haus, welt, h, 0, 1);            // auf der Flucht gestorben
+         display_msg(rl_haus_name(h) + ": " + rl_text(244));
+      end else begin
+         haus[rl_idx(h, RL_F_KRISE)] := RL_EV_KEINS;
+         call rl_personal_verlust(haus, h, RL_VERLUST_ABGANG);
+         display_msg(rl_haus_name(h) + ": " + rl_text(245));
+      end
+   end else if (k == RL_EV_TOD) then begin
+      haus[rl_idx(h, RL_F_KRISE)] := RL_EV_KEINS;
+      call rl_haus_plus(haus, h, RL_F_MORAL, -15);
+      display_msg(rl_haus_name(h) + ": " + rl_text(246));
+   end else if (k == RL_EV_STAMMKUNDE) then begin
+      haus[rl_idx(h, RL_F_KRISE)] := RL_EV_KEINS;              // die Gelegenheit ist vorbei
+   end else if (k == RL_EV_ABWERBUNG) then begin
+      haus[rl_idx(h, RL_F_KRISE)] := RL_EV_KEINS;
+      call rl_personal_verlust(haus, h, RL_VERLUST_ABGANG);
+      display_msg(rl_haus_name(h) + ": " + rl_text(208));
+   end else if (k == RL_EV_UEBERFALL) then begin
+      haus[rl_idx(h, RL_F_KRISE)] := RL_EV_KEINS;
+      welt[RL_W_UEBERFALL_BETRAG] := 0;
+      display_msg(rl_haus_name(h) + ": " + rl_text(247));
+   end else if (k == RL_EV_GHUL) then begin
+      haus[rl_idx(h, RL_F_KRISE)] := RL_EV_KEINS;
+      welt[RL_W_VESPER_LOYAL] := welt[RL_W_VESPER_LOYAL] - 20;
+      display_msg(rl_haus_name(h) + ": " + rl_text(248));
+   end else if (k == RL_EV_RICHTER) then begin
+      haus[rl_idx(h, RL_F_KRISE)] := RL_EV_KEINS;
+      welt[RL_W_ABIGAIL_LOYAL] := welt[RL_W_ABIGAIL_LOYAL] - 10;
+      call rl_haus_plus(haus, h, RL_F_HITZE, 10);
+      display_msg(rl_haus_name(h) + ": " + rl_text(249));
+   end else if (k == RL_EV_BUNKER) then begin
+      haus[rl_idx(h, RL_F_KRISE)] := RL_EV_KEINS;
+      haus[rl_idx(h, RL_F_SICHERHEIT)] := rl_max(0, haus[rl_idx(h, RL_F_SICHERHEIT)] - RL_DESERTEUR_SICHERHEIT);
+      welt[RL_W_DESERTEUR] := 0;
+      display_msg(rl_haus_name(h) + ": " + rl_text(239));
+   end else begin
+      // Metzgers Vergeltung und die uebrigen: Moral -10, Ruf -10, die Krise bleibt
+      call rl_haus_plus(haus, h, RL_F_MORAL, -10);
+      call rl_haus_plus(haus, h, RL_F_RUF, -10);
+      display_msg(rl_haus_name(h) + ": " + rl_text(111));
+   end
+   if (haus[rl_idx(h, RL_F_KRISE)] == RL_EV_KEINS) then haus[rl_idx(h, RL_F_KRISENWOCHEN)] := 0;
+end
+
+// Die bezahlten Soldaten kommen vielleicht wieder; der Deserteur geht mit seinem Haus
+procedure rl_ereignisse_woche(variable woche) begin
+   variable h := welt[RL_W_SOLDATEN_HAUS] - 1;
+   if ((h >= 0) and (woche >= welt[RL_W_SOLDATEN_WOCHE])) then begin
+      welt[RL_W_SOLDATEN_HAUS] := 0;
+      if (haus[rl_idx(h, RL_F_BESITZ)] and rl_krise_setzen(haus, h, RL_EV_SOLDATEN)) then
+         display_msg(rl_haus_name(h) + ": " + rl_text(238));
+   end
+   h := welt[RL_W_DESERTEUR] - 1;
+   if (h >= 0) then begin                        // SSL wertet "and" immer ganz aus
+      if (haus[rl_idx(h, RL_F_BESITZ)] == 0) then welt[RL_W_DESERTEUR] := 0;
+   end
 end
 
 #ifdef RL_DEBUG

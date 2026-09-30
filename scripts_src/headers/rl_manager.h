@@ -14,6 +14,7 @@
      620-639  Die anderen Staedte (nur in der Gosse, Umsetzung 6)
      950-999  Talente (Umsetzung 13, _rl_talente.inc, bei allen Madames gleich)
     1000-1059  Jobs und Laeuferroute (Umsetzung 14, _rl_jobs.inc, bei allen gleich)
+    1100-1249  Krisen und ihre Loesungswege (Umsetzung 15, _rl_krisen.inc)
 
    Das einbindende Skript stellt bereit:
      variable haus, welt, h   (Haus-Array, Welt-Array, Hausnummer)
@@ -87,6 +88,49 @@ procedure RLM_StoffBezahlen;
 procedure RLM_StoffLeine;
 procedure RLM_StoffRauswurf;
 procedure RLM_KriseGeld;
+procedure rlm_krise_fertig(variable text);
+procedure RLM_SoldatenZahlen;
+procedure RLM_SoldatenTrinken;
+procedure RLM_SoldatenRuestung;
+procedure RLM_SoldatenLassen;
+procedure RLM_SoldatenReden;
+procedure RLM_SoldatenWerben;
+procedure RLM_SoldatenKampf;
+procedure RLM_StoffHeilen;
+procedure RLM_RazziaVerstecken;
+procedure RLM_RazziaWachen;
+procedure RLM_RazziaSelbst;
+procedure RLM_RazziaWaage;
+procedure RLM_RazziaSchutzgeld;
+procedure RLM_FreierSelbst;
+procedure RLM_FreierVerbot;
+procedure RLM_SeucheDoctor;
+procedure RLM_SeucheArzt;
+procedure RLM_SeucheSchliessen;
+procedure RLM_KasseBuecher;
+procedure RLM_KasseBeschatten;
+procedure RLM_KasseLassen;
+procedure RLM_FluchtLassen;
+procedure RLM_FluchtHolen;
+procedure RLM_TodBeerdigen;
+procedure RLM_TodSchweigen;
+procedure RLM_TodRache;
+procedure RLM_GeheimnisAkte;
+procedure RLM_GeheimnisVerkaufen;
+procedure RLM_GeheimnisVergessen;
+procedure RLM_AbwerbungHalten;
+procedure RLM_AbwerbungLassen;
+procedure RLM_UeberfallSpur;
+procedure RLM_UeberfallAbschreiben;
+procedure RLM_GhulRaus;
+procedure RLM_GhulReden;
+procedure RLM_GhulLassen;
+procedure RLM_RichterHeilen;
+procedure RLM_RichterBlossstellen;
+procedure RLM_RichterGift;
+procedure RLM_BunkerAusliefern;
+procedure RLM_BunkerVerstecken;
+procedure RLM_BunkerWeg;
 procedure RLM_Abspann;
 procedure RLM_Personal;
 procedure RLM_Werben;
@@ -486,21 +530,111 @@ end
 /* ------------------------------------------------------------------ */
 /* Krisen (Phase 4, Abschnitt 4.2)                                     */
 /* ------------------------------------------------------------------ */
+/* Das Krisenmenue (Phase 4, Abschnitte 4.2 und 4.3; Umsetzung 15): je Art die
+   Loesungswege. Die Beschreibung der Kern-Krisen spricht die Madame selbst
+   (180 + Art), die weiteren erzaehlt _rl_krisen.inc (1100 + Art). */
 procedure RLM_Krise begin
-   if (haus[rl_idx(h, RL_F_KRISE)] == RL_EV_STOFF) then begin
+   variable k := haus[rl_idx(h, RL_F_KRISE)], kampf := rl_kampfwert;
+   if (k == RL_EV_STOFF) then begin
       Reply(160);
       if (has_skill(dude_obj, SKILL_DOCTOR) >= 60) then
          GOption(161, RLM_StoffDoctor, 004);
-      if (dude_caps >= 200) then
+      if (haus[rl_idx(h, RL_F_MODULE)] bwand RL_MOD_KRANKENSTUBE) then
+         GOption(1140, RLM_StoffHeilen, 004);
+      else if (dude_caps >= 200) then
          NOption(162, RLM_StoffBezahlen, 004);
+      if (haus[rl_idx(RL_REDDING, RL_F_BESITZ)] and rl_red_entzug(haus)) then
+         GOption(1141, RLM_StoffHeilen, 004);
+      if (obj_is_carrying_obj_pid(dude_obj, PID_JET_ANTIDOTE)) then
+         GOption(1142, RLM_StoffHeilen, 004);
       BOption(163, RLM_StoffLeine, 004);
       BOption(164, RLM_StoffRauswurf, 004);
+   end else if (k == RL_EV_SOLDATEN) then begin
+      Reply(mstr(170) + " " + mstr(181));
+      if (rlm_bezahlbar(RL_SOLDATEN_PREIS)) then NOption(1130, RLM_SoldatenZahlen, 004);
+      if (rl_bar2_hier(haus, h) and (has_skill(dude_obj, SKILL_BARTER) >= 50)) then
+         NOption(1131, RLM_SoldatenTrinken, 004);
+      if (has_skill(dude_obj, SKILL_SPEECH) >= 70) then GOption(1135, RLM_SoldatenReden, 004);
+      if ((has_skill(dude_obj, SKILL_SPEECH) >= 90) or (dude_charisma >= 8)) then
+         GOption(1136, RLM_SoldatenWerben, 004);
+      if ((h == rl_talus_haus(welt)) or (kampf >= 80)) then BOption(1137, RLM_SoldatenKampf, 004);
+   end else if ((k == RL_EV_RAZZIA) and rl_razzia_stadt(h)) then begin
+      // Die angekuendigte Razzia: eine Woche, um die Beweise verschwinden zu lassen
+      Reply(1120 + h);
+      if ((h == RL_DEN) and (rl_razzia_beweise(haus, welt, h) bwand RL_BEWEIS_FLUECHTLINGE)
+          and ((has_skill(dude_obj, SKILL_SNEAK) >= 60) or (has_skill(dude_obj, SKILL_OUTDOORSMAN) >= 60))) then
+         GOption(1125, RLM_RazziaVerstecken, 004);
+      if ((h == RL_NEW_RENO) and ((welt[RL_W_RAZZIA_VERSTECKT] bwand rl_bit(h)) == 0)) then begin
+         if (rlm_bezahlbar(200)) then NOption(1126, RLM_RazziaWachen, 004);
+         if (kampf >= 60) then BOption(1127, RLM_RazziaSelbst, 004);
+      end
+      if ((h == RL_REDDING) and (haus[rl_idx(h, RL_F_MODULE)] bwand RL_MOD_WAAGE_GEZINKT)) then
+         GOption(1128, RLM_RazziaWaage, 004);
+      if ((h == RL_REDDING) and (welt[RL_W_JOBS] bwand RL_JOB_SCHUTZ_RED)) then
+         GOption(1129, RLM_RazziaSchutzgeld, 004);
+      if ((h == RL_NCR) and (rl_razzia_beweise(haus, welt, h) bwand RL_BEWEIS_ZWANG)
+          and (has_skill(dude_obj, SKILL_SNEAK) >= 60)) then
+         GOption(1138, RLM_RazziaVerstecken, 004);
+   end else if (k == RL_EV_FREIER) then begin
+      Reply(mstr(170) + " " + mstr(184));
+      if (has_skill(dude_obj, SKILL_UNARMED_COMBAT) >= 50) then BOption(1150, RLM_FreierSelbst, 004);
+      NOption(1151, RLM_FreierVerbot, 004);
+   end else if (k == RL_EV_SEUCHE) then begin
+      Reply(mstr(170) + " " + mstr(185));
+      if (has_skill(dude_obj, SKILL_DOCTOR) >= 60) then GOption(1152, RLM_SeucheDoctor, 004);
+      if (dude_caps >= 300) then NOption(1153, RLM_SeucheArzt, 004);
+      NOption(1154, RLM_SeucheSchliessen, 004);
+   end else if (k == RL_EV_KASSE) then begin
+      Reply(mstr(170) + " " + mstr(186));
+      if (dude_iq >= 7) then GOption(1155, RLM_KasseBuecher, 004);
+      if (has_skill(dude_obj, SKILL_SNEAK) >= 50) then NOption(1156, RLM_KasseBeschatten, 004);
+      NOption(1157, RLM_KasseLassen, 004);
+   end else if (k == RL_EV_FLUCHT) then begin
+      Reply(mstr(170) + " " + mstr(187));
+      NOption(1158, RLM_FluchtLassen, 004);
+      if ((has_skill(dude_obj, SKILL_OUTDOORSMAN) >= 60) or (kampf >= 60)) then
+         BOption(1159, RLM_FluchtHolen, 004);
+   end else if (k == RL_EV_TOD) then begin
+      Reply(1109);
+      if (rlm_bezahlbar(RL_BEERDIGUNG_PREIS)) then GOption(1160, RLM_TodBeerdigen, 004);
+      BOption(1161, RLM_TodSchweigen, 004);
+      if (welt[RL_W_TOD_GEWALT] bwand rl_bit(h)) then NOption(1162, RLM_TodRache, 004);
+   end else if (k == RL_EV_STAMMKUNDE) then begin
+      Reply(1110);
+      NOption(1163, RLM_GeheimnisAkte, 004);
+      BOption(1164, RLM_GeheimnisVerkaufen, 004);
+      GOption(1165, RLM_GeheimnisVergessen, 004);
+   end else if (k == RL_EV_ABWERBUNG) then begin
+      Reply(1112);
+      if ((has_skill(dude_obj, SKILL_BARTER) >= 60) and rlm_bezahlbar(RL_ABWERBUNG_GEGENANGEBOT)) then
+         NOption(1166, RLM_AbwerbungHalten, 004);
+      NOption(1167, RLM_AbwerbungLassen, 004);
+   end else if (k == RL_EV_UEBERFALL) then begin
+      Reply(mstr(1113) + welt[RL_W_UEBERFALL_BETRAG] + mstr(1119));
+      if (has_skill(dude_obj, SKILL_OUTDOORSMAN) >= 60) then NOption(1168, RLM_UeberfallSpur, 004);
+      NOption(1169, RLM_UeberfallAbschreiben, 004);
+   end else if (k == RL_EV_GHUL) then begin
+      Reply(1114);
+      if ((has_skill(dude_obj, SKILL_UNARMED_COMBAT) >= 60) or (kampf >= 60)) then
+         NOption(1170, RLM_GhulRaus, 004);
+      if (has_skill(dude_obj, SKILL_SPEECH) >= 60) then GOption(1171, RLM_GhulReden, 004);
+      BOption(1172, RLM_GhulLassen, 004);
+   end else if (k == RL_EV_RICHTER) then begin
+      Reply(1115);
+      GOption(1173, RLM_RichterHeilen, 004);
+      NOption(1174, RLM_RichterBlossstellen, 004);
+      BOption(1175, RLM_RichterGift, 004);
+   end else if (k == RL_EV_BUNKER) then begin
+      Reply(1116);
+      NOption(1176, RLM_BunkerAusliefern, 004);
+      if (has_skill(dude_obj, SKILL_SNEAK) >= 60) then NOption(1177, RLM_BunkerVerstecken, 004);
+      if (kampf >= 80) then BOption(1178, RLM_BunkerWeg, 004);
    end else begin
-      Reply(mstr(170) + " " + mstr(180 + haus[rl_idx(h, RL_F_KRISE)]));
+      Reply(mstr(170) + " " + mstr(180 + rl_min(8, k)));
       if (dude_caps >= 300) then
          NOption(171, RLM_KriseGeld, 004);
       // Metzgers Vergeltung im stillen Krieg (Phase 4, Abschnitt 4.3)
-      if (haus[rl_idx(h, RL_F_KRISE)] == RL_EV_VERGELTUNG) then begin
+      if (k == RL_EV_VERGELTUNG) then begin
          if (rl_max(rl_max(has_skill(dude_obj, SKILL_SMALL_GUNS), has_skill(dude_obj, SKILL_MELEE)),
                     has_skill(dude_obj, SKILL_UNARMED_COMBAT)) >= 60) then
             NOption(174, RLM_VergeltungKampf, 004);
@@ -509,6 +643,266 @@ procedure RLM_Krise begin
       end
    end
    NOption(172, RLM_Ende, 004);
+end
+
+procedure rlm_krise_fertig(variable text) begin
+   call rlm_krise_loesen;
+   Reply(text);
+   NOption(123, RLM_Start, 004);
+end
+
+// Soldaten ohne Krieg (Phase 4, 4.2)
+procedure RLM_SoldatenZahlen begin
+   call rlm_bezahlen(RL_SOLDATEN_PREIS);
+   if (random(1, 100) <= 50) then begin                 // sie kommen vielleicht wieder
+      welt[RL_W_SOLDATEN_HAUS] := h + 1;
+      welt[RL_W_SOLDATEN_WOCHE] := rl_woche_jetzt + RL_SOLDATEN_WIEDER;
+   end
+   call rlm_krise_fertig(mstr(1180));
+end
+
+procedure RLM_SoldatenTrinken begin
+   Reply(1132);
+   BOption(1133, RLM_SoldatenRuestung, 004);
+   NOption(1134, RLM_SoldatenLassen, 004);
+end
+
+procedure RLM_SoldatenRuestung begin
+   variable ruestung := create_object(PID_POWERED_ARMOR, 0, 0);
+   add_obj_to_inven(dude_obj, ruestung);
+   rl_karma(-5);
+   call rlm_krise_fertig(mstr(1181));
+end
+
+procedure RLM_SoldatenLassen begin
+   call rlm_krise_fertig(mstr(1182));
+end
+
+procedure RLM_SoldatenReden begin
+   call rlm_krise_fertig(mstr(1183));
+end
+
+// Ein Deserteur bleibt als Rausschmeisser; die Brotherhood sucht ihn
+procedure RLM_SoldatenWerben begin
+   haus[rl_idx(h, RL_F_SICHERHEIT)] := haus[rl_idx(h, RL_F_SICHERHEIT)] + RL_DESERTEUR_SICHERHEIT;
+   welt[RL_W_DESERTEUR] := h + 1;
+   welt[RL_W_DESERTEUR_WOCHE] := rl_woche_jetzt;
+   call rlm_krise_fertig(mstr(1184));
+end
+
+// Kampf: Die Teile der Ruestungen bringen Geld; die Leichen bringen Hitze (Totengraeber)
+procedure RLM_SoldatenKampf begin
+   item_caps_adjust(dude_obj, 300);
+   call rl_haus_plus(haus, h, RL_F_HITZE, 20);
+   welt[RL_W_GEWALT_HAUS] := h + 1;
+   call rlm_krise_fertig(mstr(1185));
+end
+
+// Der Stoff: behandeln mit Krankenstube, Entzugsstube oder Antidot
+procedure RLM_StoffHeilen begin
+   haus[rl_idx(h, RL_F_MORAL)] := rl_min(100, haus[rl_idx(h, RL_F_MORAL)] + 5);
+   call rlm_krise_fertig(mstr(1186));
+end
+
+// Die angekuendigte Razzia: Beweise verschwinden lassen
+procedure RLM_RazziaVerstecken begin
+   welt[RL_W_RAZZIA_VERSTECKT] := welt[RL_W_RAZZIA_VERSTECKT] bwor rl_bit(h);
+   Reply(1187);
+   NOption(123, RLM_Start, 004);
+end
+
+procedure RLM_RazziaWachen begin
+   call rlm_bezahlen(200);
+   welt[RL_W_RAZZIA_VERSTECKT] := welt[RL_W_RAZZIA_VERSTECKT] bwor rl_bit(h);
+   Reply(1188);
+   NOption(123, RLM_Start, 004);
+end
+
+procedure RLM_RazziaSelbst begin
+   welt[RL_W_RAZZIA_VERSTECKT] := welt[RL_W_RAZZIA_VERSTECKT] bwor rl_bit(h);
+   call rl_haus_plus(haus, h, RL_F_HITZE, 10);
+   call rl_haus_plus(haus, h, RL_F_EINFLUSS, 5);
+   Reply(1189);
+   NOption(123, RLM_Start, 004);
+end
+
+procedure RLM_RazziaWaage begin
+   haus[rl_idx(h, RL_F_MODULE)]   := haus[rl_idx(h, RL_F_MODULE)] - RL_MOD_WAAGE_GEZINKT;
+   haus[rl_idx(h, RL_F_PREISMOD)] := haus[rl_idx(h, RL_F_PREISMOD)] - RL_WAAGE_PREIS;
+   Reply(1190);
+   NOption(123, RLM_Start, 004);
+end
+
+procedure RLM_RazziaSchutzgeld begin
+   welt[RL_W_JOBS] := welt[RL_W_JOBS] - RL_JOB_SCHUTZ_RED;
+   Reply(1191);
+   NOption(123, RLM_Start, 004);
+end
+
+// Gewalttaetiger Freier (Phase 4, 4.3)
+procedure RLM_FreierSelbst begin
+   call rl_haus_plus(haus, h, RL_F_HITZE, 5);
+   call rlm_krise_fertig(mstr(1192));
+end
+
+procedure RLM_FreierVerbot begin
+   call rl_haus_plus(haus, h, RL_F_RUF, -2);
+   call rlm_krise_fertig(mstr(1193));
+end
+
+// Seuche
+procedure RLM_SeucheDoctor begin
+   call rlm_krise_fertig(mstr(1194));
+end
+
+procedure RLM_SeucheArzt begin
+   item_caps_adjust(dude_obj, -300);
+   call rlm_krise_fertig(mstr(1195));
+end
+
+procedure RLM_SeucheSchliessen begin
+   haus[rl_idx(h, RL_F_GESCHLOSSEN)] := rl_max(haus[rl_idx(h, RL_F_GESCHLOSSEN)], 2);
+   call rlm_krise_fertig(mstr(1196));
+end
+
+// Griff in die Kasse
+procedure RLM_KasseBuecher begin
+   haus[rl_idx(h, RL_F_KASSE)] := haus[rl_idx(h, RL_F_KASSE)] + 100;
+   call rlm_krise_fertig(mstr(1197));
+end
+
+procedure RLM_KasseBeschatten begin
+   haus[rl_idx(h, RL_F_KASSE)] := haus[rl_idx(h, RL_F_KASSE)] + 100;
+   call rl_personal_verlust(haus, h, RL_VERLUST_ABGANG);
+   call rlm_krise_fertig(mstr(1198));
+end
+
+procedure RLM_KasseLassen begin
+   call rlm_krise_fertig(mstr(1199));
+end
+
+// Flucht und Kuendigung
+procedure RLM_FluchtLassen begin
+   call rl_personal_verlust(haus, h, RL_VERLUST_FLUCHT);
+   call rlm_krise_fertig(mstr(1200));
+end
+
+procedure RLM_FluchtHolen begin
+   if (haus[rl_idx(h, RL_F_ZWANG)] > 0) then rl_karma(-10);
+   call rlm_krise_fertig(mstr(1201));
+end
+
+// Tod im Haus
+procedure RLM_TodBeerdigen begin
+   call rlm_bezahlen(RL_BEERDIGUNG_PREIS);
+   call rl_haus_plus(haus, h, RL_F_MORAL, 5);
+   call rlm_krise_fertig(mstr(1202));
+end
+
+procedure RLM_TodSchweigen begin
+   call rl_haus_plus(haus, h, RL_F_MORAL, -15);
+   call rlm_krise_fertig(mstr(1203));
+end
+
+procedure RLM_TodRache begin
+   call rl_haus_plus(haus, h, RL_F_HITZE, 10);
+   call rl_haus_plus(haus, h, RL_F_MORAL, 5);
+   call rlm_krise_fertig(mstr(1204));
+end
+
+// Stammkunde mit Geheimnis
+procedure RLM_GeheimnisAkte begin
+   call rl_haus_plus(haus, h, RL_F_EINFLUSS, 5);
+   call rlm_krise_fertig(mstr(1205));
+end
+
+procedure RLM_GeheimnisVerkaufen begin
+   item_caps_adjust(dude_obj, RL_GEHEIMNIS_PREIS);
+   rl_karma(-5);
+   call rlm_krise_fertig(mstr(1206));
+end
+
+procedure RLM_GeheimnisVergessen begin
+   call rlm_krise_fertig(mstr(1207));
+end
+
+// Abwerbung durch Kitty
+procedure RLM_AbwerbungHalten begin
+   call rlm_bezahlen(RL_ABWERBUNG_GEGENANGEBOT);
+   call rlm_krise_fertig(mstr(1208));
+end
+
+procedure RLM_AbwerbungLassen begin
+   call rl_personal_verlust(haus, h, RL_VERLUST_ABGANG);
+   call rlm_krise_fertig(mstr(1209));
+end
+
+// Ueberfall auf die Laeufer
+procedure RLM_UeberfallSpur begin
+   welt[RL_W_HQ_KASSE] := welt[RL_W_HQ_KASSE] + welt[RL_W_UEBERFALL_BETRAG];
+   welt[RL_W_UEBERFALL_BETRAG] := 0;
+   call rlm_krise_fertig(mstr(1210));
+end
+
+procedure RLM_UeberfallAbschreiben begin
+   welt[RL_W_UEBERFALL_BETRAG] := 0;
+   call rlm_krise_fertig(mstr(1211));
+end
+
+// Ghul im Haus (Vesper)
+procedure RLM_GhulRaus begin
+   welt[RL_W_VESPER_LOYAL] := rl_min(100, welt[RL_W_VESPER_LOYAL] + 5);
+   call rlm_krise_fertig(mstr(1212));
+end
+
+procedure RLM_GhulReden begin
+   call rlm_krise_fertig(mstr(1213));
+end
+
+procedure RLM_GhulLassen begin
+   welt[RL_W_VESPER_LOYAL] := welt[RL_W_VESPER_LOYAL] - 20;
+   call rlm_krise_fertig(mstr(1214));
+end
+
+// Der Richter (Abigail)
+procedure RLM_RichterHeilen begin
+   rl_karma(5);
+   welt[RL_W_ABIGAIL_LOYAL] := rl_min(100, welt[RL_W_ABIGAIL_LOYAL] + 5);
+   call rlm_krise_fertig(mstr(1215));
+end
+
+procedure RLM_RichterBlossstellen begin
+   call rl_haus_plus(haus, h, RL_F_HITZE, 10);
+   welt[RL_W_ABIGAIL_LOYAL] := rl_min(100, welt[RL_W_ABIGAIL_LOYAL] + 10);
+   call rlm_krise_fertig(mstr(1216));
+end
+
+procedure RLM_RichterGift begin
+   rl_karma(-20);
+   welt[RL_W_ABIGAIL_LOYAL] := rl_min(100, welt[RL_W_ABIGAIL_LOYAL] + 10);
+   call rl_haus_plus(haus, h, RL_F_HITZE, 15);
+   welt[RL_W_GEWALT_HAUS] := h + 1;
+   call rlm_krise_fertig(mstr(1217));
+end
+
+// Besuch aus dem Bunker (der Deserteur)
+procedure RLM_BunkerAusliefern begin
+   rl_karma(5);
+   haus[rl_idx(h, RL_F_SICHERHEIT)] := rl_max(0, haus[rl_idx(h, RL_F_SICHERHEIT)] - RL_DESERTEUR_SICHERHEIT);
+   welt[RL_W_DESERTEUR] := 0;
+   call rlm_krise_fertig(mstr(1218));
+end
+
+procedure RLM_BunkerVerstecken begin
+   welt[RL_W_DESERTEUR_WOCHE] := rl_woche_jetzt;
+   call rlm_krise_fertig(mstr(1219));
+end
+
+procedure RLM_BunkerWeg begin
+   welt[RL_W_DESERTEUR_WOCHE] := rl_woche_jetzt;
+   call rl_haus_plus(haus, h, RL_F_HITZE, 20);
+   call rl_haus_plus(haus, h, RL_F_EINFLUSS, 5);
+   call rlm_krise_fertig(mstr(1220));
 end
 
 procedure RLM_VergeltungKampf begin

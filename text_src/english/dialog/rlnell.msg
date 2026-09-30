@@ -74,3 +74,4 @@
 # @include _rl_sonder.inc
 # @include _rl_talente.inc
 # @include _rl_jobs.inc
+# @include _rl_krisen.inc

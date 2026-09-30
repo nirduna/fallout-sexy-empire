@@ -57,7 +57,7 @@ NAMEN = {
     0x803F: 'or', 0x8040: 'bwand', 0x8041: 'bwor', 0x8042: 'bwxor', 0x8043: 'bwnot',
     0x8044: 'floor', 0x8045: 'not', 0x8046: 'negate',
     0x80A7: 'tile_contains_pid_obj', 0x80AA: 'has_skill', 0x80B4: 'random',
-    0x80B6: 'move_to', 0x80B7: 'create_object_sid', 0x80B8: 'display_msg',
+    0x80B6: 'move_to', 0x80B7: 'create_object_sid', 0x80D8: 'add_obj_to_inven', 0x80B8: 'display_msg',
     0x80E3: 'set_obj_visibility', 0x80FB: 'critter_state', 0x80B9: 'script_overrides', 0x80BA: 'obj_is_carrying_obj_pid', 0x80BC: 'self_obj', 0x80BD: 'source_obj',
     0x80BE: 'target_obj', 0x80BF: 'dude_obj', 0x80C1: 'local_var', 0x80C2: 'set_local_var',
     0x80C3: 'map_var', 0x80C4: 'set_map_var', 0x80C5: 'global_var', 0x80C6: 'set_global_var',
@@ -802,6 +802,14 @@ def _s_create_object_sid(vm, sp):
     vm.stack.append(o)
 
 
+def _s_add_obj_to_inven(vm, sp):
+    ding = vm.pop_obj()
+    wer = vm.pop_obj()
+    if wer and ding:
+        wer.inventar[ding.pid] = wer.inventar.get(ding.pid, 0) + 1
+        ding.tile = -1
+
+
 def _s_critter_state(vm, sp):
     o = vm.pop_obj()
     vm.stack.append(1 if (o and o.tot) else 0)
@@ -1232,6 +1240,7 @@ SPIEL = {
     0x80B4: _s_random,
     0x80B6: _s_move_to,
     0x80B7: _s_create_object_sid,
+    0x80D8: _s_add_obj_to_inven,
     0x80B8: _s_display_msg,
     0x80B9: lambda vm, sp: setattr(vm, 'overrides', True),
     0x80BA: _s_carrying_pid,
