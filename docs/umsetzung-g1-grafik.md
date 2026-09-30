@@ -181,7 +181,7 @@ Neue Prüfungen in `bau_karten.py` (laufen bei jedem Bau, mit und ohne Einrichtu
 | Einbau mit künstlichen Listen | `szenerie.py`: Liste ohne letzten Zeilenumbruch, Nummern, Texte | OK |
 | Fertiges Paket gegenlesen | `szenerie.pruefe_paket` bei jedem `paket.py`-Lauf, für beide Releases: Grafikliste → FRM, Prototypliste → PRO (PID, FID, Textnummer, Untertyp), Texte in `pro_scen.msg`, jedes Objekt auf der Karte mit passender FID am erwarteten Feld | OK |
 | Karte | Round-Trip byte-gleich, Wegeprüfung (Abschnitt 5) | OK |
-| Gesamtlauf | Builds RPU 2.4.34 und 2.3.34 mit allen Tests, Unofficial Patch, beide Pakete | je 79 Tests grün, Unofficial Patch gebaut, beide Pakete mit 11 Grafiken |
+| Gesamtlauf (zweiter Stand) | Builds RPU 2.4.34 und 2.3.34 mit allen Tests, Unofficial Patch, beide Pakete | je 79 Tests grün, Unofficial Patch gebaut, beide Pakete mit 11 Grafiken |
 
 ---
 

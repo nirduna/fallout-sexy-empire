@@ -23,7 +23,7 @@ import fomap  # noqa: E402
 import frm  # noqa: E402
 import geometrie as g  # noqa: E402
 
-REIHEN, SPALTEN = range(80, 99), range(59, 74)
+REIHEN, SPALTEN = range(80, 99), range(59, 81)
 
 
 def main():
