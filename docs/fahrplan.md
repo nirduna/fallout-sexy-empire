@@ -1,7 +1,7 @@
 # Fahrplan: der Rest der Umsetzung
 
 **Arbeitstitel:** *Rotlicht über dem Ödland* – Addon-Modifikation für Fallout 2
-**Stand:** Umsetzung 1–15 sind fertig, die Gosse ist im Spiel getestet. Das [Prüfwerkzeug](pruefwerkzeug.md) steht.
+**Stand:** Umsetzung 1–16 sind fertig, die Gosse ist im Spiel getestet. Das [Prüfwerkzeug](pruefwerkzeug.md) steht.
 **Auftrag:** Alles Übrige aus Phase 1–6 umsetzen, prüfen und abschließen, ohne weitere Rückfragen. Wo eine Entscheidung nötig ist, gilt meine Empfehlung. Jede steht in der Doku des jeweiligen Schritts.
 
 ---
@@ -45,7 +45,7 @@ Diese Regeln gelten für alle folgenden Schritte. Sie halten das Addon verträgl
 | 13 ✔ | **Talente** ([Umsetzung 13](umsetzung-13-talente.md)) | Vesper (Gecko), Abigail Kessler (Vault City), Talus (Broken Hills), Julian Rook (Golden Globes), dazu Loyalität, Vorwarnung vor dem Tod und Tyrannen-Varianten |
 | 14 ✔ | **Jobs und Läuferroute** ([Umsetzung 14](umsetzung-14-jobs.md)) | Bestechung je Stadt, Schutzgeld, Sabotage, Gefälligkeiten. „Die Läuferroute“ mit Marcus |
 | 15 ✔ | **Ereignisse vollständig** ([Umsetzung 15](umsetzung-15-ereignisse.md)) | alle Lösungswege aus Phase 4 (4.2, 4.3) bei allen Madames, Razzien je Stadt, Tod im Haus |
-| 16 | **Abschluss** | Enden und Nachsätze aller Linien im Epilog, Titel-Wirkungen, Gesamtprüfung, Pakete für RPU 2.3.34 und 2.4.34, Gesamtdoku |
+| 16 ✔ | **Abschluss** ([Umsetzung 16](umsetzung-16-abschluss.md)) | Enden und Nachsätze aller Linien im Epilog, Titel-Wirkungen, Gesamtprüfung, Pakete für RPU 2.3.34 und 2.4.34, Gesamtdoku |
 
 ---
 

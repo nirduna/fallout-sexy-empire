@@ -101,7 +101,7 @@ procedure Node100 begin
    if (haus[rl_idx(RL_NEW_RENO, RL_F_EINFLUSS)] >= 40) then
       NOption(103, Node112, 004);
    if (rl_zahlbar(haus, RL_NEW_RENO, RL_KITTY_DRUCK_PREIS)) then begin
-      if (has_skill(dude_obj, SKILL_UNARMED_COMBAT) >= 60) then
+      if ((has_skill(dude_obj, SKILL_UNARMED_COMBAT) >= 60) or global_var(GVAR_NEW_RENO_HAS_REP_PRIZEFIGHTER)) then
          BOption(104, Node113, 004);
       if (haus[rl_idx(RL_NEW_RENO, RL_F_MODULE)] bwand RL_MOD_VIP) then
          BOption(105, Node113, 004);

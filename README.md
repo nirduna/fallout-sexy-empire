@@ -35,8 +35,17 @@ Konzept und Skripte für eine Addon-Modifikation für **Fallout 2** (sfall 4.x).
 | 13 | Talente: Vesper, Abigail Kessler, Talus und Julian Rook mit Anwerbe-Wegen, Loyalität, Tyrannen-Varianten und einer Woche Vorwarnung vor dem Tod | umgesetzt, im Prüfwerkzeug getestet, Test im Spiel offen: [docs/umsetzung-13-talente.md](docs/umsetzung-13-talente.md) |
 | 14 | Jobs und Läuferroute: Tyler, Totengräber, McClure und der Polizist, Schutzgeld, Sabotage mit Erpressungsmaterial, Spenden, Sheriff Marcus mit Relais, Eskorte oder Sperre | umgesetzt, im Prüfwerkzeug getestet, Test im Spiel offen: [docs/umsetzung-14-jobs.md](docs/umsetzung-14-jobs.md) |
 | 15 | Ereignisse vollständig: alle Lösungswege der Krisen bei jeder Madame, Razzien je Stadt mit Frühwarnung, Tod im Haus, Stammkunde, Abwerbung, Überfall, Ghul im Haus, Der Richter, Besuch aus dem Bunker, Inspektion der Liga | umgesetzt, im Prüfwerkzeug getestet, Test im Spiel offen: [docs/umsetzung-15-ereignisse.md](docs/umsetzung-15-ereignisse.md) |
+| 16 | Abschluss: Titel-Wirkungen, fünf weitere Nachsätze im Epilog, Gesamtprüfung, Testpakete für RPU 2.4.34 und 2.3.34 | umgesetzt, im Prüfwerkzeug getestet, Test im Spiel offen: [docs/umsetzung-16-abschluss.md](docs/umsetzung-16-abschluss.md) |
 
-Der letzte Schritt 16 steht im [Fahrplan](docs/fahrplan.md).
+Alle 16 Schritte des [Fahrplans](docs/fahrplan.md) sind umgesetzt. Im Spiel getestet ist bisher nur die Gosse. Was sonst noch offen ist, steht in [Umsetzung 16, Abschnitt 5](docs/umsetzung-16-abschluss.md#5-was-im-spiel-noch-offen-ist).
+
+## Testpaket installieren
+
+`tools/paket.py` baut für ein RPU-Release einen sfall-Mod-Ordner `mods/rotlicht` und legt eine `ANLEITUNG.txt` dazu: Installation, die sechs Häuser und ihre Eingänge, das Menü der Madame, Debug-Tasten und was zu prüfen ist. Kurz:
+
+1. `mods/rotlicht` nach `<Fallout 2>/mods/` kopieren.
+2. `rotlicht` als letzte Zeile in `mods/mods_order.txt` eintragen.
+3. Ein neues Spiel beginnen. In der Den führt auf Den Business 2 eine Kellertreppe in die Gosse.
 
 ## Werkzeuge
 

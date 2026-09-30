@@ -305,7 +305,8 @@ procedure RLM_Jobs begin
    // Gefaelligkeiten (5.3)
    if ((h == RL_DEN) and ((welt[RL_W_JOBS] bwand RL_JOB_KLINIK) == 0) and rlm_bezahlbar(RL_KLINIK_SPENDE)) then
       GOption(1013, RLM_Klinik, 004);
-   if ((h == RL_NCR) and ((welt[RL_W_JOBS] bwand RL_JOB_RANGERS) == 0) and rlm_bezahlbar(RL_RANGERS_SPENDE)) then
+   if ((h == RL_NCR) and ((welt[RL_W_JOBS] bwand RL_JOB_RANGERS) == 0) and rlm_bezahlbar(RL_RANGERS_SPENDE)
+       and not rl_seelenverkaeufer) then
       GOption(1014, RLM_Rangers, 004);
    NOption(109, RLM_Draussen, 004);
 end
@@ -417,7 +418,8 @@ procedure RLM_Laeufer begin
    if ((not besucht) and (m < RL_MARCUS_ESKORTE)) then text := text + " " + mstr(1045);
    Reply(text);
    if (besucht and (m == RL_MARCUS_KEIN)) then begin
-      if ((has_skill(dude_obj, SKILL_SPEECH) >= 70 + 10 * geld) and (global_var(GVAR_REPUTATION_SLAVER) != 1)) then
+      // Dem Seelenverkaeufer hoert Marcus nicht zu; dem anstaendigen Haus eher (Phase 6, 3.1)
+      if ((has_skill(dude_obj, SKILL_SPEECH) >= 70 + 10 * geld - rl_titel_bonus) and not rl_seelenverkaeufer) then
          GOption(1046, RLM_MarcusReden, 004);
       if (not geld) then
          BOption(1047, RLM_MarcusGeld, 004);
@@ -638,7 +640,8 @@ procedure RLM_Krise begin
          if (rl_max(rl_max(has_skill(dude_obj, SKILL_SMALL_GUNS), has_skill(dude_obj, SKILL_MELEE)),
                     has_skill(dude_obj, SKILL_UNARMED_COMBAT)) >= 60) then
             NOption(174, RLM_VergeltungKampf, 004);
-         if (welt[RL_W_RANGERS] >= RL_RANGERS_KONTAKT) then
+         if ((welt[RL_W_RANGERS] >= RL_RANGERS_KONTAKT) and (welt[RL_W_RANGERS] != RL_RANGERS_FEIND)
+             and not rl_seelenverkaeufer) then
             GOption(175, RLM_VergeltungRangers, 004);
       end
    end
@@ -995,12 +998,12 @@ end
 procedure rlm_talente_da begin
    if (welt[RL_W_JULIAN] == RL_TS_KRITISCH) then return 1;
    if (h == RL_NEW_RENO) then begin
-      if (welt[RL_W_VESPER_STAND] == RL_TS_OFFEN) then return 1;
+      if ((welt[RL_W_VESPER_STAND] == RL_TS_OFFEN) and not rl_seelenverkaeufer) then return 1;
       if ((welt[RL_W_VESPER_STAND] == RL_TS_DA) and (welt[RL_W_VESPER_FRAGE] == 0)) then return 1;
       if ((welt[RL_W_JULIAN] == RL_TS_OFFEN) or (welt[RL_W_JULIAN] == RL_TS_AUFTRAG)) then return 1;
    end
    if ((h == RL_VAULT_CITY) and (welt[RL_W_ABIGAIL] == RL_TS_OFFEN)) then return 1;
-   if ((h != RL_VAULT_CITY) and (welt[RL_W_TALUS] == RL_TS_OFFEN)) then return 1;
+   if ((h != RL_VAULT_CITY) and (welt[RL_W_TALUS] == RL_TS_OFFEN) and not rl_seelenverkaeufer) then return 1;
    if ((welt[RL_W_TALUS] == RL_TS_DA) and (welt[RL_W_TALUS_LOYAL] < 100) and (dude_iq >= 7)) then return 1;
    return 0;
 end
@@ -1009,13 +1012,14 @@ procedure RLM_Talente begin
    Reply(951);
    if (welt[RL_W_JULIAN] == RL_TS_KRITISCH) then NOption(996, RLM_JulianRetten, 004);
    if (h == RL_NEW_RENO) then begin
-      if (welt[RL_W_VESPER_STAND] == RL_TS_OFFEN) then NOption(952, RLM_Vesper, 004);
+      if ((welt[RL_W_VESPER_STAND] == RL_TS_OFFEN) and not rl_seelenverkaeufer) then NOption(952, RLM_Vesper, 004);
       if ((welt[RL_W_VESPER_STAND] == RL_TS_DA) and (welt[RL_W_VESPER_FRAGE] == 0)) then NOption(953, RLM_VesperFrage, 004);
       if (welt[RL_W_JULIAN] == RL_TS_OFFEN) then NOption(954, RLM_Julian, 004);
       if (welt[RL_W_JULIAN] == RL_TS_AUFTRAG) then NOption(955, RLM_JulianEntzug, 004);
    end
    if ((h == RL_VAULT_CITY) and (welt[RL_W_ABIGAIL] == RL_TS_OFFEN)) then NOption(956, RLM_Abigail, 004);
-   if ((h != RL_VAULT_CITY) and (welt[RL_W_TALUS] == RL_TS_OFFEN)) then NOption(957, RLM_Talus, 004);
+   if ((h != RL_VAULT_CITY) and (welt[RL_W_TALUS] == RL_TS_OFFEN) and not rl_seelenverkaeufer) then
+      NOption(957, RLM_Talus, 004);
    if ((welt[RL_W_TALUS] == RL_TS_DA) and (welt[RL_W_TALUS_LOYAL] < 100) and (dude_iq >= 7)) then
       GOption(958, RLM_TalusLesen, 004);
    NOption(959, RLM_Draussen, 004);

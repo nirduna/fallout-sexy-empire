@@ -146,3 +146,4 @@
 {258}{}{The police checked every paper and every door. Everything was in order.}
 {259}{}{The police found the house without valid papers. The fine is $500.}
 {260}{}{A raid is coming next week. The madam wants a word with you.}
+{262}{}{Talus has heard what people say about you. He put down his club, walked back to Broken Hills and told Marcus everything he knew.}

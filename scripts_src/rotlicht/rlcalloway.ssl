@@ -82,7 +82,7 @@ procedure Node100 begin
    else
       Reply(100);
    if ((welt[RL_W_REINE] == RL_REINE_FLUGBLAETTER) and ((welt[RL_W_NCR_KENNT] bwand RL_NCR_KENNT_CALLOWAY) == 0)
-       and (has_skill(dude_obj, SKILL_SPEECH) >= 60)) then
+       and (has_skill(dude_obj, SKILL_SPEECH) >= 60 - rl_titel_bonus) and not rl_seelenverkaeufer) then
       GOption(101, Node110, 004);
    NOption(103, Node999, 004);
    NLowOption(104, Node999);

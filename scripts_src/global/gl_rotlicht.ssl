@@ -303,6 +303,13 @@ procedure rl_welt_modifikatoren begin
    end
 
    call rl_marcus_pruefen;
+
+   // Preisboxer (Vanilla-Titel): Sicherheit im Strumpfband +10, einmal (Phase 6, 3.2)
+   if (global_var(GVAR_NEW_RENO_HAS_REP_PRIZEFIGHTER) and haus[rl_idx(RL_NEW_RENO, RL_F_BESITZ)]
+       and ((welt[RL_W_EREIGNIS_FLAGS] bwand RL_EF_BOXER) == 0)) then begin
+      welt[RL_W_EREIGNIS_FLAGS] := welt[RL_W_EREIGNIS_FLAGS] bwor RL_EF_BOXER;
+      haus[rl_idx(RL_NEW_RENO, RL_F_SICHERHEIT)] := haus[rl_idx(RL_NEW_RENO, RL_F_SICHERHEIT)] + 10;
+   end
 end
 
 /* Laeuferroute (Phase 3, Abschnitt 6): Marcus' Vertrauen folgt aus seiner
@@ -322,7 +329,7 @@ procedure rl_marcus_pruefen begin
       return;
    end
    if (welt[RL_W_MARCUS] == RL_MARCUS_GESPERRT) then return;
-   if ((global_var(GVAR_REPUTATION_SLAVER) == 1) or (welt[RL_W_KETTEN] == RL_KETTEN_NEUER_METZGER)) then begin
+   if (rl_seelenverkaeufer or (welt[RL_W_KETTEN] == RL_KETTEN_NEUER_METZGER)) then begin
       welt[RL_W_MARCUS] := RL_MARCUS_GESPERRT;
       if (haus[rl_idx(RL_NEW_RENO, RL_F_BESITZ)]) then display_msg(rl_text(233));
       return;
@@ -657,6 +664,17 @@ procedure rl_ende_und_titel begin
       nachsatz := RL_NACHSATZ_KRALLE;
    else if ((welt[RL_W_VESPER] == 1) and haus[rl_idx(RL_NEW_RENO, RL_F_BESITZ)]) then
       nachsatz := RL_NACHSATZ_STIMME;
+   // Die Linien nach Phase 6 (Umsetzung 16), mit geringerem Gewicht
+   else if (welt[RL_W_VIRGIN] == RL_VIRGIN_LEERER_STUHL) then
+      nachsatz := RL_NACHSATZ_STUHL;
+   else if (welt[RL_W_MARCUS] == RL_MARCUS_ESKORTE) then
+      nachsatz := RL_NACHSATZ_STRASSE;
+   else if ((welt[RL_W_TALUS] == RL_TS_DA) and (welt[RL_W_TALUS_LOYAL] >= 100)) then
+      nachsatz := RL_NACHSATZ_STEIN;
+   else if ((welt[RL_W_JULIAN] == RL_TS_DA) and (welt[RL_W_JULIAN_WEG] != RL_JULIAN_TYRANN)) then
+      nachsatz := RL_NACHSATZ_JULIAN;
+   else if ((welt[RL_W_ABIGAIL] == RL_TS_DA) and (welt[RL_W_ABIGAIL_WEG] == RL_ABIGAIL_BUERGERIN)) then
+      nachsatz := RL_NACHSATZ_BUERGERIN;
 
    call rl_setze_gvar(GVAR_RL_ENDE, ende);
    call rl_setze_gvar(GVAR_RL_NACHSATZ, nachsatz);
@@ -1247,7 +1265,7 @@ procedure rl_talente_woche(variable woche) begin
          display_msg(rl_haus_name(RL_NEW_RENO) + ": " + rl_text(212));
       end
    end else if (welt[RL_W_VESPER_STAND] == RL_TS_DA) then begin
-      if (rl_zwang_irgendwo(haus) or (welt[RL_W_VESPER_LOYAL] < RL_LOYAL_GRENZE)) then begin
+      if (rl_zwang_irgendwo(haus) or (welt[RL_W_VESPER_LOYAL] < RL_LOYAL_GRENZE) or rl_seelenverkaeufer) then begin
          welt[RL_W_VESPER_STAND] := RL_TS_GEGANGEN;
          welt[RL_W_VESPER] := 0;
          call rl_talent_weg(RL_TALENT_VESPER, 213);
@@ -1279,14 +1297,20 @@ procedure rl_talente_woche(variable woche) begin
          welt[RL_W_TALUS] := RL_TS_GEGANGEN;
          welt[RL_W_MARCUS] := RL_MARCUS_GESPERRT;
          call rl_talent_weg(RL_TALENT_TALUS, 218);
+      end else if (rl_seelenverkaeufer) then begin
+         welt[RL_W_TALUS] := RL_TS_GEGANGEN;
+         call rl_talent_weg(RL_TALENT_TALUS, 262);
       end
    end
 
-   // Julian: VIP-Kundschaft in jedem Haus mit VIP-Trakt, Ruf +1; der Rueckfall
+   // Julian: VIP-Kundschaft in jedem Haus mit VIP-Trakt, Ruf +1; der Rueckfall.
+   // Der Titel Pornostar bringt dem Strumpfband zwei VIP-Kunden mehr (Phase 6, 3.2)
    h := 0;
    while (h < RL_ANZAHL_HAEUSER) do begin
-      if (rl_julian_aktiv(welt)) then haus[rl_idx(h, RL_F_VIP_MOD)] := RL_JULIAN_VIP;
-      else haus[rl_idx(h, RL_F_VIP_MOD)] := 0;
+      c := 0;
+      if (rl_julian_aktiv(welt)) then c := RL_JULIAN_VIP;
+      if ((h == RL_NEW_RENO) and global_var(GVAR_NEW_RENO_PORN_STAR)) then c := c + 2;
+      haus[rl_idx(h, RL_F_VIP_MOD)] := c;
       if (haus[rl_idx(h, RL_F_BESITZ)]) then begin
          if (haus[rl_idx(h, RL_F_MODULE)] bwand RL_MOD_JET_THEKE) then jet := 1;
          if (haus[rl_idx(h, RL_F_MODULE)] bwand RL_MOD_KRANKENSTUBE) then doc := 1;

@@ -217,7 +217,7 @@ procedure Node860 begin
 end
 
 procedure Node861 begin
-   if (rl_zwang_irgendwo(haus)) then begin
+   if (rl_zwang_irgendwo(haus) or rl_seelenverkaeufer) then begin
       Reply(mstr(862) + " " + mstr(863));
       NOption(869, Node999, 004);
       NLowOption(869, Node999);

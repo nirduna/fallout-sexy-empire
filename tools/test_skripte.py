@@ -3177,6 +3177,111 @@ def test_ereignisse_weitere(u):
     allgemein(sp, 'inspektion')
 
 
+# --------------------------------------------------------------------------
+# Umsetzung 16: Titel-Wirkungen und Epilog
+
+def test_titel_wirkungen(u):
+    k = u.k
+    # Seelenverkaeufer: Talus und Vesper verweigern sich, Marcus sperrt die Stadt
+    sp, w = _nr_uebernommen(u, 'Salvatore')
+    roz = figur(sp, k, 'RLROZ')
+    rede(sp, roz, ['how the house', None])
+    v = rede(sp, roz, ['Business outside', 'People worth knowing'])
+    pruefe(any('super mutant' in o for o in _optionen_bei(v, 'People worth knowing')), 'Talus ohne Titel')
+    w.setze_welt('RL_W_TYRANN_WOCHEN', 4)
+    sp.globale[0].rufe_mit('rl_ende_und_titel')
+    pruefe(sp.gvars.get(k['GVAR_RL_TITEL_SEELE']) == 1, 'Titel Seelenverkaeufer')
+    v = rede(sp, roz, ['Business outside', 'People worth knowing'])
+    opts = _optionen_bei(v, 'People worth knowing')
+    pruefe(not any('super mutant' in o or 'ghoul in Gecko' in o for o in opts), f'Talus/Vesper trotz Titel: {opts}')
+    sp.globale[0].rufe_mit('rl_marcus_pruefen')
+    pruefe(w.welt('RL_W_MARCUS') == k['RL_MARCUS_GESPERRT'], 'Marcus sperrt den Seelenverkaeufer')
+    allgemein(sp, 'seelenverkaeufer')
+    # Anstaendiges Haus: Marcus hoert schon bei Speech 60 zu
+    sp, w = _nr_uebernommen(u, 'Salvatore')
+    sp, w = _red_uebernommen(u, sp)
+    betrete_strumpfband(u, sp)
+    roz = figur(sp, k, 'RLROZ')
+    rede(sp, roz, ['how the house', None])
+    sp.betrete_karte(k['MAP_BROKEN_HILLS1'])
+    betrete_strumpfband(u, sp)
+    roz = figur(sp, k, 'RLROZ')
+    sp.dude.skills[k['SKILL_SPEECH']] = 60
+    v = rede(sp, roz, ['Business outside', "runners' road"])
+    pruefe(not any('[Speech]' in o for o in _optionen_bei(v, "runners' road")), 'Speech 60 ohne Titel')
+    sp.gvars[k['GVAR_RL_TITEL_ANSTAND']] = 1
+    rede(sp, roz, ['Business outside', "runners' road", '[Speech]', None])
+    pruefe(w.welt('RL_W_MARCUS') == k['RL_MARCUS_RELAIS'], 'Anstaendiges Haus: Marcus +10')
+    # Pornostar: zwei VIP-Kunden mehr im Strumpfband; Preisboxer: Sicherheit +10, einmal
+    sp.gvars[k['GVAR_NEW_RENO_PORN_STAR']] = 1
+    sp.globale[0].rufe_mit('rl_talente_woche', 999)
+    pruefe(w.haus(NR, 'RL_F_VIP_MOD') == 2 and w.haus(RED, 'RL_F_VIP_MOD') == 0, 'Pornostar')
+    sp.gvars[k['GVAR_NEW_RENO_HAS_REP_PRIZEFIGHTER']] = 1
+    sicher = w.haus(NR, 'RL_F_SICHERHEIT')
+    sp.globale[0].rufe('rl_welt_modifikatoren')
+    sp.globale[0].rufe('rl_welt_modifikatoren')
+    pruefe(w.haus(NR, 'RL_F_SICHERHEIT') == sicher + 10, 'Preisboxer')
+    allgemein(sp, 'anstand')
+    # Die Fuenfte Familie: Tribut in New Reno -5 Punkte (nur in der Woche mit Titel)
+    sp, w = _nr_uebernommen(u, 'Salvatore')
+    sp2 = copy.deepcopy(sp)
+    sp.gvars[k['GVAR_RL_TITEL_FAMILIE']] = 1
+    ruhige_woche(sp)
+    ruhige_woche(sp2)
+    w2 = Welt(sp2, k)
+    pruefe(w.haus(NR, 'RL_F_GEWINN') > w2.haus(NR, 'RL_F_GEWINN'),
+           f'Fuenfte Familie: {w.haus(NR, "RL_F_GEWINN")} / {w2.haus(NR, "RL_F_GEWINN")}')
+    # Sexperte: Qualitaet +5 bringt mehr Kunden
+    sp, e, ko, w = _gosse_bereit(u)
+    w.setze_haus(0, 'RL_F_ZIMMER', 20)
+    w.setze_haus(0, 'RL_F_PERSONAL', 20)
+    sp2 = copy.deepcopy(sp)
+    sp.gvars[k['GVAR_SEXPERT']] = 1
+    ruhige_woche(sp)
+    ruhige_woche(sp2)
+    pruefe(w.haus(0, 'RL_F_KUNDEN') > Welt(sp2, k).haus(0, 'RL_F_KUNDEN'),
+           f'Sexperte: {w.haus(0, "RL_F_KUNDEN")} / {Welt(sp2, k).haus(0, "RL_F_KUNDEN")}')
+    allgemein(sp, 'titel')
+
+
+def test_epilog_nachsaetze(u):
+    k = u.k
+    sp, w = _nr_uebernommen(u, 'Salvatore')
+    ruhige_woche(sp)
+    faelle = [('RL_W_VIRGIN', k['RL_VIRGIN_LEERER_STUHL'], 'RL_NACHSATZ_STUHL'),
+              ('RL_W_MARCUS', k['RL_MARCUS_ESKORTE'], 'RL_NACHSATZ_STRASSE')]
+    for feld, wert, nachsatz in faelle:
+        alt = w.welt(feld)
+        w.setze_welt(feld, wert)
+        sp.globale[0].rufe_mit('rl_ende_und_titel')
+        pruefe(sp.gvars.get(k['GVAR_RL_NACHSATZ']) == k[nachsatz], f'{nachsatz}: {sp.gvars.get(k["GVAR_RL_NACHSATZ"])}')
+        w.setze_welt(feld, alt)
+    w.setze_welt('RL_W_TALUS', k['RL_TS_DA'])
+    w.setze_welt('RL_W_TALUS_LOYAL', 100)
+    sp.globale[0].rufe_mit('rl_ende_und_titel')
+    pruefe(sp.gvars.get(k['GVAR_RL_NACHSATZ']) == k['RL_NACHSATZ_STEIN'], 'Nachsatz Talus')
+    w.setze_welt('RL_W_TALUS', 0)
+    w.setze_welt('RL_W_JULIAN', k['RL_TS_DA'])
+    w.setze_welt('RL_W_JULIAN_WEG', k['RL_JULIAN_BARTER'])
+    sp.globale[0].rufe_mit('rl_ende_und_titel')
+    pruefe(sp.gvars.get(k['GVAR_RL_NACHSATZ']) == k['RL_NACHSATZ_JULIAN'], 'Nachsatz Julian')
+    w.setze_welt('RL_W_JULIAN', 0)
+    w.setze_welt('RL_W_ABIGAIL', k['RL_TS_DA'])
+    w.setze_welt('RL_W_ABIGAIL_WEG', k['RL_ABIGAIL_BUERGERIN'])
+    sp.globale[0].rufe_mit('rl_ende_und_titel')
+    pruefe(sp.gvars.get(k['GVAR_RL_NACHSATZ']) == k['RL_NACHSATZ_BUERGERIN'], 'Nachsatz Abigail')
+    # Jede Zeile in endgame.txt.add hat ihren Untertitel, reines ASCII, Zeilen "n:Text"
+    for zeile in open(os.path.join(WURZEL, 'install', 'endgame.txt.add')):
+        if not zeile.strip() or zeile.startswith('#'):
+            continue
+        name = zeile.split(',')[3].split('#')[0].strip()
+        pfad = os.path.join(WURZEL, 'text_src', 'english', 'cuts', name + '.txt')
+        pruefe(os.path.exists(pfad), f'Untertitel fehlt: {name}')
+        for n, t in enumerate(open(pfad, encoding='ascii').read().splitlines(), 1):
+            pruefe(t.startswith(f'{n}:') and len(t) > 3, f'{name}: Zeile {n} falsch')
+    allgemein(sp, 'epilog')
+
+
 TESTS = [test_wirtschaft_paritaet, test_erkundung, test_eingang, test_prolog_wege, test_diebstahl_erwischt, test_ketten_annehmen,
          test_ketten_ablehnen, test_ketten_kein_geld, test_kolbe_stirbt, test_kolbe_kommt_zurueck,
          test_wochen, test_anwerbung_werben, test_anwerbung_zwingen, test_pferch_flucht_und_nachschub,
@@ -3196,7 +3301,8 @@ TESTS = [test_wirtschaft_paritaet, test_erkundung, test_eingang, test_prolog_weg
          test_virgin_gebuehr_und_kitty, test_virgin_dealer_und_nacht, test_virgin_umarmung_und_vanilla,
          test_erkundung_virgin, test_talent_vesper, test_talent_abigail, test_talent_talus, test_talent_julian,
          test_jobs_den, test_jobs_staedte, test_jobs_buecher_bei_jade, test_laeuferroute,
-         test_ereignisse_soldaten, test_ereignisse_razzia, test_ereignisse_weitere]
+         test_ereignisse_soldaten, test_ereignisse_razzia, test_ereignisse_weitere,
+         test_titel_wirkungen, test_epilog_nachsaetze]
 
 
 def main():

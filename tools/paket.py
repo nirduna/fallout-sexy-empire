@@ -262,17 +262,21 @@ def packen(a):
 
 def anleitungstext(release, sb, gb, ki, debug):
     tasten = """
-DEBUG-TASTEN
+DEBUG-TASTEN (nur in diesem Testpaket)
   F11  von überall direkt in die Gosse (The Gutter)
   F8   auf Den Business 2 neben die Kellertreppe (nur dort)
   F9   Essie und Kolbe erscheinen neben dir (Notlösung ohne Karte)
   F12  Bildschirmfoto (Spiel), landet im Fallout-2-Ordner als SCR*.BMP
+  Bei jeder Madame unter "Let's go over how the house is run.":
+       "[Debug] Add two empty rooms." und "[Debug] Show me the ending."
 """ if debug else ""
     return f"""Rotlicht über dem Ödland – Testpaket
 =====================================
 
 Für: Fallout 2 Restoration Project {release}, Spiel auf Englisch
 Build: Skriptbasis {sb}, GVAR-Basis {gb}, Kartennummer der Gosse {ki}{", mit Debug-Tasten" if debug else ""}
+Stand: alle 16 Schritte des Fahrplans. Im Spiel getestet ist bisher nur die
+Gosse (Eingang, Karte, Prolog). Alles andere ist nur im Prüfwerkzeug geprüft.
 
 WICHTIG
 - Das Paket passt nur zu RPU {release}. Die Version steht im Namen des
@@ -292,33 +296,46 @@ ENTFERNEN
 Die Zeile  rotlicht  in mods_order.txt löschen (oder ein ; davorsetzen).
 Danach wieder die alten Spielstände benutzen.
 {tasten}
-WAS PRÜFEN (ausführlich: docs/umsetzung-2-die-gosse.md, Abschnitt 5)
-Den Business 2 (Ruine zwischen Sklavengilde und Mom's Diner):
-  1. Steht die Kellertreppe sauber in der Ruine (nicht in einer Wand, nicht
-     halb im Schutt)?
-  2. Maus darüber: "Stairs lead down beneath the ruin."
-  3. Benutzen: Du landest in der Gosse (The Gutter).
-Die Gosse:
-  4. Gedämpftes Licht, beim ersten Mal ein Satz zur Stimmung.
-  5. Wo Beckys Destille stand: nichts Schwebendes, kein Schatten ohne Objekt.
-  6. Essie am Tisch, Kolbe an der Tür zum hinteren Raum. Beide ansprechbar,
-     der Prolog läuft.
-  7. Holztür zum hinteren Raum lässt sich öffnen.
-  8. Treppe nach oben: zurück in die Den, direkt neben die Kellertreppe.
-  9. Speichern und Laden in der Gosse, der Spielstand heißt "The Gutter".
- 10. Alle Texte da? Nirgends "Error"?
+SO FÄNGT ES AN
+In der Den, auf Den Business 2 (Ruine zwischen Sklavengilde und Mom's
+Diner), führt eine Kellertreppe hinab in die Gosse (The Gutter). Essie
+schuldet Metzgers Mann Kolbe Geld: Das ist der Prolog. Danach gehört dir
+das Haus, und Essie erzählt dir unter "Business outside these walls." ->
+"Where else could we open a house?" von den anderen fünf Städten.
 
-NEU: ANWERBUNG (docs/umsetzung-3-anwerbung.md, Abschnitt 5)
- 11. Bei Essie "[Debug] Add two empty rooms", dann "Let's talk about our
-     people": 5 Zimmer, 3 Leute.
- 12. Werben wählen, im Pip-Boy 2 Wochen ruhen: eine neue Person.
- 13. Zwingen wählen: jede Woche eine Person, aber die Moral sinkt deutlich.
+DIE SECHS HÄUSER
+  The Gutter        The Den, Keller auf Den Business 2        Prolog mit Essie und Kolbe
+  The Silver Garter New Reno 1, Treppe am Cat's Paw           Urkunde bei der Witwe, Segen einer
+                                                              Familie über Pagano
+  The Slag          Redding, Bergbaulager (Mine Entrance)     Ascortis Lizenz über den Schreiber
+  The Cesspit       Vault City Courtyard, hinter Cassidy's    Hanne Voss, dann die Papiere
+  The Trough        NCR Bazaar, am Rawhide Saloon             Lizenz bei der Inspektorin Grieve
+  The Bilge         San Francisco, Dock                       die Duldung bei Aufseher Wen
 
-NEU: KETTEN, AKT 1 (docs/umsetzung-4-ketten-akt1.md, Abschnitt 6)
- 14. Kolbe ansprechen: Metzgers Angebot (zwei aus den Pferchen, 350 $).
-     Wer den Prolog schon hinter sich hat, findet Kolbe beim nächsten
-     Betreten der Gosse wieder vor.
- 15. Annehmen oder ablehnen, dann Essie ansprechen: ihre Reaktion.
+DAS MENÜ DER MADAME
+  Give me the till.                      Kasse auszahlen
+  Let's go over how the house is run.    Preise, Anteil, Moral, Personal, Ausbau
+  There's a problem?                     Krisen und ihre Lösungswege
+  Business outside these walls.          andere Städte, Talente, Jobs (Bestechung,
+                                         Schutzgeld, Sabotage, Spenden), Läuferroute
+  Later.                                 Gespräch beenden
+Dazu je Haus eigene Themen (Razzien, Rivalen, Questlinien).
+
+DIE WOCHE
+Abgerechnet wird jede Woche, aber nur auf Stadtkarten, nicht auf der
+Weltkarte. Die Zeit dazwischen wird beim nächsten Betreten nachgerechnet
+(höchstens ein paar Wochen). Zum Testen: im Pip-Boy ruhen lassen.
+
+WAS PRÜFEN (ausführlich jeweils im Abschnitt "Testen im Spiel" von
+docs/umsetzung-*.md)
+  1. Gosse: Treppe, Karte, Prolog, alle Wege; Anwerbung; Metzgers Angebot.
+  2. Jedes Menü: Ist "Later." immer sichtbar? Nirgends "Error"?
+  3. Jedes Haus: Eingang auf der Stadtkarte, Innenkarte, Madame, Übernahme.
+  4. Ein paar Wochen ruhen: Meldungen, Kasse, Läufer ins Hauptquartier
+     (sobald das Strumpfband dir gehört).
+  5. Krisen: Wenn die Madame eine meldet, die Wege durchprobieren.
+  6. Das Ende: bei einer Madame "[Debug] Show me the ending." zeigt die
+     Endslides des Addons (Hauptslide und höchstens ein Nachsatz).
 
 WENN ETWAS NICHT GEHT
 - Keine Treppe in der Ruine, F11 tut nichts: Steht  rotlicht  wirklich als
@@ -326,7 +343,7 @@ WENN ETWAS NICHT GEHT
   aktuelle RPU bringt es mit.)
 - Absturz oder Unsinn beim Laden: War es ein alter Spielstand? Dann ein
   neues Spiel beginnen.
-- Statt Text steht "Error": Datei unter mods\rotlicht\text\english fehlt,
+- Statt Text steht "Error": Datei unter mods\\rotlicht\\text\\english fehlt,
   oder das Spiel läuft in einer anderen Sprache (fallout2.cfg, language=).
 
 RÜCKMELDUNG

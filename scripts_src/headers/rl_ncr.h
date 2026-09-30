@@ -160,7 +160,7 @@ procedure rl_reine_bonus(variable haus, variable welt) begin
    if ((module bwand RL_MOD_REGISTRATUR) and (module bwand RL_MOD_KRANKENSTUBE)) then b := b + 10;
    if (welt[RL_W_REINE_AKT1] == RL_AKT1_STREIKPOSTEN) then b := b - 10;       // die Liga hat Maertyrer
    if (welt[RL_W_KITTY_RIVALIN]) then b := b - 10;                            // Kitty sagt gegen dich aus
-   return b;
+   return b + rl_titel_bonus;                                                 // Titel (Phase 6, 3.1)
 end
 
 procedure rl_reine_weiter(variable welt, variable akt) begin

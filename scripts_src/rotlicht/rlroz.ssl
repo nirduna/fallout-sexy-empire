@@ -132,7 +132,8 @@ end
 procedure Node821 begin
    welt[RL_W_VIRGIN_FLAGS] := welt[RL_W_VIRGIN_FLAGS] bwor RL_VF_DEALER_GEFUNDEN;
    Reply(821);
-   if (has_skill(dude_obj, SKILL_UNARMED_COMBAT) >= 60) then NOption(834, Node822, 004);
+   if ((has_skill(dude_obj, SKILL_UNARMED_COMBAT) >= 60) or global_var(GVAR_NEW_RENO_HAS_REP_PRIZEFIGHTER)) then
+      NOption(834, Node822, 004);
    if (has_skill(dude_obj, SKILL_SPEECH) >= 70) then GOption(835, Node823, 004);
    BOption(836, Node824, 004);
    NOption(123, RLM_Start, 004);

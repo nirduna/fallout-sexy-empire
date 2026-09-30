@@ -86,6 +86,12 @@
 #define RL_NACHSATZ_UEBERLEBENDE    (4)     // Mara als Madame
 #define RL_NACHSATZ_KRALLE          (5)     // Kitty als Rivalin
 #define RL_NACHSATZ_STIMME          (6)     // Vesper im Strumpfband
+// Umsetzung 16: die Linien nach Phase 6
+#define RL_NACHSATZ_STUHL           (7)     // Virgin Street: der leere Stuhl
+#define RL_NACHSATZ_STRASSE         (8)     // Marcus' Eskorte
+#define RL_NACHSATZ_STEIN           (9)     // Talus kann lesen
+#define RL_NACHSATZ_JULIAN          (10)    // Julian clean
+#define RL_NACHSATZ_BUERGERIN       (11)    // Abigail als Buergerin
 
 /* ------------------------------------------------------------------ */
 /* Speicherung                                                        */
@@ -483,6 +489,10 @@ procedure rl_haus_uebernehmen(variable haus, variable welt, variable h);
 procedure rl_rechne_woche(variable haus, variable h, variable stadt);
 procedure rl_anwerber_setzen(variable haus, variable h, variable methode);
 procedure rl_personal_verlust(variable haus, variable h, variable art);
+// Titel-Wirkungen (rl_jobs.h), schon in den Stadt-Headern gebraucht
+procedure rl_seelenverkaeufer;
+procedure rl_titel_bonus;
+procedure rl_tyrann_preis(variable preis);
 procedure rl_zwang_dazu(variable haus, variable h, variable n);
 procedure rl_riegel_aussen(variable haus, variable h);
 procedure rl_ketten_akt1(variable welt, variable zweig);
@@ -687,7 +697,8 @@ procedure rl_rechne_woche(variable haus, variable h, variable stadt) begin
       karma_tick := karma_tick - RL_ZWINGEN_KARMA;
 
    // Attraktivitaet
-   q_eff     := quali * (40 + 8 * moral / 10) / 100;
+   // Sexperte (Vanilla-Titel): Du weisst, wovon die Leute reden (Phase 6, 3.2)
+   q_eff     := rl_min(100, quali + 5 * (global_var(GVAR_SEXPERT) != 0)) * (40 + 8 * moral / 10) / 100;
    score     := (50 * q_eff + 30 * ausstattung + 20 * ruf) / 100;
    attraktiv := 40 + score * 2;
 
@@ -729,7 +740,8 @@ procedure rl_rechne_woche(variable haus, variable h, variable stadt) begin
    if (module bwand RL_MOD_KONTOR) then schwund := 4; else schwund := 10;
    schwund := schwund + rl_max(0, 40 - moral) / 3;
    if (moral >= 70) then schwund := schwund - 2;
-   tribut  := rl_max(0, rl_stadt(stadt, RL_S_TRIBUT) + haus[rl_idx(h, RL_F_TRIBUTMOD)]);
+   tribut  := rl_max(0, rl_stadt(stadt, RL_S_TRIBUT) + haus[rl_idx(h, RL_F_TRIBUTMOD)]
+                     - 5 * ((stadt == RL_NEW_RENO) and global_var(GVAR_RL_TITEL_FAMILIE)));   // Die Fuenfte Familie
 
    kosten := umsatz_dienst * anteil / 100
            + haus[rl_idx(h, RL_F_LOEHNE)]

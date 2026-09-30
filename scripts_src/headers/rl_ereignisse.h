@@ -25,6 +25,7 @@
 // Bits in RL_W_EREIGNIS_FLAGS
 #define RL_EF_RICHTER               (1)     // "Der Richter" war schon
 #define RL_EF_LEX_VERWIRKT          (2)     // die Inspektion der Liga ist durchgefallen
+#define RL_EF_BOXER                 (4)     // Sicherheit +10 fuer den Preisboxer vergeben (Umsetzung 16)
 
 // Beweise fuer eine Razzia (rl_razzia_beweise)
 #define RL_BEWEIS_FLUECHTLINGE      (1)

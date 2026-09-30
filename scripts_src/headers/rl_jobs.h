@@ -115,4 +115,23 @@ procedure rl_anstaendige_haeuser(variable haus) begin
    return n;
 end
 
+/* Titel (Phase 6, Abschnitt 3; Umsetzung 16). Der Vanilla-Titel Sklavenhaendler
+   wirkt wie "Seelenverkaeufer". */
+procedure rl_seelenverkaeufer begin
+   return (global_var(GVAR_RL_TITEL_SEELE) or (global_var(GVAR_REPUTATION_SLAVER) == 1));
+end
+
+// Checks bei anstaendigen NPCs (Marcus, Rangers, Calloway, Mara): +10 oder -10
+procedure rl_titel_bonus begin
+   if (rl_seelenverkaeufer) then return -10;
+   if (global_var(GVAR_RL_TITEL_ANSTAND)) then return 10;
+   return 0;
+end
+
+// Tyrannen-Quellen (Metzger, Vortis): dem Seelenverkaeufer 20 % billiger
+procedure rl_tyrann_preis(variable preis) begin
+   if (global_var(GVAR_RL_TITEL_SEELE)) then return preis * 80 / 100;
+   return preis;
+end
+
 #endif

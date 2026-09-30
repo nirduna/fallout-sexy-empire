@@ -61,7 +61,7 @@ variable selbst_weg := 0;
 #define RLM_EXTRA_OPTIONEN   if ((welt[RL_W_REINE] >= RL_REINE_FLUGBLAETTER) and (welt[RL_W_REINE] <= RL_REINE_BEWEISE)) then \
                                 NOption(850, Node850, 004);                                                                      \
                              if ((welt[RL_W_VORTIS] == 0) and (haus[rl_idx(h, RL_F_PERSONAL)] < haus[rl_idx(h, RL_F_ZIMMER)]) \
-                                 and rl_zahlbar(haus, h, RL_VORTIS_PREIS)) then                                                  \
+                                 and rl_zahlbar(haus, h, rl_tyrann_preis(RL_VORTIS_PREIS))) then                                                  \
                                 BOption(880, Node880, 004);                                                                      \
                              if ((welt[RL_W_REINE] == RL_REINE_DISKREDITIERUNG)                                                  \
                                  and ((welt[RL_W_NCR_TOTE] bwand RL_NCR_TOT_CALLOWAY) == 0)) then                                \
@@ -319,7 +319,7 @@ end
 /* Vortis' Angebot (Phase 2/4, Tyrannen-Route)                         */
 /* ------------------------------------------------------------------ */
 procedure Node880 begin
-   call rl_zahlen(haus, h, RL_VORTIS_PREIS);
+   call rl_zahlen(haus, h, rl_tyrann_preis(RL_VORTIS_PREIS));
    call rl_zwang_dazu(haus, h, 1);
    welt[RL_W_NCR_KENNT] := welt[RL_W_NCR_KENNT] bwor RL_NCR_VORTIS_KUNDE;
    Reply(908);

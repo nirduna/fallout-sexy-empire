@@ -66,6 +66,14 @@ Nach jedem Test laufen allgemeine Prüfungen:
 | `test_wochen` | Wochen vergehen, die Kasse ändert sich, es kommen Kunden |
 | `test_anwerbung_*` | Werben und Zwingen: Tempo, Kopfgeld, Lohn, Moral-Deckel, Hitze, Karma, Abgänge |
 | `test_pferch_flucht_und_nachschub` | Flucht aus dem Pferch, Kündigung, Metzgers Nachschub bis das Haus voll ist |
+| `test_erkundung_*` | Alle Dialogpfade je Stadt (Ketten, New Reno, Redding, Vault City, NCR, San Francisco, Virgin Street), mit und ohne Skills |
+| `test_nr_*`, `test_red_*`, `test_vc_*`, `test_ncr_*`, `test_reine_*`, `test_sf_*`, `test_virgin_*` | Übernahmen und Questlinien der Umsetzungen 7–12, jeder Weg und jedes Ende |
+| `test_talent_*` | Vesper, Abigail, Talus, Julian: Anwerbung, Wirkung, Abschied, Rückfall mit einer Woche Vorwarnung (Umsetzung 13) |
+| `test_jobs_*`, `test_laeuferroute` | Bestechung, Schutzgeld, Sabotage, Spenden, Marcus (Umsetzung 14) |
+| `test_ereignisse_*` | Krisen mit allen Lösungswegen, Razzien je Stadt, Tod im Haus, Eskalation (Umsetzung 15) |
+| `test_titel_wirkungen`, `test_epilog_nachsaetze` | Titel-Wirkungen, Nachsätze, Untertitel für jede Endslide (Umsetzung 16) |
+
+Die Erkundung der Gosse spielt jede Krise zweimal durch, einmal mit allen Skills auf 100. So ist geprüft, dass auch das vollste Krisenmenü ins Optionsfenster passt.
 
 ---
 

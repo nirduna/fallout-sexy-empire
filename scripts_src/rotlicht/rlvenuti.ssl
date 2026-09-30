@@ -106,7 +106,9 @@ end
 
 // Made Man einer anderen Familie als der Mordinos
 procedure rl_made_man_andere begin
-   return (rl_made_man(RL_SEGEN_WRIGHT) or rl_made_man(RL_SEGEN_SALVATORE) or rl_made_man(RL_SEGEN_BISHOP));
+   // Die Fuenfte Familie zaehlt bei den Familien wie ein Made Man (Phase 6, 3.1)
+   return (rl_made_man(RL_SEGEN_WRIGHT) or rl_made_man(RL_SEGEN_SALVATORE) or rl_made_man(RL_SEGEN_BISHOP)
+           or global_var(GVAR_RL_TITEL_FAMILIE));
 end
 
 /* ------------------------------------------------------------------ */
