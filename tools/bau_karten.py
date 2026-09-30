@@ -72,11 +72,15 @@ RLDEN01 = dict(
         "ANGREIFER1": 16866,  # kommen die Treppe herunter
         "ANGREIFER2": 17264,
     },
+    # Felder, die die eigene Einrichtung vom Raum trennen darf: eine Nische in der
+    # Zickzack-Rueckwand hinter Bett und Waschtisch (Reihe 82), kein Weg fuehrt hindurch
+    nischen={16470},
 )
 
 
 # Szenerie, die nicht im Weg steht (unsichtbare Lichtquelle)
 NICHT_BLOCKIEREND = {0x200008D}
+BLOCKER_PID = 0x2000043          # "Secret Blocking Hex", auf den freien Feldern grosser Moebel
 
 # ------------------------------------------------------------------ weitere Haeuser (Umsetzung 6)
 # Jedes Haus: ein Eingang auf der Vanilla-Stadtkarte (zur Laufzeit gesetzt, dieselbe
@@ -207,7 +211,9 @@ def skriptlisten(saetze_je_typ):
     return listen
 
 
-def baue_rlden01(karten_dir, db, skript_basis, karten_index):
+def baue_rlden01(karten_dir, db, skript_basis, karten_index, dekor=None):
+    """dekor: {Stueck: (fid, pid)} aus szenerie.einfuegen; dann kommt die eigene
+    Einrichtung (tools/grafik/katalog.py) dazu. Ohne dekor die Karte wie bisher."""
     offs = skript_offsets()
     idx0 = lambda name: skript_basis + offs[name] - 1          # 0-basiert (scripts.lst-Zeile - 1)
     v = fomap.Karte.lesen((Path(karten_dir) / f"{RLDEN01['vorlage']}.map").read_bytes(), db)
@@ -270,17 +276,61 @@ def baue_rlden01(karten_dir, db, skript_basis, karten_index):
         skript_fuer(o, idx0(f["skript"]))
         objekte.append(o)
 
+    neu = []
+    if dekor:
+        import szenerie
+        vorher = {o["kopf"]["tile"]: hex(o["kopf"]["pid"]) for o in objekte}
+        k.objekte = [objekte, [], []]
+        weg_vorher = erreichbar_von(k, RLDEN01["eingang_hex"])
+        neu = szenerie.kartenobjekte(dekor, naechste_id)
+        for o in neu:
+            t = o["kopf"]["tile"]
+            if t in vorher:
+                raise SystemExit(f"Einrichtung {o['kopf']['pid']:#x} auf Hex {t}, dort ist schon {vorher[t]}")
+            vorher[t] = hex(o["kopf"]["pid"])
+            db.extra.setdefault(o["kopf"]["pid"], 0)        # generische Szenerie: keine Zusatzdaten
+        objekte += neu
+        # Die Einrichtung nimmt nur ihre eigenen Felder weg und schneidet keinen Teil des Raums ab
+        weg = erreichbar_von(k, RLDEN01["eingang_hex"])
+        zu = {o["kopf"]["tile"] for o in neu if blockiert(o)}
+        abgeschnitten = sorted(weg_vorher - zu - weg - RLDEN01["nischen"])
+        if abgeschnitten:
+            raise SystemExit(f"Einrichtung schneidet Felder vom Raum ab: {abgeschnitten[:10]}")
+
     k.skripte = skriptlisten(saetze)
     k.objekte = [objekte, [], []]
     k.objekte_gesamt = len(objekte)
-    pruefe(k, db)
+    pruefe(k, db, neu)
     return k
 
 
-def pruefe(k, db):
+def blockiert(o):
+    """Steht das Objekt im Weg? Waende und Szenerie, ausser flachen und NoBlock-Objekten."""
+    p = o["kopf"]["pid"]
+    return (fomap.pid_typ(p) in (fomap.T_WALL, fomap.T_SCENERY) and p not in NICHT_BLOCKIEREND
+            and not o["kopf"]["flags"] & 0x10)
+
+
+def erreichbar_von(k, start):
+    """Alle Hexfelder, die man vom Start aus auf Ebene 0 erreicht (Breitensuche)."""
+    zu = {o["kopf"]["tile"] for _, o in k.alle_objekte() if blockiert(o)}
+    gesehen, offen = {start}, [start]
+    while offen:
+        t = offen.pop()
+        for n in hex_nachbarn(t):
+            if n not in gesehen and n not in zu:
+                gesehen.add(n)
+                offen.append(n)
+    return gesehen
+
+
+def pruefe(k, db, dekor=()):
     """Selbstkontrolle: Round-Trip, jede SID hat einen Satz mit passendem Besitzer,
     die neuen Figuren haben eigene IDs. (Vanilla-Karten haben viele doppelte
-    Objekt-IDs, auch bei Objekten mit Skript; die Engine verbindet ueber die SID.)"""
+    Objekt-IDs, auch bei Objekten mit Skript; die Engine verbindet ueber die SID.)
+    Danach: Startpunkt, Figuren, Laufzeitplaetze und die Treppe sind vom Start aus
+    erreichbar, auch mit der eigenen Einrichtung (dekor), und jedes Stueck der
+    Einrichtung steht auf Boden und im Raum (ein Nachbarfeld ist erreichbar)."""
     daten = k.schreiben()
     k2 = fomap.Karte.lesen(daten, db)
     assert k2.schreiben() == daten, "Round-Trip nicht byte-gleich"
@@ -303,15 +353,28 @@ def pruefe(k, db):
     # Figuren und Startpunkt nicht auf Waenden oder Einrichtung (Vorlagen aendern sich je RPU-Version)
     belegt = {}
     for _, o in k.alle_objekte():
-        p = o["kopf"]["pid"]
-        if fomap.pid_typ(p) in (fomap.T_WALL, fomap.T_SCENERY) and p not in NICHT_BLOCKIEREND:
-            belegt.setdefault(o["kopf"]["tile"], hex(p))
+        if blockiert(o):
+            belegt.setdefault(o["kopf"]["tile"], hex(o["kopf"]["pid"]))
     pruef = ([("Startpunkt", RLDEN01["eingang_hex"])] + [(f["name"], f["hex"]) for f in RLDEN01["figuren"]]
              + list(RLDEN01["laufzeit"].items()))
     for name, t in pruef:
         assert t not in belegt, f"{name} steht auf Hex {t}, dort ist schon {belegt[t]}"
     felder = [t for _, t in pruef]
     assert len(felder) == len(set(felder)), "zwei Positionen auf einem Feld"
+    # Wege: alles Wichtige vom Startpunkt aus erreichbar
+    weg = erreichbar_von(k, RLDEN01["eingang_hex"])
+    for name, t in pruef:
+        assert t in weg, f"{name} (Hex {t}) ist vom Startpunkt aus nicht erreichbar"
+    assert any(n in weg for n in hex_nachbarn(RLDEN01["treppe_hex"])), "Treppe nicht erreichbar"
+    kacheln = k.kacheln[0]
+    for o in dekor:
+        t = o["kopf"]["tile"]
+        sq = (t // 200 // 2) * 100 + (t % 200) // 2
+        boden = int.from_bytes(kacheln[sq * 4:sq * 4 + 4], "big") & 0xFFF
+        assert boden != 1, f"Einrichtung {o['kopf']['pid']:#x} auf Hex {t}: dort ist kein Boden"
+        if o["kopf"]["pid"] != BLOCKER_PID:
+            assert t in weg or any(n in weg for n in hex_nachbarn(t)), \
+                f"Einrichtung {o['kopf']['pid']:#x} auf Hex {t} steht ausserhalb des Raums"
 
 
 def hex_nachbarn(t):

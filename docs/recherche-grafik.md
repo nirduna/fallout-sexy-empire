@@ -1,6 +1,6 @@
 # Recherche: Neue Grafiken für die Mod
 
-**Stand:** Recherche und ein Probelauf, **nichts davon ist in der Mod umgesetzt.**
+**Stand:** Recherche und ein Probelauf. Die Schritte 1–3 des Vorschlags (Abschnitt 5) sind inzwischen umgesetzt: [Grafik 1](umsetzung-g1-grafik.md).
 **Frage:** Kann die Mod eigene Sprites, Texturen, Köpfe und Bilder bekommen?
 **Kurzantwort:** Ja. Die Engine lädt neue Grafiken problemlos, und die Werkzeugkette lässt sich hier bauen. Der Aufwand hängt stark von der Art der Grafik ab.
 
@@ -13,7 +13,7 @@
 | Format | Alle Spielgrafiken sind **FRM**: 8-Bit-Indexbilder, bis zu 6 Richtungen mit je n Frames, Palette extern (`color.pal`). Index 0 ist transparent |
 | Palette | 256 Farben. Die festen Farben sind 1–228. **229–254 werden von der Engine animiert** (`cycle.cc`): Schleim 229–232, Monitore 233–237, Feuer langsam 238–242, Feuer schnell 243–247, Ufer 248–253, **254 pulsiert rot** |
 | Eigene Paletten | **Endslides** laden eine eigene `.pal` mit dem Namen des Bildes (`endgame.cc`). Das RPU nutzt das schon (`eg_marc.pal` usw.). Ein Endslide-Bild kann also 256 frei gewählte Farben haben |
-| Wie viele neue Grafiken | Die Grafik-ID hat 12 Bit für den Index, also 4.096 Einträge je Typ. Das RPU belegt Tiles 3.886, Szenerie 2.348, Wände 2.001, Critter 151. **Platz ist reichlich, nur bei Tiles ist es knapp (rund 200 frei)** |
+| Wie viele neue Grafiken | Die Grafik-ID hat 12 Bit für den Index, also 4.096 Einträge je Typ. Das RPU belegt (2.3.34 / 2.4.34) Tiles 3.887 / 4.077, Szenerie 2.349 / 2.383, Wände 2.002 / 2.049, Critter 152 / 152. **Platz ist reichlich, nur bei Tiles ist es knapp: in 2.4.34 sind nur 19 frei** (Zahlen nachgezählt beim Einbau, siehe [Grafik 1](umsetzung-g1-grafik.md)) |
 | sfall | Sprechköpfe dürfen **32-Bit-PNG** sein (`Use32BitHeadGraphics`, braucht den DX9-Modus). Skript-Fenster können **PCX und FRM** anzeigen (`create_win`, `draw_image`, `interface_art_draw`) |
 | Einbindung | Neue Grafik = FRM + Zeile in `art/<typ>/<typ>.lst`. Für Szenerie zusätzlich ein Prototyp (`.pro` + `proto/.../*.lst`) und Name/Beschreibung in `pro_scen.msg`. `paket.py` schreibt Basisdateien schon je RPU-Release fort (wie `scripts.lst`) und kann das genauso für die Grafik-Listen |
 
@@ -47,7 +47,7 @@
 | **Umgefärbte Figuren** (Madames, Personal) aus vorhandenen Critter-Sprites | mittel | mittel: jede Madame erkennbar | Farbindizes der Kleidung umlegen, alle Frames und Richtungen. Es gibt dafür schon ein Python-Werkzeug (FRM Recolour) | ja, nach der Szenerie |
 | **Sprechköpfe** für Essie, Roz, Nell, Hanne, Dora, Kwan | hoch | sehr hoch | je Kopf 16 FRMs: 3 Stimmungen × (Phoneme, Neutral, 3 Fidgets) plus Übergänge. Quelle: 3D-Kopf in Blender (so machten es die Entwickler, mit Formzielen für die Laute) oder gemalte Vorlagen. Zusätzlich PNG für sfall | später, erst ein Probekopf |
 | **Eigenes Madame-Fenster** (Hauptbuch mit Bild) | mittel | mittel | sfall `create_win` + `draw_image` mit PCX | optional |
-| **Neue Tiles** (Boden, Dach) | klein bis mittel | gering, und nur rund 200 freie Plätze | 80×36 px, Kacheln aus Texturen | nur gezielt |
+| **Neue Tiles** (Boden, Dach) | klein bis mittel | gering, und nur 19 freie Plätze in RPU 2.4.34 | 80×36 px, Kacheln aus Texturen | nur gezielt |
 | **Neue Critter von Grund auf** | sehr hoch: über 100 Animationen × 6 Richtungen, bei der Littlepip-Mod über 5.000 Frames je Figur und Rüstung | mittel | 3D-Figur, Rig, Animationen, Rendern | **nein**, lieber umfärben |
 
 ---

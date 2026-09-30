@@ -1,0 +1,8 @@
+{
+ "rllatern": {"stuecke": [{"datei": "rllatern", "feld": [0, 0]}], "blocker": []},
+ "rlbett": {"stuecke": [{"datei": "rlbett0", "feld": [0, -2]}, {"datei": "rlbett1", "feld": [0, -1]}, {"datei": "rlbett2", "feld": [0, 0]}, {"datei": "rlbett3", "feld": [-1, 0]}], "blocker": [[-1, -1], [-1, -2]]},
+ "rlparavnt": {"stuecke": [{"datei": "rlparav0", "feld": [0, -2]}, {"datei": "rlparav1", "feld": [0, -1]}, {"datei": "rlparav2", "feld": [0, 0]}], "blocker": []},
+ "rlwasch": {"stuecke": [{"datei": "rlwasch", "feld": [0, 0]}], "blocker": []},
+ "rlteppich": {"stuecke": [{"datei": "rltepp", "feld": [0, 0]}], "blocker": []},
+ "rlschild": {"stuecke": [{"datei": "rlschild", "feld": [0, 0]}], "blocker": []}
+}

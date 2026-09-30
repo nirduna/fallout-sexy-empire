@@ -19,6 +19,12 @@ Aufruf (vorher tools/build_scripts.sh mit denselben Basen):
 
 Die Spieltexte des Addons sind englisch (reines ASCII). Sie landen in jedem
 Sprachordner aus --sprachen, standardmaessig nur in text/english.
+
+Eigene Grafiken (grafik/, siehe tools/szenerie.py): Das Paket bekommt auch
+art/scenery/scenery.lst, proto/scenery/scenery.lst und pro_scen.msg des Releases
+mit unseren Zeilen am Ende, dazu die FRM- und PRO-Dateien. Die Gosse bekommt
+ihre Einrichtung mit den so vergebenen Nummern. Zum Schluss liest das Werkzeug
+das fertige Paket gegen (szenerie.pruefe_paket).
 """
 import argparse
 import re
@@ -31,6 +37,7 @@ from pathlib import Path
 
 import bau_karten
 import fomap
+import szenerie
 
 ROOT = Path(__file__).resolve().parent.parent
 MOD = "rotlicht"
@@ -218,6 +225,13 @@ def packen(a):
             rel.datei(f"data/text/{sprache}/game/editor.msg"), txt / "game" / "editor.msg.add")
         dateien[f"text/{sprache}/game/rotlicht.msg"] = (txt / "game" / "rotlicht.msg").read_bytes()
 
+    # Eigene Szenerie (grafik/): Grafik- und Prototyplisten und pro_scen.msg des Releases
+    # erweitern; die vergebenen Nummern bekommt die Gosse fuer ihre Einrichtung
+    szen, dekor = szenerie.einfuegen(
+        rel.datei("data/art/scenery/scenery.lst"), rel.datei("data/proto/scenery/scenery.lst"),
+        {s: rel.datei(f"data/text/{s}/game/pro_scen.msg") for s in sprachen})
+    dateien.update(szen)
+
     # Innenkarten aus den Vorlagen desselben Releases, Eingaenge gegen dessen Stadtkarten geprueft
     with tempfile.TemporaryDirectory() as tmp:
         noetig_karten = {bau_karten.RLDEN01["vorlage"]} | {h["vorlage"] for h in bau_karten.HAEUSER} \
@@ -225,7 +239,7 @@ def packen(a):
         for name in noetig_karten:
             (Path(tmp) / f"{name}.map").write_bytes(rel.datei(f"data/maps/{name}.map"))
         db = fomap.ProtoDB()
-        dateien[f"maps/{bau_karten.RLDEN01['datei']}"] = bau_karten.baue_rlden01(tmp, db, sb, ki).schreiben()
+        dateien[f"maps/{bau_karten.RLDEN01['datei']}"] = bau_karten.baue_rlden01(tmp, db, sb, ki, dekor).schreiben()
         for i, h in enumerate(bau_karten.HAEUSER, 1):
             stadt = fomap.Karte.lesen((Path(tmp) / f"{h['stadtkarte']}.map").read_bytes(), db)
             bau_karten.pruefe_eingang(stadt, db, h)
@@ -248,6 +262,7 @@ def packen(a):
     for pfad, daten in dateien.items():
         (mod / pfad).parent.mkdir(parents=True, exist_ok=True)
         (mod / pfad).write_bytes(daten)
+    grafiken = szenerie.pruefe_paket(mod, bau_karten.RLDEN01["datei"], db, sprachen)
     anleitung = ziel / "ANLEITUNG.txt"
     anleitung.write_bytes(b"\xef\xbb\xbf" + anleitungstext(a.release, sb, gb, ki, debug).replace("\n", "\r\n").encode("utf-8"))
 
@@ -257,7 +272,8 @@ def packen(a):
             if p.is_file():
                 z.write(p, p.relative_to(ziel).as_posix())
     print(f"OK    {zip_pfad.relative_to(ROOT) if zip_pfad.is_relative_to(ROOT) else zip_pfad}: "
-          f"{len(dateien) + 1} Dateien, RPU {a.release}, Basen {sb}/{gb}/{ki}, Debug {'an' if debug else 'aus'}")
+          f"{len(dateien) + 1} Dateien, {grafiken} eigene Grafiken, RPU {a.release}, Basen {sb}/{gb}/{ki}, "
+          f"Debug {'an' if debug else 'aus'}")
 
 
 def anleitungstext(release, sb, gb, ki, debug):
@@ -275,8 +291,9 @@ DEBUG-TASTEN (nur in diesem Testpaket)
 
 Für: Fallout 2 Restoration Project {release}, Spiel auf Englisch
 Build: Skriptbasis {sb}, GVAR-Basis {gb}, Kartennummer der Gosse {ki}{", mit Debug-Tasten" if debug else ""}
-Stand: alle 16 Schritte des Fahrplans. Im Spiel getestet ist bisher nur die
-Gosse (Eingang, Karte, Prolog). Alles andere ist nur im Prüfwerkzeug geprüft.
+Stand: alle 16 Schritte des Fahrplans, dazu die ersten eigenen Grafiken
+(Einrichtung der Gosse). Im Spiel getestet ist bisher nur die Gosse (Eingang,
+Karte, Prolog). Alles andere ist nur im Prüfwerkzeug geprüft.
 
 WICHTIG
 - Das Paket passt nur zu RPU {release}. Die Version steht im Namen des
@@ -336,6 +353,17 @@ docs/umsetzung-*.md)
   5. Krisen: Wenn die Madame eine meldet, die Wege durchprobieren.
   6. Das Ende: bei einer Madame "[Debug] Show me the ending." zeigt die
      Endslides des Addons (Hauptslide und höchstens ein Nachsatz).
+  7. Neue Grafiken in der Gosse (erste eigene Grafiken der Mod): oben links
+     an der Rückwand Bett, Paravent und Waschtisch, davor ein Teppich, neben
+     der Treppe eine Preistafel, zwei rote Laternen. Bitte ansehen:
+     - Erscheinen alle sechs Dinge, oder fehlt etwas / steht ein leeres Feld?
+     - Passen Größe und Stil zu den Vanilla-Möbeln (Tisch, Kisten)?
+     - Verdeckt die linke Wand Teile von Bett oder Waschtisch?
+     - Läuft eine Figur richtig vor und hinter dem Bett entlang, ohne dass
+       Teile des Betts über ihr liegen?
+     - Pulsiert das Glas der Laternen rot? Hellen sie den Raum auf?
+     - Rechtsklick/Untersuchen: Zeigen sie ihren Namen und Text?
+     Am besten mit Bildschirmfoto (F12) aus der Mitte des Raums.
 
 WENN ETWAS NICHT GEHT
 - Keine Treppe in der Ruine, F11 tut nichts: Steht  rotlicht  wirklich als
@@ -362,7 +390,7 @@ def main():
     a = ap.parse_args()
     try:
         packen(a)
-    except Fehler as e:
+    except (Fehler, szenerie.Fehler) as e:
         print(f"FEHLER {e}")
         return 1
     return 0

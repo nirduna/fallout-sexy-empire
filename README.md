@@ -39,7 +39,14 @@ Konzept und Skripte für eine Addon-Modifikation für **Fallout 2** (sfall 4.x).
 
 Alle 16 Schritte des [Fahrplans](docs/fahrplan.md) sind umgesetzt. Im Spiel getestet ist bisher nur die Gosse. Was sonst noch offen ist, steht in [Umsetzung 16, Abschnitt 5](docs/umsetzung-16-abschluss.md#5-was-im-spiel-noch-offen-ist).
 
-Recherche für eigene Grafiken (Szenerie, Leuchtreklame, Köpfe, Endslides), noch nicht umgesetzt: [docs/recherche-grafik.md](docs/recherche-grafik.md).
+## Eigene Grafiken
+
+| Schritt | Inhalt | Status |
+|---|---|---|
+| – | Recherche: was an eigenen Grafiken geht (Szenerie, Leuchtreklame, Köpfe, Endslides) und was es kostet | fertig: [docs/recherche-grafik.md](docs/recherche-grafik.md) |
+| G1 | Werkzeugkette Blender → FRM → Paket; Paket „Rotlicht“ für die Gosse: rote Laternen, Bett, Paravent, Waschtisch, Teppich, Preistafel | umgesetzt, geprüft, Test im Spiel offen: [docs/umsetzung-g1-grafik.md](docs/umsetzung-g1-grafik.md) |
+
+Die fertigen Grafiken liegen in [`grafik/`](grafik/). Die Palette des Spiels liegt nicht im Repository.
 
 ## Testpaket installieren
 
@@ -66,6 +73,9 @@ Recherche für eigene Grafiken (Szenerie, Leuchtreklame, Köpfe, Endslides), noc
 - `tools/bau_karten.py`: alle Kartenpositionen an einer Stelle. Baut die Innenkarten aus Vorlagen des RPU und erzeugt `rl_karten.h` (läuft bei jedem Build mit).
 - `tools/intvm.py` und `tools/test_skripte.py`: führen die kompilierten Skripte in Python aus und spielen Dialoge, Wochen und Kartenwechsel automatisch durch. Dazu gehört ein Abgleich der Wochenrechnung mit dem Simulator ([Prüfwerkzeug](docs/pruefwerkzeug.md)).
 - `tools/paket.py`: packt einen Build als sfall-Mod-Ordner `mods/rotlicht` für ein bestimmtes RPU-Release, mit Anleitung ([Umsetzung 2, Abschnitt 4.1](docs/umsetzung-2-die-gosse.md#41-testpaket-empfohlen)).
+- `tools/frm.py`: Fallout-Grafiken (FRM) lesen und schreiben, PNG ↔ FRM mit der Spielpalette, Szenerie-Prototypen.
+- `tools/grafik/`: Blender-Szene mit geeichter Kamera, Modelle, Rendern und Umwandeln der eigenen Szenerie; `katalog.py` ist die eine Quelle für Namen, Texte und Plätze ([Grafik 1](docs/umsetzung-g1-grafik.md)).
+- `tools/szenerie.py`: baut die eigenen Grafiken ins Paket ein (Grafik- und Prototyplisten, `pro_scen.msg`, Kartenobjekte) und liest das fertige Paket gegen.
 
   ```
   python3 tools/ausbau_sim.py [stadt|alle] [fair|branchenueblich|ausbeuterisch]
