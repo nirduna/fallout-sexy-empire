@@ -13,12 +13,14 @@
      600-619  Die Route nach Sueden (Ketten, Akt 3, Umsetzung 5)
      620-639  Die anderen Staedte (nur in der Gosse, Umsetzung 6)
      950-999  Talente (Umsetzung 13, _rl_talente.inc, bei allen Madames gleich)
+    1000-1059  Jobs und Laeuferroute (Umsetzung 14, _rl_jobs.inc, bei allen gleich)
 
    Das einbindende Skript stellt bereit:
      variable haus, welt, h   (Haus-Array, Welt-Array, Hausnummer)
      NAME                     (Skriptindex, fuer die .msg-Datei)
    und ruft nach end_dialogue das Makro RLM_NACH_DIALOG auf.
-   Optional: RLM_EXTRA_OPTIONEN, eigene Optionen im Hauptmenue (Umsetzung 7).
+   Optional: RLM_EXTRA_OPTIONEN, eigene Optionen im Hauptmenue (Umsetzung 7),
+   RLM_DRAUSSEN_OPTIONEN, eigene Optionen im Menue "Draussen" (Umsetzung 14).
 
    Madames ohne eigene Stimme fuer alles binden _rl_manager.inc ein (die
    neutralen Texte) und schreiben nur ihre eigenen Saetze selbst.
@@ -48,7 +50,27 @@ variable rlm_zeige_abspann := 0;
 procedure RLM_Start;
 procedure RLM_Fuehrung;
 procedure RLM_Draussen;
-procedure rlm_draussen_da;
+procedure RLM_Jobs;
+procedure rlm_tyler_weg;
+procedure rlm_job_fertig(variable text);
+procedure RLM_TylerZahlen;
+procedure RLM_TylerStopp;
+procedure RLM_PolizeiZahlen;
+procedure RLM_PolizeiStopp;
+procedure RLM_Totengraeber;
+procedure RLM_McClure;
+procedure RLM_SchutzAn;
+procedure RLM_SchutzAus;
+procedure RLM_Abfangen;
+procedure RLM_Buecher;
+procedure RLM_BuchVerkaufen;
+procedure RLM_Klinik;
+procedure RLM_Rangers;
+procedure rlm_laeufer_da;
+procedure RLM_Laeufer;
+procedure RLM_MarcusReden;
+procedure RLM_MarcusGeld;
+procedure RLM_MarcusAnstand;
 procedure RLM_Kasse;
 procedure RLM_Preise;
 procedure RLM_PreisRamsch;
@@ -154,8 +176,7 @@ procedure RLM_Start begin
        and (((welt[RL_W_KETTEN] >= RL_KETTEN_KETTE) and (welt[RL_W_KETTEN] <= RL_KETTEN_STURM))
             or (welt[RL_W_KETTEN] == RL_KETTEN_STILLER_KRIEG))) then
       NOption(600, RLM_Route, 004);
-   if (rlm_draussen_da) then
-      NOption(107, RLM_Draussen, 004);
+   NOption(107, RLM_Draussen, 004);
 #ifdef RLM_EXTRA_OPTIONEN
    RLM_EXTRA_OPTIONEN
 #endif
@@ -178,11 +199,7 @@ procedure RLM_Fuehrung begin
    NOption(109, RLM_Start, 004);
 end
 
-// Geschaefte ausserhalb des Hauses: andere Staedte, Talente, Jobs
-procedure rlm_draussen_da begin
-   return ((h == RL_DEN) or rlm_talente_da);
-end
-
+// Geschaefte ausserhalb des Hauses: andere Staedte, Talente, Jobs, Laeuferroute
 procedure RLM_Draussen begin
    Reply(108);
    // Die Gosse kennt die anderen Staedte (Umsetzung 6)
@@ -190,7 +207,196 @@ procedure RLM_Draussen begin
       NOption(620, RLM_Staedte, 004);
    if (rlm_talente_da) then
       NOption(950, RLM_Talente, 004);
+   NOption(1000, RLM_Jobs, 004);
+   if (rlm_laeufer_da) then
+      NOption(1040, RLM_Laeufer, 004);
+#ifdef RLM_DRAUSSEN_OPTIONEN
+   RLM_DRAUSSEN_OPTIONEN
+#endif
    NOption(109, RLM_Start, 004);
+end
+
+/* ------------------------------------------------------------------ */
+/* Jobs (Umsetzung 14, Phase 3 Abschnitt 5, rl_jobs.h)                 */
+/* ------------------------------------------------------------------ */
+procedure rlm_tyler_weg begin
+   return (rl_tyler_tot or (welt[RL_W_TYLER] == RL_TYLER_BESIEGT) or (welt[RL_W_TYLER] == RL_TYLER_TOT));
+end
+
+procedure RLM_Jobs begin
+   variable bit := rl_schutz_bit(h);
+   Reply(1001);
+   // Bestechung (5.1)
+   if ((h == RL_DEN) and not rlm_tyler_weg) then begin
+      if (welt[RL_W_JOBS] bwand RL_JOB_TYLER) then NOption(1003, RLM_TylerStopp, 004);
+      else NOption(1002, RLM_TylerZahlen, 004);
+   end
+   if (h == RL_NCR) then begin
+      if (welt[RL_W_JOBS] bwand RL_JOB_POLIZEI) then NOption(1005, RLM_PolizeiStopp, 004);
+      else NOption(1004, RLM_PolizeiZahlen, 004);
+   end
+   if ((h == RL_NEW_RENO) and (welt[RL_W_GEWALT_HAUS] > 0) and rlm_bezahlbar(RL_TOTENGRAEBER_PREIS)) then
+      NOption(1006, RLM_Totengraeber, 004);
+   if ((h == RL_VAULT_CITY) and ((welt[RL_W_JOBS] bwand RL_JOB_MCCLURE) == 0) and rl_gecko_offen
+       and rlm_bezahlbar(RL_MCCLURE_SPENDE)) then
+      NOption(1007, RLM_McClure, 004);
+   // Schutzgeld (5.2)
+   if (bit) then begin
+      if (welt[RL_W_JOBS] bwand bit) then
+         NOption(1009, RLM_SchutzAus, 004);
+      else if ((has_skill(dude_obj, SKILL_UNARMED_COMBAT) >= 60) or (dude_strength >= 7)
+               or (has_skill(dude_obj, SKILL_SPEECH) >= 60)) then
+         BOption(1008, RLM_SchutzAn, 004);
+   end
+   // Sabotage (5.3): einmal in vier Wochen, nur gegen einen Rivalen in dieser Stadt
+   if ((rl_woche_jetzt >= welt[RL_W_JOB_WOCHE]) and rl_rivale_da(welt, h)) then begin
+      if ((has_skill(dude_obj, SKILL_SNEAK) >= 60) or (rl_kampfwert >= 60)) then
+         NOption(1010, RLM_Abfangen, 004);
+      if ((welt[RL_W_ERPRESSUNG] == 0)
+          and ((has_skill(dude_obj, SKILL_STEAL) >= 60) or (has_skill(dude_obj, SKILL_LOCKPICK) >= 60))) then
+         NOption(1011, RLM_Buecher, 004);
+   end
+   if (welt[RL_W_ERPRESSUNG] > 0) then
+      NOption(1012, RLM_BuchVerkaufen, 004);
+   // Gefaelligkeiten (5.3)
+   if ((h == RL_DEN) and ((welt[RL_W_JOBS] bwand RL_JOB_KLINIK) == 0) and rlm_bezahlbar(RL_KLINIK_SPENDE)) then
+      GOption(1013, RLM_Klinik, 004);
+   if ((h == RL_NCR) and ((welt[RL_W_JOBS] bwand RL_JOB_RANGERS) == 0) and rlm_bezahlbar(RL_RANGERS_SPENDE)) then
+      GOption(1014, RLM_Rangers, 004);
+   NOption(109, RLM_Draussen, 004);
+end
+
+procedure rlm_job_fertig(variable text) begin
+   Reply(text);
+   NOption(123, RLM_Start, 004);
+end
+
+procedure RLM_TylerZahlen begin
+   call rl_job_bestechung(haus, welt, RL_JOB_TYLER, 1);
+   call rlm_job_fertig(mstr(1020));
+end
+
+procedure RLM_TylerStopp begin
+   call rl_job_bestechung(haus, welt, RL_JOB_TYLER, 0);
+   call rlm_job_fertig(mstr(1021));
+end
+
+procedure RLM_PolizeiZahlen begin
+   call rl_job_bestechung(haus, welt, RL_JOB_POLIZEI, 1);
+   call rlm_job_fertig(mstr(1022));
+end
+
+procedure RLM_PolizeiStopp begin
+   call rl_job_bestechung(haus, welt, RL_JOB_POLIZEI, 0);
+   call rlm_job_fertig(mstr(1023));
+end
+
+// Der Totengraeber von Golgotha: Die Leichen verschwinden, die Fragen auch
+procedure RLM_Totengraeber begin
+   call rlm_bezahlen(RL_TOTENGRAEBER_PREIS);
+   call rl_haus_plus(haus, welt[RL_W_GEWALT_HAUS] - 1, RL_F_HITZE, -15);
+   welt[RL_W_GEWALT_HAUS] := 0;
+   call rlm_job_fertig(mstr(1024));
+end
+
+procedure RLM_McClure begin
+   call rlm_bezahlen(RL_MCCLURE_SPENDE);
+   welt[RL_W_JOBS] := welt[RL_W_JOBS] bwor RL_JOB_MCCLURE;
+   call rl_haus_plus(haus, RL_VAULT_CITY, RL_F_EINFLUSS, 10);
+   call rlm_job_fertig(mstr(1025));
+end
+
+// In Redding nimmt Sheriff Marion das persoenlich
+procedure RLM_SchutzAn begin
+   welt[RL_W_JOBS] := welt[RL_W_JOBS] bwor rl_schutz_bit(h);
+   if (h == RL_REDDING) then begin
+      call rl_red_marion_feind(haus, welt);
+      call rlm_job_fertig(mstr(1027));
+   end else
+      call rlm_job_fertig(mstr(1026));
+end
+
+procedure RLM_SchutzAus begin
+   welt[RL_W_JOBS] := welt[RL_W_JOBS] - rl_schutz_bit(h);
+   call rlm_job_fertig(mstr(1028));
+end
+
+procedure RLM_Abfangen begin
+   welt[RL_W_JOB_WOCHE] := rl_woche_jetzt + RL_SABOTAGE_ABSTAND;
+   call rl_haus_plus(haus, h, RL_F_EINFLUSS, 5);
+   call rl_haus_plus(haus, h, RL_F_HITZE, 5);
+   call rlm_job_fertig(mstr(1029));
+end
+
+procedure RLM_Buecher begin
+   welt[RL_W_JOB_WOCHE] := rl_woche_jetzt + RL_SABOTAGE_ABSTAND;
+   welt[RL_W_ERPRESSUNG] := 1;
+   call rl_haus_plus(haus, h, RL_F_HITZE, 5);
+   call rlm_job_fertig(mstr(1030));
+end
+
+procedure RLM_BuchVerkaufen begin
+   welt[RL_W_ERPRESSUNG] := 0;
+   item_caps_adjust(dude_obj, RL_BUECHER_PREIS);
+   call rlm_job_fertig(mstr(1031));
+end
+
+procedure RLM_Klinik begin
+   call rlm_bezahlen(RL_KLINIK_SPENDE);
+   welt[RL_W_JOBS] := welt[RL_W_JOBS] bwor RL_JOB_KLINIK;
+   rl_karma(10);
+   call rl_haus_plus(haus, RL_DEN, RL_F_EINFLUSS, 5);
+   call rlm_job_fertig(mstr(1032));
+end
+
+procedure RLM_Rangers begin
+   call rlm_bezahlen(RL_RANGERS_SPENDE);
+   welt[RL_W_JOBS] := welt[RL_W_JOBS] bwor RL_JOB_RANGERS;
+   call rl_haus_plus(haus, RL_NCR, RL_F_EINFLUSS, 5);
+   call rl_haus_plus(haus, RL_NCR, RL_F_HITZE, -10);
+   call rlm_job_fertig(mstr(1033));
+end
+
+/* ------------------------------------------------------------------ */
+/* Die Laeuferroute durch Broken Hills (Phase 3, Abschnitt 6)          */
+/* ------------------------------------------------------------------ */
+// Nur wo Laeufer durch Broken Hills gehen: ab dem Hauptquartier, in NR, Redding, VC, NCR
+procedure rlm_laeufer_da begin
+   if (haus[rl_idx(RL_NEW_RENO, RL_F_BESITZ)] == 0) then return 0;
+   return ((h == RL_NEW_RENO) or (h == RL_REDDING) or (h == RL_VAULT_CITY) or (h == RL_NCR));
+end
+
+procedure RLM_Laeufer begin
+   variable m := welt[RL_W_MARCUS], text := mstr(1041 + welt[RL_W_MARCUS]);
+   variable besucht := ((welt[RL_W_JOBS] bwand RL_JOB_BH_BESUCHT) != 0);
+   variable geld := ((welt[RL_W_JOBS] bwand RL_JOB_MARCUS_GELD) != 0);
+   if ((not besucht) and (m < RL_MARCUS_ESKORTE)) then text := text + " " + mstr(1045);
+   Reply(text);
+   if (besucht and (m == RL_MARCUS_KEIN)) then begin
+      if ((has_skill(dude_obj, SKILL_SPEECH) >= 70 + 10 * geld) and (global_var(GVAR_REPUTATION_SLAVER) != 1)) then
+         GOption(1046, RLM_MarcusReden, 004);
+      if (not geld) then
+         BOption(1047, RLM_MarcusGeld, 004);
+   end
+   if (besucht and (m <= RL_MARCUS_RELAIS) and (global_var(GVAR_PLAYER_REPUTATION) >= RL_KARMA_GUT)
+       and (rl_anstaendige_haeuser(haus) >= 3)) then
+      GOption(1048, RLM_MarcusAnstand, 004);
+   NOption(109, RLM_Draussen, 004);
+end
+
+procedure RLM_MarcusReden begin
+   welt[RL_W_MARCUS] := RL_MARCUS_RELAIS;
+   call rlm_job_fertig(mstr(1049));
+end
+
+procedure RLM_MarcusGeld begin
+   welt[RL_W_JOBS] := welt[RL_W_JOBS] bwor RL_JOB_MARCUS_GELD;
+   call rlm_job_fertig(mstr(1050));
+end
+
+procedure RLM_MarcusAnstand begin
+   welt[RL_W_MARCUS] := RL_MARCUS_ESKORTE;
+   call rlm_job_fertig(mstr(1051));
 end
 
 procedure RLM_Kasse begin

@@ -35,6 +35,7 @@ procedure Node112;      // Fusion mit Einfluss
 procedure Node113;      // Druck
 procedure Node114;      // Sabotage
 procedure Node115;      // Verrat
+procedure Node116;      // Druck mit den gestohlenen Buechern (Umsetzung 14)
 procedure Node999;
 procedure rl_fusion;
 procedure rl_entschieden(variable text);
@@ -104,6 +105,8 @@ procedure Node100 begin
          BOption(104, Node113, 004);
       if (haus[rl_idx(RL_NEW_RENO, RL_F_MODULE)] bwand RL_MOD_VIP) then
          BOption(105, Node113, 004);
+      else if (welt[RL_W_ERPRESSUNG] > 0) then
+         BOption(110, Node116, 004);
    end
    if (has_skill(dude_obj, SKILL_SNEAK) >= 60) then
       BOption(106, Node114, 004);
@@ -156,6 +159,12 @@ procedure Node113 begin
    rl_karma(-10);
    call rl_kitty_rivalin(welt, RL_KITTY_DRUCK);
    call rl_entschieden(mstr(122));
+end
+
+// Die Buecher eines Rivalen sind auch Erpressungsmaterial; sie sind danach verbraucht
+procedure Node116 begin
+   welt[RL_W_ERPRESSUNG] := 0;
+   call Node113;
 end
 
 procedure Node114 begin

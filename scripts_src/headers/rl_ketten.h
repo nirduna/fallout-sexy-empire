@@ -254,6 +254,7 @@ end
 /* Ein Kampf in der Gosse ist vorbei (alle Angreifer liegen). */
 procedure rl_kampf_ende(variable haus, variable welt) begin
    variable typ := welt[RL_W_ANGRIFF];
+   welt[RL_W_GEWALT_HAUS] := RL_DEN + 1;          // Leichen in der Gosse (Totengraeber, Umsetzung 14)
    if (typ == RL_ANGRIFF_TYLER) then begin
       welt[RL_W_TYLER] := RL_TYLER_BESIEGT;
       call rl_haus_plus(haus, RL_DEN, RL_F_HITZE, 10);

@@ -60,6 +60,7 @@ procedure rl_haus_kampf_ende(variable haus, variable welt, variable h) begin
    variable typ := haus[rl_idx(h, RL_F_ANGRIFF)];
    haus[rl_idx(h, RL_F_ANGRIFF)]   := RL_ANGRIFF_KEINER;
    haus[rl_idx(h, RL_F_ANGREIFER)] := 0;
+   welt[RL_W_GEWALT_HAUS] := h + 1;               // Leichen im Haus (Totengraeber, Umsetzung 14)
    if (typ == RL_ANGRIFF_EROEFFNUNG) then begin
       // Die Eroeffnungsnacht ist ueberstanden: unabhaengig, mit Respekt (Phase 3, 2.2)
       welt[RL_W_NR_EROEFFNUNG] := RL_EROEFFNUNG_UEBERSTANDEN;

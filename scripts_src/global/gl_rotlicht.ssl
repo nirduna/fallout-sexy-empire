@@ -29,6 +29,8 @@
         Venuti, Kittys Abwerbung, die Umarmung in neuen Haeusern.
     16. Talente (Umsetzung 13, rl_talente.h): Reisen nach Gecko und Broken
         Hills, Ankunft, Loyalitaet, Rueckfall, Verrat, Abschied.
+    17. Jobs und Laeuferroute (Umsetzung 14, rl_jobs.h): Tyler und der
+        Polizist, Schutzgeld, Marcus sperrt oder hilft, der Umweg der Laeufer.
 
    sfall laedt alle gl*.int beim Spielstart. Die Wochenlogik laeuft nur
    auf lokalen Karten; Reisezeit auf der Weltkarte wird beim naechsten
@@ -87,6 +89,9 @@ procedure rl_kitty_woche(variable woche);
 procedure rl_talente_woche(variable woche);
 procedure rl_talente_reise;
 procedure rl_talent_weg(variable wer, variable text);
+procedure rl_jobs_woche;
+procedure rl_marcus_pruefen;
+procedure rl_jobs_reise;
 #ifdef RL_DEBUG
 procedure rl_taste;
 procedure rl_debug_spawn;
@@ -119,6 +124,7 @@ procedure map_enter_p_proc begin
    call rl_eingaenge;
    if (cur_map_index == MAP_NCR_WESTIN_RANCH) then call rl_nr_brief;
    call rl_talente_reise;
+   call rl_jobs_reise;
 end
 
 /* Die Gosse: Die Vanilla-Karte Den Business 2 bleibt unveraendert. Die
@@ -223,6 +229,7 @@ procedure rl_tick begin
          end
          h := h + 1;
       end
+      if (rl_jobs_woche) then tyrann := 1;                         // Schutzgeld (Phase 3, 5.2)
       welt[RL_W_TYRANN_WOCHEN] := welt[RL_W_TYRANN_WOCHEN] + tyrann;
       welt[RL_W_AUSBEUTUNG_WOCHEN] := welt[RL_W_AUSBEUTUNG_WOCHEN] + ausbeutung;
       call rl_laeufer;
@@ -288,7 +295,38 @@ procedure rl_welt_modifikatoren begin
    if (welt[RL_W_SF_SPITZEL_AUF]) then m := m - 10;
    haus[rl_idx(RL_SAN_FRAN, RL_F_STADTMOD)] := m + global_boom;
 
-   // Laeuferroute: Marcus' Vertrauen folgt aus seiner Vanilla-Quest
+   // Gecko friedlich geloest: Vault City erinnert sich daran (Phase 3, 5.3)
+   if (((global_var(GVAR_VAULT_GECKO_PLANT) == PLANT_REPAIRED) or (global_var(GVAR_VAULT_GECKO_PLANT) >= PLANT_FIXED_PLUS_KNOWN))
+       and ((welt[RL_W_JOBS] bwand RL_JOB_GECKO) == 0)) then begin
+      welt[RL_W_JOBS] := welt[RL_W_JOBS] bwor RL_JOB_GECKO;
+      call rl_haus_plus(haus, RL_VAULT_CITY, RL_F_EINFLUSS, 10);
+   end
+
+   call rl_marcus_pruefen;
+end
+
+/* Laeuferroute (Phase 3, Abschnitt 6): Marcus' Vertrauen folgt aus seiner
+   Vanilla-Quest; Slaver-Titel und der neue Metzger sperren die Stadt, und
+   wer Marcus toetet, hat Broken Hills und jede Stadt gegen sich. */
+procedure rl_marcus_pruefen begin
+   variable h;
+   if (global_var(GVAR_MARCUS_DEAD) and ((welt[RL_W_JOBS] bwand RL_JOB_MARCUS_TOT) == 0)) then begin
+      welt[RL_W_JOBS] := welt[RL_W_JOBS] bwor RL_JOB_MARCUS_TOT;
+      welt[RL_W_MARCUS] := RL_MARCUS_GESPERRT;
+      h := 0;
+      while (h < RL_ANZAHL_HAEUSER) do begin
+         if (haus[rl_idx(h, RL_F_BESITZ)]) then call rl_haus_plus(haus, h, RL_F_HITZE, 10);
+         h := h + 1;
+      end
+      display_msg(rl_text(232));
+      return;
+   end
+   if (welt[RL_W_MARCUS] == RL_MARCUS_GESPERRT) then return;
+   if ((global_var(GVAR_REPUTATION_SLAVER) == 1) or (welt[RL_W_KETTEN] == RL_KETTEN_NEUER_METZGER)) then begin
+      welt[RL_W_MARCUS] := RL_MARCUS_GESPERRT;
+      if (haus[rl_idx(RL_NEW_RENO, RL_F_BESITZ)]) then display_msg(rl_text(233));
+      return;
+   end
    if ((welt[RL_W_MARCUS] == RL_MARCUS_KEIN) and (global_var(GVAR_BH_MISSING) >= MISSING_FINISHED_CASH)) then
       welt[RL_W_MARCUS] := RL_MARCUS_RELAIS;
 end
@@ -301,6 +339,12 @@ procedure rl_laeufer begin
 
    if (haus[rl_idx(RL_NEW_RENO, RL_F_BESITZ)] == 0) then return;   // noch kein Hauptquartier
 
+   // Der Umweg um Broken Hills: Was letzte Woche losging, kommt jetzt an
+   if (welt[RL_W_HQ_UNTERWEGS] > 0) then begin
+      welt[RL_W_HQ_KASSE] := welt[RL_W_HQ_KASSE] + welt[RL_W_HQ_UNTERWEGS];
+      welt[RL_W_HQ_UNTERWEGS] := 0;
+   end
+
    h := 0;
    while (h < RL_ANZAHL_HAEUSER) do begin
       if ((h != RL_NEW_RENO) and haus[rl_idx(h, RL_F_BESITZ)] and (haus[rl_idx(h, RL_F_KASSE)] > 0)) then begin
@@ -310,6 +354,8 @@ procedure rl_laeufer begin
          chance := rl_min(25, haus[rl_idx(h, RL_F_HITZE)] / 4) * faktor / 100;
          if (random(1, 100) <= chance) then begin
             display_msg(rl_haus_name(h) + ": " + rl_text(112) + haus[rl_idx(h, RL_F_KASSE)] + rl_text(113));
+         end else if (faktor == 125) then begin
+            welt[RL_W_HQ_UNTERWEGS] := welt[RL_W_HQ_UNTERWEGS] + haus[rl_idx(h, RL_F_KASSE)];   // eine Woche spaeter
          end else begin
             welt[RL_W_HQ_KASSE] := welt[RL_W_HQ_KASSE] + haus[rl_idx(h, RL_F_KASSE)];
          end
@@ -1233,6 +1279,59 @@ procedure rl_talente_woche(variable woche) begin
          display_msg(rl_text(223));
       end
    end
+end
+
+/* ------------------------------------------------------------------ */
+/* Jobs und Laeuferroute (Umsetzung 14, rl_jobs.h)                     */
+/* ------------------------------------------------------------------ */
+
+// Marcus kann man nur sprechen, wenn man in Broken Hills war
+procedure rl_jobs_reise begin
+   variable k := cur_map_index;
+   if (welt == 0) then welt := rl_lade_welt;
+   if ((k == MAP_BROKEN_HILLS1) or (k == MAP_BROKEN_HILLS2)) then
+      welt[RL_W_JOBS] := welt[RL_W_JOBS] bwor RL_JOB_BH_BESUCHT;
+end
+
+/* Bestechung und Schutzgeld jede Woche. Rueckgabe 1: Es wurde Schutzgeld
+   kassiert (zaehlt als Tyrannen-Woche). */
+procedure rl_jobs_woche begin
+   variable h := 0, bit, schutz := 0;
+
+   // Tyler: Das Schmiergeld endet, wenn Tyler faellt oder die Gosse nicht mehr uns gehoert
+   if (welt[RL_W_JOBS] bwand RL_JOB_TYLER) then begin
+      if (tyler_dead or (welt[RL_W_TYLER] == RL_TYLER_BESIEGT) or (welt[RL_W_TYLER] == RL_TYLER_TOT)
+          or (haus[rl_idx(RL_DEN, RL_F_BESITZ)] == 0)) then begin
+         call rl_job_bestechung(haus, welt, RL_JOB_TYLER, 0);
+         display_msg(rl_haus_name(RL_DEN) + ": " + rl_text(230));
+      end else
+         call rl_haus_plus(haus, RL_DEN, RL_F_HITZE, -5);
+   end
+   // Der Polizist in Downtown: H -5, die Rangers bleiben unberuehrt
+   if (welt[RL_W_JOBS] bwand RL_JOB_POLIZEI) then begin
+      if (haus[rl_idx(RL_NCR, RL_F_BESITZ)] == 0) then
+         call rl_job_bestechung(haus, welt, RL_JOB_POLIZEI, 0);
+      else
+         call rl_haus_plus(haus, RL_NCR, RL_F_HITZE, -5);
+   end
+   // Schutzgeld: 50-150 $ in die Kasse, E +2, H +5 (NCR: doppelt, die Rangers), K -2
+   while (h < RL_ANZAHL_HAEUSER) do begin
+      bit := rl_schutz_bit(h);
+      if (bit and (welt[RL_W_JOBS] bwand bit)) then begin
+         if (haus[rl_idx(h, RL_F_BESITZ)] == 0) then
+            welt[RL_W_JOBS] := welt[RL_W_JOBS] - bit;
+         else begin
+            haus[rl_idx(h, RL_F_KASSE)] := haus[rl_idx(h, RL_F_KASSE)] + random(50, 150);
+            call rl_haus_plus(haus, h, RL_F_EINFLUSS, 2);
+            if (h == RL_NCR) then call rl_haus_plus(haus, h, RL_F_HITZE, 10);
+            else call rl_haus_plus(haus, h, RL_F_HITZE, 5);
+            rl_karma(-2);
+            schutz := 1;
+         end
+      end
+      h := h + 1;
+   end
+   return schutz;
 end
 
 #ifdef RL_DEBUG

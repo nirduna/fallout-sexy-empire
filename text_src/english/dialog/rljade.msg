@@ -11,6 +11,7 @@
 {107}{}{(Tell Venuti where Kitty keeps her books.)}
 {108}{}{I'll think about it.}
 {109}{}{Kitty?}
+{110}{}{I have a rival's books, and Kitty's friends are in them. She sells for $1500.}
 {120}{}{(Jade smiles for the first time.) Two houses, one answer. Venuti will hate it. Miss Kitty will send word whenever the Desperado is planning something.}
 {121}{}{(Jade holds out her hand.) The Cat's Paw is yours, and Miss Kitty is yours with it. She knows every girl in New Reno, and every girl knows her. Half of what comes through her door is hers. That was always going to be the price.}
 {122}{}{(Jade stands up very slowly.) She'll sell. And she'll leave New Reno, and she'll open somewhere you can't reach. You just made the only enemy on Virgin Street who's smarter than Venuti.}

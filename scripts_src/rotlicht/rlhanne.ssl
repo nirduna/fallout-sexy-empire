@@ -51,9 +51,11 @@ variable selbst_weg := 0;
 #define RLM_EXTRA_OPTIONEN   if ((welt[RL_W_VC_RAZZIA_WOCHE] > 0) and (haus[rl_idx(h, RL_F_GESCHLOSSEN)] == 0)) then \
                                 NOption(850, Node850, 004);                                                        \
                              if (welt[RL_W_VC_GEFASST] > 0) then NOption(860, Node860, 004);                       \
-                             if (welt[RL_W_VC_WACHE] == RL_WACHE_KEINE) then NOption(870, Node870, 004);           \
                              if ((haus[rl_idx(h, RL_F_MODULE)] bwand RL_MOD_AKTE) and (welt[RL_W_VC_LYNETTE] == 0)) then \
                                 BOption(880, Node880, 004);
+
+// Die Torwache ist Bestechung, also ein Job "draussen" (Umsetzung 14)
+#define RLM_DRAUSSEN_OPTIONEN   if (welt[RL_W_VC_WACHE] == RL_WACHE_KEINE) then NOption(870, Node870, 004);
 
 #include "../headers/rl_manager.h"
 

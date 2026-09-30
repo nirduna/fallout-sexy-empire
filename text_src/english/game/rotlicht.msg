@@ -115,3 +115,8 @@
 {222}{}{Abigail went to the Garde. She knew every name and every stair, and she told them all.}
 {223}{}{Julian is gone. He left a note: "Thanks for the rooms. Not for the rest."}
 {224}{}{Julian relapsed. He is lying in a back room, barely breathing. Without a doctor he won't last the week.}
+
+# Jobs and the runners' road (Umsetzung 14)
+{230}{}{Tyler is gone. Nobody collects for looking the other way anymore.}
+{232}{}{Marcus is dead. Broken Hills closes its gates to anyone who works for you, and every town along the road hears why.}
+{233}{}{Marcus has heard what you are. Your runners take the long way around Broken Hills now.}

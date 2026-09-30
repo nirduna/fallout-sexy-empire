@@ -33,8 +33,9 @@ Konzept und Skripte für eine Addon-Modifikation für **Fallout 2** (sfall 4.x).
 | 11 | San Francisco: „Die Duldung“ (Wen, Tanker), Madame Kwan, Schmuggelkammer und Siegel, Razzia der Shi, Hubologen | umgesetzt, im Prüfwerkzeug getestet, Test im Spiel offen: [docs/umsetzung-11-san-francisco.md](docs/umsetzung-11-san-francisco.md) |
 | 12 | „Blut auf der Virgin Street“: Carlo Venuti in vier Akten und drei Enden, Miss Kittys Angebot (fünf Wege), Kittys Kralle | umgesetzt, im Prüfwerkzeug getestet, Test im Spiel offen: [docs/umsetzung-12-virgin-street.md](docs/umsetzung-12-virgin-street.md) |
 | 13 | Talente: Vesper, Abigail Kessler, Talus und Julian Rook mit Anwerbe-Wegen, Loyalität, Tyrannen-Varianten und einer Woche Vorwarnung vor dem Tod | umgesetzt, im Prüfwerkzeug getestet, Test im Spiel offen: [docs/umsetzung-13-talente.md](docs/umsetzung-13-talente.md) |
+| 14 | Jobs und Läuferroute: Tyler, Totengräber, McClure und der Polizist, Schutzgeld, Sabotage mit Erpressungsmaterial, Spenden, Sheriff Marcus mit Relais, Eskorte oder Sperre | umgesetzt, im Prüfwerkzeug getestet, Test im Spiel offen: [docs/umsetzung-14-jobs.md](docs/umsetzung-14-jobs.md) |
 
-Die übrigen Schritte 14–16 stehen im [Fahrplan](docs/fahrplan.md).
+Die übrigen Schritte 15 und 16 stehen im [Fahrplan](docs/fahrplan.md).
 
 ## Werkzeuge
 

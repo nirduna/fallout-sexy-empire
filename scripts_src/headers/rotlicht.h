@@ -313,6 +313,12 @@
 #define RL_W_JULIAN_LOYAL           (129)
 #define RL_W_JULIAN_WEG             (130)   // RL_JULIAN_*
 #define RL_W_TALENTE_AKTIV          (131)   // Bits: welche Talent-Wirkungen angewendet sind
+// Jobs und Laeuferroute (Umsetzung 14, rl_jobs.h)
+#define RL_W_JOBS                   (132)   // Bits RL_JOB_*
+#define RL_W_JOB_WOCHE              (133)   // ab dieser Woche ist wieder Sabotage moeglich
+#define RL_W_ERPRESSUNG             (134)   // 1 = gestohlene Buecher eines Rivalen (einmal verwendbar)
+#define RL_W_GEWALT_HAUS            (135)   // Haus + 1 mit einem gewaltsamen Vorfall (fuer den Totengraeber)
+#define RL_W_HQ_UNTERWEGS           (136)   // Geld der Laeufer auf dem Umweg um Broken Hills
 
 #define RL_PROLOG_OFFEN             (0)
 #define RL_PROLOG_LAEUFT            (1)
@@ -363,6 +369,8 @@
 
 // Metzger tot (wie metzger_dead aus den.h, ohne den ganzen Header)
 #define rl_metzger_tot              gvar_bit(GVAR_DEN_FLAG_1, bit_1)
+// Tyler tot (wie tyler_dead aus den.h)
+#define rl_tyler_tot                gvar_bit(GVAR_DEN_FLAG_2, bit_32)
 
 // Wie jemand geht (rl_personal_verlust)
 #define RL_VERLUST_ABGANG           (0)     // kuendigt: nur, wer gehen kann
@@ -845,6 +853,7 @@ end
 #include "rl_sanfran.h"
 #include "rl_virgin.h"
 #include "rl_talente.h"
+#include "rl_jobs.h"
 #include "rl_kampf.h"
 
 #endif

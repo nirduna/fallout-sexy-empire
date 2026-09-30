@@ -1260,6 +1260,7 @@ def test_nr_eroeffnungsnacht(u):
         sp.zerstoere(o)
     pruefe(w.haus(NR, 'RL_F_BESITZ') == 1 and w.welt('RL_W_NR_SEGEN') == k['RL_SEGEN_UNABHAENGIG'], 'unabhaengig')
     pruefe(w.welt('RL_W_NR_EROEFFNUNG') == k['RL_EROEFFNUNG_UEBERSTANDEN'] and w.haus(NR, 'RL_F_ANGRIFF') == 0, 'ueberstanden')
+    pruefe(w.welt('RL_W_GEWALT_HAUS') == NR + 1, 'Leichen im Haus: ein Fall fuer den Totengraeber')
     pruefe(w.haus(NR, 'RL_F_TRIBUTMOD') == -20 and w.haus(NR, 'RL_F_HITZE') == 20, 'kein Tribut, Hitze +20')
     alle = sum(1 << k[f] for f in ('RL_SEGEN_MORDINO', 'RL_SEGEN_WRIGHT', 'RL_SEGEN_SALVATORE', 'RL_SEGEN_BISHOP'))
     pruefe(w.welt('RL_W_NR_MISSTRAUEN') == alle, 'alle misstrauisch')
@@ -1807,10 +1808,10 @@ def test_vc_schweigegeld_und_wache(u):
     woche(sp)
     pruefe(w.haus(VC, 'RL_F_BESTECHUNG_MOD') == 150, f'Schweigegeld Klasse 2: {w.haus(VC, "RL_F_BESTECHUNG_MOD")}')
     hanne = figur(sp, k, 'RLHANNE')
-    v = rede(sp, hanne, ['eye at the gate'])
+    v = rede(sp, hanne, ['Business outside', 'eye at the gate'])
     pruefe(not any('[Charisma]' in o for o in _optionen_bei(v, 'eye at the gate')), 'Charisma ohne CH 6')
     sp.dude.stats[k['STAT_ch']] = 6
-    rede(sp, hanne, ['eye at the gate', '[Charisma]', None])
+    rede(sp, hanne, ['Business outside', 'eye at the gate', '[Charisma]', None])
     pruefe(w.welt('RL_W_VC_WACHE') == k['RL_WACHE_ANGEWORBEN'] and w.haus(VC, 'RL_F_BESTECHUNG_MOD') == 200, 'Wache +50')
     woche(sp)
     sp.zufall_fest = None
@@ -2736,6 +2737,209 @@ def test_talent_julian(u):
     allgemein(sp, 'julian')
 
 
+# --------------------------------------------------------------------------
+# Umsetzung 14: Jobs und Laeuferroute
+
+def _jobs(sp, w, name):
+    """Ruft rl_jobs_woche des globalen Skripts auf; liefert 1, wenn Schutzgeld kassiert wurde."""
+    return sp.globale[0].rufe_mit(name)
+
+
+def _job_optionen(sp, madame):
+    return _optionen_bei(rede(sp, madame, ['Business outside', 'Work that needs doing']), 'Work that needs doing')
+
+
+def test_jobs_den(u):
+    k = u.k
+    sp, e, ko, w = _gosse_bereit(u)
+    ruhige_woche(sp)
+    # Tyler: 100 $/Woche ueber die Schmiergeld-Abweichung, H -5 je Woche
+    rede(sp, e, ['Business outside', 'Work that needs doing', 'Pay Tyler', None])
+    pruefe(w.welt('RL_W_JOBS') & k['RL_JOB_TYLER'] and w.haus(0, 'RL_F_BESTECHUNG_MOD') == 100, 'Tyler bezahlt')
+    w.setze_haus(0, 'RL_F_HITZE', 30)
+    pruefe(_jobs(sp, w, 'rl_jobs_woche') == 0 and w.haus(0, 'RL_F_HITZE') == 25, 'Tyler: H -5')
+    # Tyler faellt (Vanilla): Das Schmiergeld endet, die Option verschwindet
+    sp.gvars[k['GVAR_DEN_FLAG_2']] = sp.gvars.get(k['GVAR_DEN_FLAG_2'], 0) | 0x80000000
+    _jobs(sp, w, 'rl_jobs_woche')
+    pruefe(not (w.welt('RL_W_JOBS') & k['RL_JOB_TYLER']) and w.haus(0, 'RL_F_BESTECHUNG_MOD') == 0
+           and any('Tyler is gone' in m for m in sp.meldungen), 'Tyler tot')
+    pruefe(not any('Tyler' in o for o in _job_optionen(sp, e)), 'Tyler-Option nach seinem Tod')
+    # Schutzgeld: ohne Check keine Option, mit Unarmed 60 schon
+    pruefe(not any('stalls' in o for o in _job_optionen(sp, e)), 'Schutzgeld ohne Check')
+    sp.dude.skills[k['SKILL_UNARMED_COMBAT']] = 60
+    rede(sp, e, ['Business outside', 'Work that needs doing', 'small stalls', None])
+    pruefe(w.welt('RL_W_JOBS') & k['RL_JOB_SCHUTZ_DEN'], 'Schutzgeld an')
+    kasse, einfluss, hitze = w.haus(0, 'RL_F_KASSE'), w.haus(0, 'RL_F_EINFLUSS'), w.haus(0, 'RL_F_HITZE')
+    karma = sp.gvars.get(k['GVAR_PLAYER_REPUTATION'], 0)
+    sp.zufall_fest = 'max'
+    pruefe(_jobs(sp, w, 'rl_jobs_woche') == 1, 'Schutzgeld zaehlt als Tyrannen-Woche')
+    pruefe(w.haus(0, 'RL_F_KASSE') == kasse + 150 and w.haus(0, 'RL_F_EINFLUSS') == einfluss + 2
+           and w.haus(0, 'RL_F_HITZE') == hitze + 5 and sp.gvars[k['GVAR_PLAYER_REPUTATION']] == karma - 2,
+           'Schutzgeld: Kasse, E, H, K')
+    tyrann = w.welt('RL_W_TYRANN_WOCHEN')
+    ruhige_woche(sp)
+    pruefe(w.welt('RL_W_TYRANN_WOCHEN') == tyrann + 1, 'Tyrannen-Woche gezaehlt')
+    rede(sp, e, ['Business outside', 'Work that needs doing', 'Leave the stalls', None])
+    pruefe(not (w.welt('RL_W_JOBS') & k['RL_JOB_SCHUTZ_DEN']), 'Schutzgeld aus')
+    # Sabotage gegen Metzger: einmal in vier Wochen
+    sp.dude.skills[k['SKILL_SNEAK']] = 60
+    einfluss, hitze = w.haus(0, 'RL_F_EINFLUSS'), w.haus(0, 'RL_F_HITZE')
+    rede(sp, e, ['Business outside', 'Work that needs doing', 'Intercept', None])
+    pruefe(w.haus(0, 'RL_F_EINFLUSS') == einfluss + 5 and w.haus(0, 'RL_F_HITZE') == hitze + 5, 'abgefangen')
+    pruefe(not any('Intercept' in o for o in _job_optionen(sp, e)), 'Sabotage ohne Pause')
+    w.setze_welt('RL_W_JOB_WOCHE', 0)
+    sp.dude.skills[k['SKILL_STEAL']] = 60
+    rede(sp, e, ['Business outside', 'Work that needs doing', 'books', None])
+    pruefe(w.welt('RL_W_ERPRESSUNG') == 1, 'Buecher gestohlen')
+    geld = sp.dude.kronkorken
+    rede(sp, e, ['Business outside', 'Work that needs doing', 'Sell the stolen books', None])
+    pruefe(w.welt('RL_W_ERPRESSUNG') == 0 and sp.dude.kronkorken == geld + 300, 'Buecher verkauft')
+    # Ohne Metzger kein Rivale in der Den
+    w.setze_welt('RL_W_JOB_WOCHE', 0)
+    sp.gvars[k['GVAR_DEN_FLAG_1']] = sp.gvars.get(k['GVAR_DEN_FLAG_1'], 0) | 1
+    pruefe(not any('Intercept' in o for o in _job_optionen(sp, e)), 'Sabotage ohne Rivalen')
+    # Die Krankenstube: K +10, E +5, einmal
+    karma, einfluss = sp.gvars.get(k['GVAR_PLAYER_REPUTATION'], 0), w.haus(0, 'RL_F_EINFLUSS')
+    rede(sp, e, ['Business outside', 'Work that needs doing', 'sick room', None])
+    pruefe(sp.gvars[k['GVAR_PLAYER_REPUTATION']] == karma + 10 and w.haus(0, 'RL_F_EINFLUSS') == einfluss + 5,
+           'Krankenstube')
+    pruefe(not any('sick room' in o for o in _job_optionen(sp, e)), 'Krankenstube zweimal')
+    allgemein(sp, 'jobs den')
+
+
+def test_jobs_staedte(u):
+    k = u.k
+    # New Reno: der Totengraeber nach einem gewaltsamen Vorfall
+    sp, w = _nr_uebernommen(u, 'Salvatore')
+    roz = figur(sp, k, 'RLROZ')
+    rede(sp, roz, ['how the house', None])
+    pruefe(not any('gravedigger' in o for o in _job_optionen(sp, roz)), 'Totengraeber ohne Vorfall')
+    w.setze_welt('RL_W_GEWALT_HAUS', NR + 1)
+    w.setze_haus(NR, 'RL_F_HITZE', 40)
+    sp.dude.kronkorken += 300
+    rede(sp, roz, ['Business outside', 'Work that needs doing', 'gravedigger', None])
+    pruefe(w.haus(NR, 'RL_F_HITZE') == 25 and w.welt('RL_W_GEWALT_HAUS') == 0, 'Totengraeber')
+    allgemein(sp, 'totengraeber')
+    # Vault City: McClure nur, solange Gecko offen ist; der Gecko-Frieden zaehlt einmal
+    sp, w = _vc_uebernommen(u)
+    hanne = figur(sp, k, 'RLHANNE')
+    sp.dude.kronkorken += 1000
+    e = w.haus(VC, 'RL_F_EINFLUSS')
+    rede(sp, hanne, ['Business outside', 'Work that needs doing', 'McClure', None])
+    pruefe(w.haus(VC, 'RL_F_EINFLUSS') == e + 10 and w.welt('RL_W_JOBS') & k['RL_JOB_MCCLURE'], 'McClure')
+    pruefe(not any('McClure' in o for o in _job_optionen(sp, hanne)), 'McClure zweimal')
+    sp.gvars[k['GVAR_VAULT_GECKO_PLANT']] = k['PLANT_REPAIRED']
+    e = w.haus(VC, 'RL_F_EINFLUSS')
+    ruhige_woche(sp)
+    ruhige_woche(sp)
+    pruefe(w.haus(VC, 'RL_F_EINFLUSS') == e + 10 and w.welt('RL_W_JOBS') & k['RL_JOB_GECKO'], 'Gecko-Frieden einmal')
+    allgemein(sp, 'mcclure')
+    # NCR: der Polizist, Schutzgeld mit doppelter Hitze, die Spende an die Rangers
+    sp, w = _ncr_offen(u)
+    dora = figur(sp, k, 'RLDORA')
+    rede(sp, dora, ['how the house', None])
+    rede(sp, dora, ['Business outside', 'Work that needs doing', 'Downtown cop', None])
+    pruefe(w.haus(NCR, 'RL_F_BESTECHUNG_MOD') == 80, 'Polizist')
+    sp.dude.skills[k['SKILL_SPEECH']] = 60
+    rede(sp, dora, ['Business outside', 'Work that needs doing', 'small stalls', None])
+    w.setze_haus(NCR, 'RL_F_HITZE', 30)
+    sp.zufall_fest = 'max'
+    _jobs(sp, w, 'rl_jobs_woche')
+    pruefe(w.haus(NCR, 'RL_F_HITZE') == 35, f'NCR: -5 Polizist, +10 Schutzgeld: {w.haus(NCR, "RL_F_HITZE")}')
+    rede(sp, dora, ['Business outside', 'Work that needs doing', 'cop off the payroll', None])
+    pruefe(w.haus(NCR, 'RL_F_BESTECHUNG_MOD') == 0, 'Polizist entlassen')
+    sp.dude.kronkorken += 1000
+    e = w.haus(NCR, 'RL_F_EINFLUSS')
+    rede(sp, dora, ['Business outside', 'Work that needs doing', 'Rangers', None])
+    pruefe(w.haus(NCR, 'RL_F_EINFLUSS') == e + 5 and w.haus(NCR, 'RL_F_HITZE') == 25, 'Rangers')
+    allgemein(sp, 'ncr jobs')
+    # Redding: Schutzgeld macht Marion zum Feind
+    sp, w = _red_uebernommen(u)
+    w.setze_welt('RL_W_MARION', k['RL_MARION_SCHUTZ'])
+    w.setze_welt('RL_W_MARION_BONUS', 1)
+    sicher = w.haus(RED, 'RL_F_SICHERHEIT')
+    sp.dude.stats[k['STAT_st']] = 7
+    rede(sp, figur(sp, k, 'RLNELL'), ['how the house', None])
+    rede(sp, figur(sp, k, 'RLNELL'), ['Business outside', 'Work that needs doing', 'small stalls', None])
+    pruefe(w.welt('RL_W_MARION') == k['RL_MARION_FEIND'] and w.haus(RED, 'RL_F_SICHERHEIT') == sicher - 10,
+           'Marion wird Feind')
+    allgemein(sp, 'redding jobs')
+
+
+def test_jobs_buecher_bei_jade(u):
+    k = u.k
+    sp, w = _nr_uebernommen(u, 'Salvatore')
+    w.setze_welt('RL_W_VIRGIN', k['RL_VIRGIN_KITTY'])
+    w.setze_welt('RL_W_VIRGIN_WOCHE', 99)
+    w.setze_haus(NR, 'RL_F_KASSE', 2000)
+    betrete_strumpfband(u, sp)
+    v = rede(sp, figur(sp, k, 'RLJADE'), [])
+    pruefe(not any("rival's books" in o for o in v[0][1]), 'Buecher-Option ohne Buecher')
+    w.setze_welt('RL_W_ERPRESSUNG', 1)
+    rede(sp, figur(sp, k, 'RLJADE'), ["rival's books", None])
+    pruefe(w.welt('RL_W_KITTY_WEG') == k['RL_KITTY_DRUCK'] and w.welt('RL_W_CATSPAW') == 2
+           and w.welt('RL_W_ERPRESSUNG') == 0, 'Druck mit den Buechern')
+    allgemein(sp, 'jade buecher')
+
+
+def test_laeuferroute(u):
+    k = u.k
+    sp, w = _nr_uebernommen(u, 'Salvatore')
+    sp, w = _red_uebernommen(u, sp)
+    betrete_strumpfband(u, sp)
+    roz = figur(sp, k, 'RLROZ')
+    rede(sp, roz, ['how the house', None])
+    v = rede(sp, roz, ['Business outside', "runners' road"])
+    pruefe(any('without going to Broken Hills' in a for a, _, _ in v) and
+           not any('[Speech]' in o for o in _optionen_bei(v, "runners' road")), 'ohne Besuch kein Gespraech')
+    sp.betrete_karte(k['MAP_BROKEN_HILLS1'])
+    pruefe(w.welt('RL_W_JOBS') & k['RL_JOB_BH_BESUCHT'], 'Broken Hills besucht')
+    betrete_strumpfband(u, sp)
+    roz = figur(sp, k, 'RLROZ')
+    # Geld anbieten: abgelehnt, danach braucht es Speech 80 statt 70
+    rede(sp, roz, ['Business outside', "runners' road", 'Offer Marcus money', None])
+    pruefe(w.welt('RL_W_JOBS') & k['RL_JOB_MARCUS_GELD'] and w.welt('RL_W_MARCUS') == k['RL_MARCUS_KEIN'], 'Geld')
+    sp.dude.skills[k['SKILL_SPEECH']] = 70
+    v = rede(sp, roz, ['Business outside', "runners' road"])
+    pruefe(not any('[Speech]' in o for o in _optionen_bei(v, "runners' road")), 'Speech 70 reicht nach Geld nicht')
+    sp.dude.skills[k['SKILL_SPEECH']] = 80
+    rede(sp, roz, ['Business outside', "runners' road", '[Speech]', None])
+    pruefe(w.welt('RL_W_MARCUS') == k['RL_MARCUS_RELAIS'], 'Relais')
+    # Anstaendigkeit: Karma >= 250 und drei Haeuser mit Moral >= 60
+    sp.gvars[k['GVAR_PLAYER_REPUTATION']] = 300
+    for h in (0, NR, RED):
+        w.setze_haus(h, 'RL_F_BESITZ', 1)
+        w.setze_haus(h, 'RL_F_MORAL', 60)
+    rede(sp, roz, ['Business outside', "runners' road", 'treat their people', None])
+    pruefe(w.welt('RL_W_MARCUS') == k['RL_MARCUS_ESKORTE'], 'Eskorte')
+    # Gesperrt: Das Geld aus Redding kommt eine Woche spaeter
+    w.setze_welt('RL_W_MARCUS', k['RL_MARCUS_GESPERRT'])
+    w.setze_haus(0, 'RL_F_BESITZ', 0)
+    w.setze_haus(RED, 'RL_F_KASSE', 500)
+    w.setze_haus(RED, 'RL_F_HITZE', 0)
+    hq = w.welt('RL_W_HQ_KASSE')
+    sp.globale[0].rufe_mit('rl_laeufer')
+    pruefe(w.welt('RL_W_HQ_UNTERWEGS') == 500 and w.welt('RL_W_HQ_KASSE') == hq, 'unterwegs')
+    sp.globale[0].rufe_mit('rl_laeufer')
+    pruefe(w.welt('RL_W_HQ_UNTERWEGS') == 0 and w.welt('RL_W_HQ_KASSE') == hq + 500, 'angekommen')
+    # Slaver-Titel sperrt die Stadt
+    w.setze_welt('RL_W_MARCUS', k['RL_MARCUS_KEIN'])
+    sp.gvars[k['GVAR_REPUTATION_SLAVER']] = 1
+    sp.globale[0].rufe_mit('rl_marcus_pruefen')
+    pruefe(w.welt('RL_W_MARCUS') == k['RL_MARCUS_GESPERRT'] and any('what you are' in m for m in sp.meldungen),
+           'Slaver gesperrt')
+    # Marcus tot: gesperrt, H +10 in jedem eigenen Haus, nur einmal
+    sp.gvars[k['GVAR_REPUTATION_SLAVER']] = 0
+    w.setze_welt('RL_W_MARCUS', k['RL_MARCUS_KEIN'])
+    sp.gvars[k['GVAR_MARCUS_DEAD']] = 1
+    h1, h2 = w.haus(NR, 'RL_F_HITZE'), w.haus(RED, 'RL_F_HITZE')
+    sp.globale[0].rufe_mit('rl_marcus_pruefen')
+    sp.globale[0].rufe_mit('rl_marcus_pruefen')
+    pruefe(w.welt('RL_W_MARCUS') == k['RL_MARCUS_GESPERRT'] and w.haus(NR, 'RL_F_HITZE') == h1 + 10
+           and w.haus(RED, 'RL_F_HITZE') == h2 + 10, 'Marcus tot')
+    allgemein(sp, 'laeuferroute')
+
+
 TESTS = [test_wirtschaft_paritaet, test_erkundung, test_eingang, test_prolog_wege, test_diebstahl_erwischt, test_ketten_annehmen,
          test_ketten_ablehnen, test_ketten_kein_geld, test_kolbe_stirbt, test_kolbe_kommt_zurueck,
          test_wochen, test_anwerbung_werben, test_anwerbung_zwingen, test_pferch_flucht_und_nachschub,
@@ -2753,7 +2957,8 @@ TESTS = [test_wirtschaft_paritaet, test_erkundung, test_eingang, test_prolog_weg
          test_reine_diskreditierung, test_reine_calloway_mara_gedraengt, test_erkundung_ncr,
          test_sf_duldung, test_sf_schmuggelkammer, test_sf_hubologen, test_erkundung_sanfran,
          test_virgin_gebuehr_und_kitty, test_virgin_dealer_und_nacht, test_virgin_umarmung_und_vanilla,
-         test_erkundung_virgin, test_talent_vesper, test_talent_abigail, test_talent_talus, test_talent_julian]
+         test_erkundung_virgin, test_talent_vesper, test_talent_abigail, test_talent_talus, test_talent_julian,
+         test_jobs_den, test_jobs_staedte, test_jobs_buecher_bei_jade, test_laeuferroute]
 
 
 def main():
