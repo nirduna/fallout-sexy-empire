@@ -56,6 +56,12 @@
 #define RL_TASTE_GOSSE              (87)    // DIK_F11: Debug, direkt in die Gosse (RLDEN01)
 #define RL_TASTE_TREPPE             (66)    // DIK_F8: Debug, auf Den Business 2 neben die Kellertreppe
 // Nicht F10: Das ist im Spiel "Beenden". F1-F7 und F12 sind ebenfalls belegt.
+// Ersatz ohne F-Reihe (Laptops schicken F-Tasten oft nur mit Fn): Alt + E, G, T
+#define RL_TASTE_ALT_LINKS          (56)    // DIK_LMENU
+#define RL_TASTE_ALT_RECHTS         (184)   // DIK_RMENU (AltGr)
+#define RL_TASTE_E                  (18)    // DIK_E: Essie und Kolbe
+#define RL_TASTE_G                  (34)    // DIK_G: Gosse
+#define RL_TASTE_T                  (20)    // DIK_T: Treppe
 
 procedure start;
 procedure map_enter_p_proc;
@@ -114,6 +120,7 @@ procedure start begin
       welt := rl_lade_welt;
 #ifdef RL_DEBUG
       register_hook_proc(HOOK_KEYPRESS, rl_taste);
+      display_msg(rl_text(270));      // zeigt, dass der Debug-Build laeuft und welche Tasten gelten
 #endif
 #ifdef RL_SELBSTTEST
       call rl_selbsttest;
@@ -1505,22 +1512,38 @@ procedure rl_ereignisse_woche(variable woche) begin
 end
 
 #ifdef RL_DEBUG
-/* Debug-Tasten:
-     F9   Essie und Kolbe erscheinen neben dem Spieler, damit sich der Prolog
-          auch ohne die Innenkarte RLDEN01 testen laesst. Figuren wie in
-          RLDEN01: Durchschnittsbaeuerin und Schlaeger aus Vanilla.
-     F11  direkt in die Gosse (Pruefliste der Karten)
-     F8   auf Den Business 2 neben die Kellertreppe (Pruefliste der Karten) */
+/* Debug-Tasten (jeweils auch Alt + Buchstabe, falls die F-Reihe nicht ankommt):
+     F9  / Alt+E  Essie und Kolbe erscheinen neben dem Spieler, damit sich der Prolog
+                  auch ohne die Innenkarte RLDEN01 testen laesst. Figuren wie in
+                  RLDEN01: Durchschnittsbaeuerin und Schlaeger aus Vanilla.
+     F11 / Alt+G  direkt in die Gosse (Pruefliste der Karten)
+     F8  / Alt+T  auf Den Business 2 neben die Kellertreppe (Pruefliste der Karten)
+   Jeder erkannte Tastendruck gibt eine Meldung, auch wenn er nichts tun kann
+   (Weltkarte, falsche Karte). Beim Laden meldet sich der Debug-Build selbst. */
 procedure rl_taste begin
    variable gedrueckt := get_sfall_arg;
    variable taste := get_sfall_arg;
+   variable alt, was := 0;
    if (not gedrueckt) then return;
-   if (taste == RL_TASTE_SPAWN) then
+   alt := key_pressed(RL_TASTE_ALT_LINKS) or key_pressed(RL_TASTE_ALT_RECHTS);
+   if ((taste == RL_TASTE_SPAWN) or (alt and (taste == RL_TASTE_E))) then was := 1;
+   else if ((taste == RL_TASTE_GOSSE) or (alt and (taste == RL_TASTE_G))) then was := 2;
+   else if ((taste == RL_TASTE_TREPPE) or (alt and (taste == RL_TASTE_T))) then was := 3;
+   if (was == 0) then return;
+   if (in_world_map) then begin
+      display_msg(rl_text(272));        // Kartenwechsel und Figuren gehen nur auf einer Karte
+      return;
+   end
+   if (was == 1) then
       call rl_debug_spawn;
-   else if (taste == RL_TASTE_GOSSE) then
+   else if (was == 2) then begin
+      display_msg(rl_text(271));
       load_map(RL_KARTE_GOSSE, 0);
-   else if ((taste == RL_TASTE_TREPPE) and (cur_map_index == MAP_DEN_BUSINESS)) then
+   end else if (cur_map_index == MAP_DEN_BUSINESS) then begin
+      display_msg(rl_text(274));
       move_to(dude_obj, RL_GOSSE_ANKUNFT_HEX, RL_GOSSE_TREPPE_EBENE);
+   end else
+      display_msg(rl_text(273));
 end
 
 procedure rl_debug_spawn begin

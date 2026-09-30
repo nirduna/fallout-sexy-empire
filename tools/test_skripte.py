@@ -3282,6 +3282,46 @@ def test_epilog_nachsaetze(u):
     allgemein(sp, 'epilog')
 
 
+def test_debug_tasten(u):
+    """Debug-Build: Meldung beim Laden, F-Tasten und Alt-Ersatz, Weltkarte, falsche Karte."""
+    if str(u.cfg.get('RL_DEBUG', '0')) != '1':
+        return
+    sp = u.neues_spiel()
+    pruefe(any('[Debug] Red light test build' in m for m in sp.meldungen), 'keine Meldung beim Laden')
+    pruefe(19 in sp.hooks, 'HOOK_KEYPRESS nicht registriert')
+    vm, proc = sp.hooks[19]
+    name = vm.p.prozeduren[proc]['name']
+
+    def druecke(taste, halten=(), gedrueckt=1):
+        sp.tasten = set(halten)
+        vor = (len(sp.karten_wechsel), len(sp.objekte), len(sp.meldungen))
+        sp.hook_args = [gedrueckt, taste, 0]
+        vm.rufe(name)
+        sp.tasten = set()
+        return (len(sp.karten_wechsel) - vor[0], len(sp.objekte) - vor[1], sp.meldungen[vor[2]:])
+
+    gosse = ('rlden01.map', 0)
+    pruefe(druecke(87)[0] == 1 and sp.karten_wechsel[-1] == gosse, 'F11')
+    pruefe(druecke(34, halten=[56])[0] == 1, 'Alt+G')
+    pruefe(druecke(34, halten=[184])[0] == 1, 'AltGr+G')
+    pruefe(druecke(34) == (0, 0, []), 'G ohne Alt darf nichts tun')
+    pruefe(druecke(87, gedrueckt=0) == (0, 0, []), 'Loslassen darf nichts tun')
+    pruefe(druecke(67)[1] == 2, 'F9')
+    pruefe(druecke(18, halten=[56])[1] == 2, 'Alt+E')
+    sp.karte = 0
+    kw, ob, meld = druecke(66)
+    pruefe(kw == 0 and any('only works on Den Business 2' in m for m in meld), f'F8 woanders: {meld}')
+    sp.karte = u.k['MAP_DEN_BUSINESS']
+    sp.dude.tile = 20000
+    kw, ob, meld = druecke(20, halten=[56])
+    pruefe(sp.dude.tile == u.k['RL_GOSSE_ANKUNFT_HEX'] and meld, 'Alt+T auf Den Business 2')
+    sp.weltkarte = True
+    kw, ob, meld = druecke(87)
+    pruefe(kw == 0 and any('Not on the world map' in m for m in meld), f'Weltkarte: {meld}')
+    sp.weltkarte = False
+    allgemein(sp, 'debug')
+
+
 TESTS = [test_wirtschaft_paritaet, test_erkundung, test_eingang, test_prolog_wege, test_diebstahl_erwischt, test_ketten_annehmen,
          test_ketten_ablehnen, test_ketten_kein_geld, test_kolbe_stirbt, test_kolbe_kommt_zurueck,
          test_wochen, test_anwerbung_werben, test_anwerbung_zwingen, test_pferch_flucht_und_nachschub,
@@ -3302,7 +3342,7 @@ TESTS = [test_wirtschaft_paritaet, test_erkundung, test_eingang, test_prolog_weg
          test_erkundung_virgin, test_talent_vesper, test_talent_abigail, test_talent_talus, test_talent_julian,
          test_jobs_den, test_jobs_staedte, test_jobs_buecher_bei_jade, test_laeuferroute,
          test_ereignisse_soldaten, test_ereignisse_razzia, test_ereignisse_weitere,
-         test_titel_wirkungen, test_epilog_nachsaetze]
+         test_titel_wirkungen, test_epilog_nachsaetze, test_debug_tasten]
 
 
 def main():

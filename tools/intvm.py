@@ -70,6 +70,7 @@ NAMEN = {
     0x8128: 'combat_is_initialized', 0x8136: 'gfade_out', 0x8137: 'gfade_in',
     0x8138: 'item_caps_total', 0x8139: 'item_caps_adjust', 0x8143: 'attack_setup',
     0x8146: 'endgame_slideshow', 0x8164: 'game_loaded', 0x816A: 'set_global_script_repeat',
+    0x816C: 'key_pressed', 0x8170: 'in_world_map',
     0x81E4: 'get_sfall_arg', 0x81F5: 'get_script', 0x822D: 'create_array',
     0x822E: 'set_array', 0x822F: 'get_array', 0x8230: 'free_array', 0x8231: 'len_array',
     0x8233: 'temp_array', 0x8236: 'list_as_array', 0x8254: 'save_array',
@@ -1051,6 +1052,15 @@ def _s_endgame_slideshow(vm, sp):
     sp.protokoll.append('endgame_slideshow')
 
 
+def _s_key_pressed(vm, sp):
+    taste = vm.pop_int()
+    vm.stack.append(1 if taste in sp.tasten else 0)
+
+
+def _s_in_world_map(vm, sp):
+    vm.stack.append(1 if sp.weltkarte else 0)
+
+
 def _s_game_loaded(vm, sp):
     vm.stack.append(1 if sp.game_loaded else 0)
 
@@ -1284,6 +1294,8 @@ SPIEL = {
     0x8143: _s_attack_setup,
     0x8146: _s_endgame_slideshow,
     0x8164: _s_game_loaded,
+    0x816C: _s_key_pressed,
+    0x8170: _s_in_world_map,
     0x816A: _s_script_repeat,
     0x81E4: _s_get_sfall_arg,
     0x81F5: _s_get_script,
@@ -1390,6 +1402,8 @@ class Spiel:
         self.fehlende_texte = []
         self.hooks = {}
         self.hook_args = []
+        self.tasten = set()               # gedrueckt gehaltene Tasten (DX-Scancodes, key_pressed)
+        self.weltkarte = False            # in_world_map
         self.self_obj = self.source_obj = self.target_obj = None
         self.fixed_param = 0
         self.aktiv = None

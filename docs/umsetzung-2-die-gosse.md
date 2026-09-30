@@ -236,6 +236,11 @@ Nicht im Mapper speichern: Der nächste Build würde die Änderungen überschrei
 - **Kodierung:** Die Spieltexte sind englisch und reines ASCII, `check_msg.py` prüft das. Zur Information: Das RPU liefert deutsche Texte in Windows-1252 aus. Git speichert sie als UTF-8 und wandelt sie beim Auschecken um (`.gitattributes`: `working-tree-encoding=cp1252`).
 - **RPU-Versionen:** Die Skripte sind gegen die Header von RPU 2.3.34, 2.4.34 und den aktuellen Stand kompiliert byte-gleich. Unterschiede gibt es nur in den Systemdateien (eine Zeile in `scripts.lst`) und in den Karten (Beckys Keller). Beides nimmt `tools/paket.py` aus dem passenden Release.
 - **Debug-Tasten:** F9, F11 und F8. F10 ist im Spiel „Beenden“, F1 bis F7 und F12 sind ebenfalls belegt.
+  - Nachtrag nach dem Test im Spiel („Debug-Tasten funktionieren nicht“): Die Skript-Logik stimmt. Das zeigen das Prüfwerkzeug (`test_debug_tasten`) und der Quelltext von sfall 4.4.8, das RPU 2.4.34 mitbringt. Wahrscheinlich kommen die F-Tasten gar nicht im Spiel an: Laptop-F-Tasten senden oft nur mit Fn, und Overlays fangen manche ab.
+  - Neu gibt es darum **Alt+E, Alt+G und Alt+T** als Ersatz für F9, F11 und F8.
+  - Der Debug-Build meldet sich beim Laden im Meldungsfenster.
+  - Jede Debug-Taste antwortet mit einer „[Debug]“-Zeile, auch wenn sie gerade nichts tun kann: auf der Weltkarte oder F8 außerhalb von Den Business 2.
+  - So lässt sich im Spiel unterscheiden, ob das Testpaket nicht läuft, die Taste nicht ankommt oder die Aktion nicht geht.
 
 ---
 

@@ -279,10 +279,19 @@ def packen(a):
 def anleitungstext(release, sb, gb, ki, debug):
     tasten = """
 DEBUG-TASTEN (nur in diesem Testpaket)
-  F11  von überall direkt in die Gosse (The Gutter)
-  F8   auf Den Business 2 neben die Kellertreppe (nur dort)
-  F9   Essie und Kolbe erscheinen neben dir (Notlösung ohne Karte)
-  F12  Bildschirmfoto (Spiel), landet im Fallout-2-Ordner als SCR*.BMP
+  Beim Laden und beim Start eines neuen Spiels steht im Meldungsfenster unten
+  "[Debug] Red light test build ...". Fehlt diese Zeile, läuft das Testpaket
+  nicht (mods_order.txt prüfen).
+  F11 oder Alt+G   von einer Karte direkt in die Gosse (The Gutter)
+  F8  oder Alt+T   auf Den Business 2 neben die Kellertreppe (nur dort)
+  F9  oder Alt+E   Essie und Kolbe erscheinen neben dir (Notlösung ohne Karte)
+  F12              Bildschirmfoto (Spiel), landet im Fallout-2-Ordner als SCR*.BMP
+  Jede Debug-Taste antwortet mit einer "[Debug]"-Zeile im Meldungsfenster.
+  Kommt keine Antwort, erreicht die Taste das Spiel nicht: Auf vielen Laptops
+  senden die F-Tasten nur zusammen mit Fn (oder dienen als Lautstärke/Helligkeit),
+  und Overlays (Steam, GOG, Grafiktreiber) fangen manche F-Tasten ab. Dann
+  die Alt-Varianten nehmen. Auf der Weltkarte geht keine Debug-Taste: erst
+  eine Stadt betreten.
   Bei jeder Madame unter "Let's go over how the house is run.":
        "[Debug] Add two empty rooms." und "[Debug] Show me the ending."
 """ if debug else ""

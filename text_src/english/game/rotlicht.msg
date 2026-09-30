@@ -147,3 +147,8 @@
 {259}{}{The police found the house without valid papers. The fine is $500.}
 {260}{}{A raid is coming next week. The madam wants a word with you.}
 {262}{}{Talus has heard what people say about you. He put down his club, walked back to Broken Hills and told Marcus everything he knew.}
+{270}{}{[Debug] Red light test build. F11 or Alt+G: to the Gutter. F8 or Alt+T: to the cellar stairs on Den Business 2. F9 or Alt+E: Essie and Kolbe appear.}
+{271}{}{[Debug] Going to the Gutter.}
+{272}{}{[Debug] Not on the world map. Enter a town first.}
+{273}{}{[Debug] This key only works on Den Business 2.}
+{274}{}{[Debug] To the cellar stairs.}
