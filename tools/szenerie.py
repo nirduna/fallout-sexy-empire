@@ -84,12 +84,13 @@ def stuecke(grafik=GRAFIK):
         if blocker != felder - belegt:
             raise Fehler(f"{name}: Blocker {sorted(blocker)} decken die freien Felder "
                          f"{sorted(felder - belegt)} nicht genau ab")
-        # Mehrfeldrige Objekte sind fuer die Hex-Paritaet des ersten Platzes gerendert
+        # Mehrfeldrige Objekte sind fuer die Hex-Paritaet ihres Bezugsfelds gerendert
         if len(felder) > 1:
-            paritaet = obj["platz"][0] % 200 % 2
+            paritaet = katalog.bezug(name) % 200 % 2
             for p in obj["platz"]:
                 if p % 200 % 2 != paritaet:
-                    raise Fehler(f"{name}: Platz {p} hat eine andere Spaltenparitaet als {obj['platz'][0]}")
+                    raise Fehler(f"{name}: Platz {p} hat eine andere Spaltenparitaet als das Bezugsfeld "
+                                 f"{katalog.bezug(name)}, dafuer neu rendern")
     return aus
 
 
@@ -138,6 +139,11 @@ def einfuegen(art_lst, proto_lst, pro_scen, grafik=GRAFIK):
                 neu.append(f"{{{nr}}}{{}}{{{text}}}")
         dateien[f"text/{sprache}/game/pro_scen.msg"] = anhaengen(basis, neu)
     return dateien, nummern
+
+
+def ersetzt():
+    """Vanilla-Objekte der Gosse, die fuer die eigene Einrichtung wegfallen: [(PID, Hexfeld)]."""
+    return [e for obj in katalog.OBJEKTE.values() if obj["platz"] for e in obj.get("ersetzt", [])]
 
 
 def kartenobjekte(nummern, naechste_id, grafik=GRAFIK):

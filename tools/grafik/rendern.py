@@ -23,7 +23,7 @@ def main():
     namen = sys.argv[2:] or list(katalog.OBJEKTE)
     for name in namen:
         obj = katalog.OBJEKTE[name]
-        ref = obj["platz"][0]
+        ref = katalog.bezug(name)
         felder = [g.hex_welt(g.versatz(ref, dx, dy), ref) for dx, dy in obj["felder"]]
         breite, hoehe, ox, oy = modelle.LEINWAND[name]
         ziel = aus / name

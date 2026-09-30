@@ -353,17 +353,20 @@ docs/umsetzung-*.md)
   5. Krisen: Wenn die Madame eine meldet, die Wege durchprobieren.
   6. Das Ende: bei einer Madame "[Debug] Show me the ending." zeigt die
      Endslides des Addons (Hauptslide und höchstens ein Nachsatz).
-  7. Neue Grafiken in der Gosse (erste eigene Grafiken der Mod): oben links
-     an der Rückwand Bett, Paravent und Waschtisch, davor ein Teppich, neben
-     der Treppe eine Preistafel, zwei rote Laternen. Bitte ansehen:
-     - Erscheinen alle sechs Dinge, oder fehlt etwas / steht ein leeres Feld?
-     - Passen Größe und Stil zu den Vanilla-Möbeln (Tisch, Kisten)?
-     - Verdeckt die linke Wand Teile von Bett oder Waschtisch?
-     - Läuft eine Figur richtig vor und hinter dem Bett entlang, ohne dass
-       Teile des Betts über ihr liegen?
-     - Pulsiert das Glas der Laternen rot? Hellen sie den Raum auf?
-     - Rechtsklick/Untersuchen: Zeigen sie ihren Namen und Text?
-     Am besten mit Bildschirmfoto (F12) aus der Mitte des Raums.
+  7. Neue Grafiken in der Gosse (zweiter Stand, nach deinem Bildschirmfoto):
+     - Treppenraum: am Fuß der Treppe ein roter Teppich und die Preistafel,
+       neben der Treppe eine rote Laterne.
+     - Zimmer hinter der Tür: ein rotes Bett an der Stelle des grauen
+       Vanilla-Betts, daneben der Waschtisch, am Fußende eine rote Laterne.
+     Bitte ansehen:
+     - Erscheint alles, und ist das graue Bett weg? Steht irgendwo ein
+       unsichtbares Hindernis, wo nichts zu sehen ist?
+     - Kommt man durch die Tür ins Zimmer und am Bett vorbei?
+     - Schneidet die Wand links das Bett an?
+     - Läuft eine Figur richtig vor und hinter dem Bett entlang?
+     - Pulsiert das Glas der Laternen rot?
+     - Untersuchen: Zeigen alle Objekte Namen und Text?
+     Am besten mit Bildschirmfoto (F12), so dass beide Räume zu sehen sind.
 
 WENN ETWAS NICHT GEHT
 - Keine Treppe in der Ruine, F11 tut nichts: Steht  rotlicht  wirklich als

@@ -44,7 +44,7 @@ Alle 16 Schritte des [Fahrplans](docs/fahrplan.md) sind umgesetzt. Im Spiel gete
 | Schritt | Inhalt | Status |
 |---|---|---|
 | – | Recherche: was an eigenen Grafiken geht (Szenerie, Leuchtreklame, Köpfe, Endslides) und was es kostet | fertig: [docs/recherche-grafik.md](docs/recherche-grafik.md) |
-| G1 | Werkzeugkette Blender → FRM → Paket; Paket „Rotlicht“ für die Gosse: rote Laternen, Bett, Paravent, Waschtisch, Teppich, Preistafel | umgesetzt, geprüft, Test im Spiel offen: [docs/umsetzung-g1-grafik.md](docs/umsetzung-g1-grafik.md) |
+| G1 | Werkzeugkette Blender → FRM → Paket; Paket „Rotlicht“ für die Gosse: rote Laternen, Bett, Waschtisch, Teppich, Preistafel (Paravent vorerst nicht aufgestellt) | umgesetzt; erster Stand im Spiel angesehen und nach dem Bildschirmfoto neu angeordnet, zweiter Stand im Spiel offen: [docs/umsetzung-g1-grafik.md](docs/umsetzung-g1-grafik.md) |
 
 Die fertigen Grafiken liegen in [`grafik/`](grafik/). Die Palette des Spiels liegt nicht im Repository.
 

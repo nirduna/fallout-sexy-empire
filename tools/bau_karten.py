@@ -72,9 +72,8 @@ RLDEN01 = dict(
         "ANGREIFER1": 16866,  # kommen die Treppe herunter
         "ANGREIFER2": 17264,
     },
-    # Felder, die die eigene Einrichtung vom Raum trennen darf: eine Nische in der
-    # Zickzack-Rueckwand hinter Bett und Waschtisch (Reihe 82), kein Weg fuehrt hindurch
-    nischen={16470},
+    # Felder, die die eigene Einrichtung vom Raum trennen darf (keine)
+    nischen=set(),
 )
 
 
@@ -279,10 +278,24 @@ def baue_rlden01(karten_dir, db, skript_basis, karten_index, dekor=None):
     neu = []
     if dekor:
         import szenerie
-        vorher = {o["kopf"]["tile"]: hex(o["kopf"]["pid"]) for o in objekte}
         k.objekte = [objekte, [], []]
         weg_vorher = erreichbar_von(k, RLDEN01["eingang_hex"])
-        neu = szenerie.kartenobjekte(dekor, naechste_id)
+        # Vanilla-Objekte, an deren Stelle die eigene Einrichtung kommt (das graue Bett im Zimmer)
+        gefunden = set()
+        for pid, t in szenerie.ersetzt():
+            for o in [o for o in objekte if o["kopf"]["pid"] == pid and o["kopf"]["tile"] == t]:
+                objekte.remove(o)
+                gefunden.add(pid)
+        fehlt = {pid for pid, _ in szenerie.ersetzt()} - gefunden - {BLOCKER_PID}
+        if fehlt:
+            raise SystemExit(f"Vorlage: {', '.join(map(hex, fehlt))} nicht gefunden, die Einrichtung passt nicht mehr")
+        zu = {o["kopf"]["tile"] for o in objekte if blockiert(o)}
+        # Kamerasperren und unsichtbare Lichtquellen duerfen mit auf dem Feld liegen
+        vorher = {o["kopf"]["tile"]: hex(o["kopf"]["pid"]) for o in objekte
+                  if fomap.pid_typ(o["kopf"]["pid"]) != fomap.T_MISC and o["kopf"]["pid"] not in NICHT_BLOCKIEREND}
+        # Blocker nur, wo nicht schon eine Wand oder ein Blocker der Vorlage steht
+        neu = [o for o in szenerie.kartenobjekte(dekor, naechste_id)
+               if not (o["kopf"]["pid"] == BLOCKER_PID and o["kopf"]["tile"] in zu)]
         for o in neu:
             t = o["kopf"]["tile"]
             if t in vorher:
@@ -305,9 +318,13 @@ def baue_rlden01(karten_dir, db, skript_basis, karten_index, dekor=None):
 
 
 def blockiert(o):
-    """Steht das Objekt im Weg? Waende und Szenerie, ausser flachen und NoBlock-Objekten."""
+    """Steht das Objekt im Weg? Waende und Szenerie, ausser NoBlock-Objekten und Tueren
+    (Szenerie mit genau einem Zusatzwert; Tueren oeffnen sich beim Durchgehen)."""
     p = o["kopf"]["pid"]
-    return (fomap.pid_typ(p) in (fomap.T_WALL, fomap.T_SCENERY) and p not in NICHT_BLOCKIEREND
+    typ = fomap.pid_typ(p)
+    if typ == fomap.T_SCENERY and len(o["daten"]) == 2:
+        return False
+    return (typ in (fomap.T_WALL, fomap.T_SCENERY) and p not in NICHT_BLOCKIEREND
             and not o["kopf"]["flags"] & 0x10)
 
 
@@ -372,9 +389,19 @@ def pruefe(k, db, dekor=()):
         sq = (t // 200 // 2) * 100 + (t % 200) // 2
         boden = int.from_bytes(kacheln[sq * 4:sq * 4 + 4], "big") & 0xFFF
         assert boden != 1, f"Einrichtung {o['kopf']['pid']:#x} auf Hex {t}: dort ist kein Boden"
-        if o["kopf"]["pid"] != BLOCKER_PID:
-            assert t in weg or any(n in weg for n in hex_nachbarn(t)), \
-                f"Einrichtung {o['kopf']['pid']:#x} auf Hex {t} steht ausserhalb des Raums"
+    # Im Raum: jedes Stueck grenzt an begehbaren Boden, oder ueber andere Stuecke desselben
+    # Moebels (das Kopfende eines Betts an der Wand hat keinen freien Nachbarn)
+    felder = {o["kopf"]["tile"] for o in dekor}
+    im_raum = {t for t in felder if t in weg or any(n in weg for n in hex_nachbarn(t))}
+    offen = list(im_raum)
+    while offen:
+        for n in hex_nachbarn(offen.pop()):
+            if n in felder and n not in im_raum:
+                im_raum.add(n)
+                offen.append(n)
+    for o in dekor:
+        assert o["kopf"]["tile"] in im_raum, \
+            f"Einrichtung {o['kopf']['pid']:#x} auf Hex {o['kopf']['tile']} steht ausserhalb des Raums"
 
 
 def hex_nachbarn(t):
