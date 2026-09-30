@@ -578,7 +578,7 @@ def test_anwerbung_werben(u):
     k = u.k
     sp, e, ko, w = _gosse_bereit(u)
     loehne = w.haus(0, 'RL_F_LOEHNE')
-    v = rede(sp, e, ['about our people', 'talks people into it'])
+    v = rede(sp, e, ['house is run', 'about our people', 'talks people into it'])
     pruefe('sad story' in texte(v), f'Antwort: {texte(v)}')
     pruefe(w.haus(0, 'RL_F_ANWERBER') == k['RL_ANWERBER_WERBEN'], 'Anwerber')
     pruefe(w.haus(0, 'RL_F_LOEHNE') == loehne + 40, 'Lohn')
@@ -588,9 +588,9 @@ def test_anwerbung_werben(u):
         personal.append(w.haus(0, 'RL_F_PERSONAL'))
     pruefe(personal == [3, 4, 4, 5, 5], f'Personal je Woche {personal}')
     pruefe(sum('New girl' in m or 'new' in m.lower() for m in sp.meldungen) >= 2, f'Meldungen {sp.meldungen}')
-    v = rede(sp, e, ['about our people', 'Back'])
+    v = rede(sp, e, ['house is run', 'about our people', 'Back'])
     pruefe('Every room is taken' in texte(v), f'Hinweis volle Zimmer fehlt: {texte(v)}')
-    rede(sp, e, ['about our people', 'Let the recruiter go'])
+    rede(sp, e, ['house is run', 'about our people', 'Let the recruiter go'])
     pruefe(w.haus(0, 'RL_F_LOEHNE') == loehne and w.haus(0, 'RL_F_ANWERBER') == 0, 'Entlassen')
     allgemein(sp, 'werben')
 
@@ -599,7 +599,7 @@ def test_anwerbung_zwingen(u):
     k = u.k
     sp, e, ko, w = _gosse_bereit(u)
     karma = sp.gvars.get(k['GVAR_PLAYER_REPUTATION'], 0)
-    rede(sp, e, ['about our people', "doesn't ask"])
+    rede(sp, e, ['house is run', 'about our people', "doesn't ask"])
     woche(sp)
     pruefe(w.haus(0, 'RL_F_PERSONAL') == 4 and w.haus(0, 'RL_F_GEZWUNGEN') == 1, 'eine Person pro Woche')
     woche(sp)
@@ -616,7 +616,7 @@ def test_anwerbung_zwingen(u):
     pruefe(w.haus(0, 'RL_F_GEZWUNGEN') == 2 and w.haus(0, 'RL_F_PERSONAL') == 5, 'Abgang und Ersatz')
     pruefe(len(sp.meldungen) == 2 and 'ran off' in sp.meldungen[0], f'Meldungen {sp.meldungen}')
     # ohne Anwerber bleibt die Stelle leer
-    rede(sp, e, ['about our people', 'Let the recruiter go'])
+    rede(sp, e, ['house is run', 'about our people', 'Let the recruiter go'])
     g.rufe_mit('rl_personalwechsel', 0)
     pruefe(w.haus(0, 'RL_F_GEZWUNGEN') == 1 and w.haus(0, 'RL_F_PERSONAL') == 4, 'Abgang')
     allgemein(sp, 'zwingen')
@@ -636,12 +636,12 @@ def test_pferch_flucht_und_nachschub(u):
     pruefe(r == 0 and w.haus(0, 'RL_F_ZWANG') == 1, 'Kuendigung trifft den Pferch')
     geld = sp.dude.kronkorken
     w.setze_haus(0, 'RL_F_KASSE', 0)
-    v = rede(sp, e, ['about our people', 'Send word to Metzger'])
+    v = rede(sp, e, ['house is run', 'about our people', 'Send word to Metzger'])
     pruefe('Kolbe brings one' in texte(v), f'Nachschub: {texte(v)}')
     pruefe(w.haus(0, 'RL_F_ZWANG') == 2 and sp.dude.kronkorken == geld - 150, 'Nachschub bezahlt')
-    rede(sp, e, ['about our people', 'Send word to Metzger'])
+    rede(sp, e, ['house is run', 'about our people', 'Send word to Metzger'])
     pruefe(w.haus(0, 'RL_F_PERSONAL') == w.haus(0, 'RL_F_ZIMMER'), 'Haus nicht voll')
-    v = rede(sp, e, ['about our people', 'Back'])
+    v = rede(sp, e, ['house is run', 'about our people', 'Back'])
     pruefe(not any('Send word' in o for _, opts, _ in v for o in opts), 'Nachschub trotz vollem Haus')
     allgemein(sp, 'pferch')
 
@@ -730,13 +730,13 @@ def test_akt2_verstecken_bis_madame(u):
     v = rede(sp, mara, ['Why did you come back', '[Speech] Run the Gutter', None])
     pruefe(w.welt('RL_W_MARA') == 1 and w.welt('RL_W_MARA_WEG') == k['RL_MARA_MADAME'], 'keine Madame')
     pruefe(w.haus(0, 'RL_F_FUEHRUNG') >= 70, 'Fuehrung')
-    v = rede(sp, mara, ["Let's talk prices", 'Back' if False else 'Leave it'])
+    v = rede(sp, mara, ['house is run', "Let's talk prices", 'Back' if False else 'Leave it'])
     pruefe('Everyone in the house can leave' in v[0][0], f'Mara-Menue: {v[0][0]}')
     sp.tick()
     pruefe(sp.gvars.get(k['GVAR_RL_NACHSATZ']) == k['RL_NACHSATZ_UEBERLEBENDE'], 'Nachsatz Die Ueberlebende')
     # Mara geht, sobald irgendwo jemand gezwungen wurde (freies Zimmer noetig)
     w.setze_haus(0, 'RL_F_ZIMMER', w.haus(0, 'RL_F_PERSONAL') + 1)
-    rede(sp, e, ['about our people', "doesn't ask"])
+    rede(sp, e, ['house is run', 'about our people', "doesn't ask"])
     sp.meldungen.clear()
     woche(sp)
     woche(sp)
@@ -955,7 +955,7 @@ def test_eingaenge_haeuser(u):
         pruefe(len(sp.karten_wechsel) == n, f'{h["kuerzel"]}: Kartenwechsel im Kampf/fuer andere')
     # Essie kennt die anderen Staedte
     sp, e, ko, w = prolog(u, 'bezahlt')
-    v = rede(sp, e, ['Go on', 'Where else', 'New Reno', 'another town', 'San Francisco'])
+    v = rede(sp, e, ['Go on', 'Business outside', 'Where else', 'New Reno', 'another town', 'San Francisco'])
     pruefe('Silver Garter' in texte(v) and 'ferry terminal' in texte(v), 'Staedte')
     pruefe(w.welt('RL_W_STAEDTE_ERZAEHLT') == (1 << k['RL_NEW_RENO']) | (1 << k['RL_SAN_FRAN']), 'Bits')
     allgemein(sp, 'eingaenge')
@@ -1097,7 +1097,7 @@ def test_nr_kauf_und_mordino(u):
     keine_figur(sp, k, 'RLFIXER')
     # Roz: erstes Gespraech, dann das Manager-Menue des Strumpfbands
     roz = figur(sp, k, 'RLROZ')
-    v = rede(sp, roz, ['how the house', 'How are our people'])
+    v = rede(sp, roz, ['how the house', 'house is run', 'How are our people'])
     pruefe('Shark Club' in texte(v) and 'Last week we had' in texte(v), f'Roz: {texte(v)[:200]}')
     v = rede(sp, roz, [])
     pruefe('cards' in texte(v).lower(), 'Roz ohne Einleitung')
@@ -1384,10 +1384,10 @@ def _optionen_bei(verlauf, gewaehlt):
 
 def _sondermodule(sp, roz):
     """Die Optionen der Gruppe "nur hier" im Ausbau-Menue (leer, wenn es sie nicht gibt)."""
-    v = rede(sp, roz, ['build'])
+    v = rede(sp, roz, ['house is run', 'build'])
     if not any('only get in New Reno' in o for o in _optionen_bei(v, 'What could we build')):
         return []
-    return _optionen_bei(rede(sp, roz, ['build', 'only get in New Reno']), 'only get in New Reno')
+    return _optionen_bei(rede(sp, roz, ['house is run', 'build', 'only get in New Reno']), 'only get in New Reno')
 
 
 def test_nr_jet_theke(u):
@@ -1402,7 +1402,7 @@ def test_nr_jet_theke(u):
     roz = figur(sp, k, 'RLROZ')
     rede(sp, roz, ['how the house', None])
     pruefe(any('Jet Counter ($800)' in o for o in _sondermodule(sp, roz)), 'Jet-Theke unter Mordino')
-    rede(sp, roz, ['build', 'only get in New Reno', 'Jet Counter', 'Build it', None])
+    rede(sp, roz, ['house is run', 'build', 'only get in New Reno', 'Jet Counter', 'Build it', None])
     pruefe(w.haus(NR, 'RL_F_BAU_ID') == k['RL_SONDER_BASIS'] + k['RL_SM_JET_THEKE'] + 1
            and w.haus(NR, 'RL_F_BAU_WOCHEN') == 2, 'Baustelle')
     woche(sp, 2)
@@ -1581,9 +1581,9 @@ def test_red_waage(u):
     nell = figur(sp, k, 'RLNELL')
     rede(sp, nell, ['how the house', None])
     sp.dude.kronkorken = 5000
-    rede(sp, nell, ['build', 'only get in Redding', 'Rigged Scale', 'Build it', None])
+    rede(sp, nell, ['house is run', 'build', 'only get in Redding', 'Rigged Scale', 'Build it', None])
     pruefe(w.haus(RED, 'RL_F_BAU_ID') == k['RL_SONDER_BASIS'] + k['RL_SM_WAAGE'] + 1, 'Baustelle Waage')
-    v = rede(sp, nell, ['build'])
+    v = rede(sp, nell, ['house is run', 'build'])
     pruefe(not any('Honest Gold Scale' in o for o in _optionen_bei(v, 'build')), 'ehrliche Waage trotz gezinkter')
     sp.zufall_fest = 'max'                  # keine Ereignisse, Marion findet nichts
     woche(sp)
@@ -1610,11 +1610,11 @@ def test_red_waage(u):
     sp, w = _red_uebernommen(u)
     nell = figur(sp, k, 'RLNELL')
     rede(sp, nell, ['how the house', None])
-    rede(sp, nell, ['build', 'only get in Redding', 'Honest Gold Scale', 'Build it', None])
+    rede(sp, nell, ['house is run', 'build', 'only get in Redding', 'Honest Gold Scale', 'Build it', None])
     pruefe(w.haus(RED, 'RL_F_BAU_ID') == k['RL_M_RED_GOLDWAAGE'] + 1, 'ehrliche Waage')
     woche(sp)
-    v = rede(sp, nell, ['build'])
-    gruppe = _optionen_bei(rede(sp, nell, ['build', 'only get in Redding']), 'only get in Redding') \
+    v = rede(sp, nell, ['house is run', 'build'])
+    gruppe = _optionen_bei(rede(sp, nell, ['house is run', 'build', 'only get in Redding']), 'only get in Redding') \
         if any('only get in Redding' in o for o in _optionen_bei(v, 'build')) else []
     pruefe(not any('Rigged' in o for o in gruppe), 'gezinkte Waage trotz ehrlicher')
     allgemein(sp, 'waage')
@@ -1759,7 +1759,7 @@ def _vc_uebernommen(u, sp=None, buerger=True):
     sp, w = kloake(u, sp)
     if buerger:
         sp.gvars[k['GVAR_VAULT_CITIZEN']] = k['CITIZEN_REAL_CITIZEN']
-    rede(sp, figur(sp, k, 'RLHANNE'), ['buy the house', 'talk about the house', 'citizen of Vault City', None])
+    rede(sp, figur(sp, k, 'RLHANNE'), ['buy the house', 'talk about the house', 'papers', 'citizen of Vault City', None])
     pruefe(w.haus(VC, 'RL_F_BESITZ') == 1, 'Kloake nicht uebernommen')
     return sp, w
 
@@ -1777,7 +1777,7 @@ def test_vc_uebernahme(u):
     pruefe('need papers' in texte(v), 'Hanne will Papiere')
     pruefe(not any('citizen' in o for o in v[0][1]), 'Buergerschaft ohne Buergerschaft angeboten')
     sp.gvars[k['GVAR_VAULT_CITIZEN']] = k['CITIZEN_REAL_CITIZEN']
-    v = rede(sp, hanne, ['citizen of Vault City', 'how the cellar', None])
+    v = rede(sp, hanne, ['papers', 'citizen of Vault City', 'how the cellar', None])
     pruefe(w.haus(VC, 'RL_F_BESITZ') == 1 and w.welt('RL_W_VC_PAPIERE') == k['RL_PAPIERE_BUERGER'], 'Buergerschaft')
     pruefe(w.haus(VC, 'RL_F_TRIBUTMOD') == 10 and w.haus(VC, 'RL_F_BESTECHUNG_MOD') == -50, 'Anteil 10 %, Schweigegeld -50')
     pruefe(w.haus(VC, 'RL_F_PREISSTUFE') == k['RL_PREIS_GEHOBEN'] and w.haus(VC, 'RL_F_ZIMMER') == 2, 'Start gehoben, 2 Zimmer')
@@ -1794,7 +1794,7 @@ def test_vc_uebernahme(u):
     # Faelschung
     sp, w = kloake(u)
     sp.dude.skills[k['SKILL_SCIENCE']] = 60
-    rede(sp, figur(sp, k, 'RLHANNE'), ['[Science]', 'talk about the house', 'buy the house', None])
+    rede(sp, figur(sp, k, 'RLHANNE'), ['papers', '[Science]', 'talk about the house', 'buy the house', None])
     pruefe(w.welt('RL_W_VC_PAPIERE') == k['RL_PAPIERE_FAELSCHUNG'] and w.haus(VC, 'RL_F_HITZE') == 5, 'Faelschung H +5')
     allgemein(sp, 'vc uebernahme')
 
@@ -1878,7 +1878,7 @@ def test_vc_akte_und_lynette(u):
     sp, w = _vc_uebernommen(u)
     hanne = figur(sp, k, 'RLHANNE')
     sp.dude.kronkorken = 5000
-    rede(sp, hanne, ['build', 'only get in Vault City', 'The File', 'Build it', None])
+    rede(sp, hanne, ['house is run', 'build', 'only get in Vault City', 'The File', 'Build it', None])
     pruefe(w.haus(VC, 'RL_F_BAU_ID') == k['RL_SONDER_BASIS'] + k['RL_SM_AKTE'] + 1, 'Baustelle Akte')
     sp.zufall_fest = 'max'
     woche(sp)
@@ -2332,7 +2332,7 @@ def test_sf_duldung(u):
     kwan = figur(sp, k, 'RLKWAN')
     rede(sp, kwan, ['how the house', None])
     sp.dude.kronkorken = 5000
-    v = rede(sp, kwan, ['build', 'only get in San Francisco'])
+    v = rede(sp, kwan, ['house is run', 'build', 'only get in San Francisco'])
     pruefe(any('Seal of the Shi' in o for o in _optionen_bei(v, 'only get in San Francisco')), 'Siegel verfuegbar')
     pruefe(not any("Smugglers' Room" in o for o in _optionen_bei(v, 'only get in San Francisco')), 'Kammer ohne Lager')
     # Tanker: kein Tribut, H +15, die Kammer sofort; spaeter doch zu Wen
@@ -2355,7 +2355,7 @@ def test_sf_schmuggelkammer(u):
     kwan = figur(sp, k, 'RLKWAN')
     rede(sp, kwan, ['how the house', None])
     sp.dude.kronkorken = 5000
-    rede(sp, kwan, ['build', 'only get in San Francisco', "Smugglers' Room", 'Build it', None])
+    rede(sp, kwan, ['house is run', 'build', 'only get in San Francisco', "Smugglers' Room", 'Build it', None])
     ruhige_woche(sp)
     pruefe(w.haus(SF, 'RL_F_MODULE') & k['RL_MOD_SCHMUGGEL'] and w.haus(SF, 'RL_F_NEBEN') == 3, 'Kammer fertig')
     # Das Siegel dazu, dann finden die Inspektoren die Kammer
@@ -2605,7 +2605,7 @@ def test_talent_vesper(u):
     roz = figur(sp, k, 'RLROZ')
     rede(sp, roz, ['how the house', None])
     sp.dude.skills[k['SKILL_SCIENCE']] = 60
-    rede(sp, roz, ['People worth knowing', 'ghoul in Gecko', '[Science]', None])
+    rede(sp, roz, ['Business outside', 'People worth knowing', 'ghoul in Gecko', '[Science]', None])
     pruefe(w.welt('RL_W_VESPER_STAND') == k['RL_TS_AUFTRAG'], 'Auftrag')
     sp.betrete_karte(k['MAP_GECKO_SETTLEMENT'])
     pruefe(w.welt('RL_W_VESPER_STAND') == k['RL_TS_UNTERWEGS'] and any('Vesper is on her way' in m for m in sp.meldungen), 'Gecko')
@@ -2616,7 +2616,7 @@ def test_talent_vesper(u):
     ruhige_woche(sp)
     pruefe(w.welt('RL_W_VESPER_STAND') == k['RL_TS_DA'] and w.welt('RL_W_VESPER') == 1, 'singt')
     pruefe(w.haus(NR, 'RL_F_NEBEN') == neben + 2 and w.haus(NR, 'RL_F_QUALI') >= quali, 'Wirkung')
-    rede(sp, roz, ['People worth knowing', 'what became of her hotel', "hotel with music", None])
+    rede(sp, roz, ['Business outside', 'People worth knowing', 'what became of her hotel', "hotel with music", None])
     pruefe(w.welt('RL_W_VESPER_LOYAL') == 60 and w.welt('RL_W_VESPER_FRAGE') == 1, 'gelogen')
     # Zwangspersonal irgendwo: sie geht
     w.setze_haus(0, 'RL_F_ZWANG', 1)
@@ -2631,13 +2631,13 @@ def test_talent_abigail(u):
     sp, w = _vc_uebernommen(u)
     w.setze_haus(VC, 'RL_F_EINFLUSS', 60)
     loehne = w.haus(VC, 'RL_F_LOEHNE')
-    rede(sp, figur(sp, k, 'RLHANNE'), ['People worth knowing', 'Abigail', 'citizenship back', None])
+    rede(sp, figur(sp, k, 'RLHANNE'), ['Business outside', 'People worth knowing', 'Abigail', 'citizenship back', None])
     pruefe(w.welt('RL_W_ABIGAIL') == k['RL_TS_DA'] and w.welt('RL_W_ABIGAIL_LOYAL') == 80, 'Buergerin')
     pruefe(w.haus(VC, 'RL_F_MODULE') & k['RL_MOD_KRANKENSTUBE'] and w.haus(VC, 'RL_F_LOEHNE') == loehne + 120, 'Doc')
     # Erpresst: sie verraet
     sp, w = _vc_uebernommen(u)
     w.setze_haus(VC, 'RL_F_PERSONAL', 2)
-    rede(sp, figur(sp, k, 'RLHANNE'), ['People worth knowing', 'Abigail', 'Remind her', None])
+    rede(sp, figur(sp, k, 'RLHANNE'), ['Business outside', 'People worth knowing', 'Abigail', 'Remind her', None])
     pruefe(w.welt('RL_W_ABIGAIL_LOYAL') == 20, 'erpresst')
     sp.zufall_folge = [1]
     sp.globale[0].rufe_mit('rl_talente_woche', 999)
@@ -2651,7 +2651,7 @@ def test_talent_talus(u):
     sp, w = _red_uebernommen(u)
     nell = figur(sp, k, 'RLNELL')
     rede(sp, nell, ['how the house', None])
-    rede(sp, nell, ['People worth knowing', 'super mutant', 'what really happened', None])
+    rede(sp, nell, ['Business outside', 'People worth knowing', 'super mutant', 'what really happened', None])
     pruefe(w.welt('RL_W_TALUS') == k['RL_TS_AUFTRAG'] and w.welt('RL_W_TALUS_HAUS') == RED + 1, 'Auftrag')
     sp.betrete_karte(k['MAP_BROKEN_HILLS1'])
     pruefe(w.welt('RL_W_TALUS') == k['RL_TS_AUFTRAG'] and any('still in Marcus' in m for m in sp.meldungen), 'noch in der Zelle')
@@ -2663,7 +2663,7 @@ def test_talent_talus(u):
     pruefe(w.welt('RL_W_TALUS') == k['RL_TS_DA'] and w.haus(RED, 'RL_F_SICHERHEIT') == sich + 45
            and w.haus(RED, 'RL_F_LOEHNE') == loehne + 50, 'Talus in der Schlacke')
     sp.dude.stats[k['STAT_iq']] = 7
-    rede(sp, nell, ['People worth knowing', 'Teach Talus', None])
+    rede(sp, nell, ['Business outside', 'People worth knowing', 'Teach Talus', None])
     pruefe(w.welt('RL_W_TALUS_LOYAL') == 100, 'lesen')
     w.setze_haus(RED, 'RL_F_ZWANG', 1)
     ruhige_woche(sp)
@@ -2674,12 +2674,12 @@ def test_talent_talus(u):
     nell = figur(sp, k, 'RLNELL')
     rede(sp, nell, ['how the house', None])
     sp.dude.skills[k['SKILL_LOCKPICK']] = 80
-    rede(sp, nell, ['People worth knowing', 'super mutant', 'break him out', None])
+    rede(sp, nell, ['Business outside', 'People worth knowing', 'super mutant', 'break him out', None])
     sp.betrete_karte(k['MAP_BROKEN_HILLS1'])
     pruefe(w.welt('RL_W_TALUS') == k['RL_TS_UNTERWEGS'] and w.welt('RL_W_MARCUS') == k['RL_MARCUS_GESPERRT'], 'Ausbruch')
     # Nicht in Vault City
     sp, w = _vc_uebernommen(u)
-    v = rede(sp, figur(sp, k, 'RLHANNE'), ['People worth knowing'])
+    v = rede(sp, figur(sp, k, 'RLHANNE'), ['Business outside', 'People worth knowing'])
     pruefe(not any('super mutant' in o for o in _optionen_bei(v, 'People worth knowing')), 'Talus nicht in Vault City')
     allgemein(sp, 'talus')
 
@@ -2691,14 +2691,14 @@ def test_talent_julian(u):
     rede(sp, roz, ['how the house', None])
     sp.dude.skills[k['SKILL_BARTER']] = 60
     geld = sp.dude.kronkorken
-    rede(sp, roz, ['People worth knowing', 'Julian Rook', '[Barter]', None])
+    rede(sp, roz, ['Business outside', 'People worth knowing', 'Julian Rook', '[Barter]', None])
     pruefe(w.welt('RL_W_JULIAN') == k['RL_TS_AUFTRAG'] and sp.dude.kronkorken == geld - 800, 'Vertrag')
     w.setze_haus(NR, 'RL_F_MODULE', k['RL_MOD_VIP'] | k['RL_MOD_KRANKENSTUBE'])
     ruf = w.haus(NR, 'RL_F_RUF')
     ruhige_woche(sp)
     pruefe(w.haus(NR, 'RL_F_VIP_MOD') == 3, 'VIP +3')
     sp.dude.skills[k['SKILL_DOCTOR']] = 60
-    rede(sp, roz, ['People worth knowing', 'still on Jet', '[Doctor]', None])
+    rede(sp, roz, ['Business outside', 'People worth knowing', 'still on Jet', '[Doctor]', None])
     pruefe(w.welt('RL_W_JULIAN') == k['RL_TS_DA'], 'clean')
     # Rueckfall mit Doc: Loyalitaet -10
     loyal = w.welt('RL_W_JULIAN_LOYAL')
@@ -2712,7 +2712,7 @@ def test_talent_julian(u):
     pruefe(w.welt('RL_W_JULIAN') == k['RL_TS_KRITISCH'] and any('barely breathing' in m for m in sp.meldungen)
            and w.haus(NR, 'RL_F_VIP_MOD') == 3, 'im Sterben')
     loyal = w.welt('RL_W_JULIAN_LOYAL')
-    rede(sp, roz, ['People worth knowing', 'dying in the back room', '[Doctor]', None])
+    rede(sp, roz, ['Business outside', 'People worth knowing', 'dying in the back room', '[Doctor]', None])
     pruefe(w.welt('RL_W_JULIAN') == k['RL_TS_DA'] and w.welt('RL_W_JULIAN_LOYAL') == loyal - 20, 'gerettet')
     # Noch einmal, und diesmal kommt niemand: eine Woche spaeter ist er tot
     sp.zufall_folge = [100, 1]
@@ -2730,7 +2730,7 @@ def test_talent_julian(u):
     roz = figur(sp, k, 'RLROZ')
     rede(sp, roz, ['how the house', None])
     karma = sp.gvars.get(k['GVAR_PLAYER_REPUTATION'], 0)
-    rede(sp, roz, ['People worth knowing', 'Julian Rook', 'Take over his contract', None])
+    rede(sp, roz, ['Business outside', 'People worth knowing', 'Julian Rook', 'Take over his contract', None])
     pruefe(w.welt('RL_W_JULIAN') == k['RL_TS_DA'] and w.welt('RL_W_JULIAN_LOYAL') == 30
            and sp.gvars[k['GVAR_PLAYER_REPUTATION']] == karma - 10, 'Tyrann')
     allgemein(sp, 'julian')

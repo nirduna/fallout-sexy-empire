@@ -6,6 +6,11 @@
 {102}{}{ customers. After costs: $}
 {103}{}{. There's $}
 {104}{}{ in the till.}
+{105}{}{Which part of it?}
+{106}{}{Let's go over how the house is run.}
+{107}{}{Business outside these walls.}
+{108}{}{Outside? Go on.}
+{109}{}{Something else.}
 {110}{}{Give me the till.}
 {111}{}{Let's talk prices.}
 {112}{}{Let's talk about what our people get.}

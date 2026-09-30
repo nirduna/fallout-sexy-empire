@@ -4,6 +4,7 @@
    Jede Madame und jeder Manager nutzt dieselben Knoten, aber mit eigenen
    Texten in der eigenen .msg-Datei:
      100-199  Bericht, Kasse, Preise, Anteil, Moral, Krisen
+              (105-109: die zwei Untermenues "Fuehrung" und "Draussen")
      460-477  Ausbau-Menue
      480-499  Personal und Anwerber (Umsetzung 3), Pferch und Metzger (Umsetzung 4)
      400-422  Modulnamen, 500-522 Moduleffekte (aus _rl_module.inc)
@@ -23,6 +24,12 @@
    neutralen Texte) und schreiben nur ihre eigenen Saetze selbst.
 
    Einstieg in das Manager-Menue: call RLM_Start;
+
+   Das Optionsfenster der Engine fasst etwa acht einzeilige Optionen; was
+   darueber hinausgeht, zeigt sie nicht an (game_dialog.cc, _gdProcessUpdate).
+   Deshalb hat das Hauptmenue zwei Untermenues: "Fuehrung" (Preise, Anteil,
+   Moral, Personal, Ausbau) und "Draussen" (Talente, Jobs, andere Staedte).
+   Das Pruefwerkzeug meldet jedes Menue, das nicht ins Fenster passt.
 */
 #ifndef RL_MANAGER_H
 #define RL_MANAGER_H
@@ -39,6 +46,9 @@ variable rlm_zeige_abspann := 0;
                              end
 
 procedure RLM_Start;
+procedure RLM_Fuehrung;
+procedure RLM_Draussen;
+procedure rlm_draussen_da;
 procedure RLM_Kasse;
 procedure RLM_Preise;
 procedure RLM_PreisRamsch;
@@ -136,32 +146,51 @@ procedure RLM_Start begin
 
    if (haus[rl_idx(h, RL_F_KASSE)] > 0) then
       NOption(110, RLM_Kasse, 004);
-   NOption(111, RLM_Preise, 004);
-   NOption(112, RLM_Anteil, 004);
-   NOption(113, RLM_Moral, 004);
-   NOption(118, RLM_Personal, 004);
-   NOption(117, RLM_Ausbau, 004);
+   NOption(106, RLM_Fuehrung, 004);
    if (haus[rl_idx(h, RL_F_KRISE)] != RL_EV_KEINS) then
       NOption(114, RLM_Krise, 004);
-   // Die Gosse kennt die anderen Staedte (Umsetzung 6)
-   if (h == RL_DEN) then
-      NOption(620, RLM_Staedte, 004);
    // Ketten, Akt 3 im Fluchtzweig: die Route nach Sueden (Umsetzung 5)
    if ((h == RL_DEN) and (welt[RL_W_KETTEN_ZWEIG] == RL_KETTEN_ZWEIG_FLUCHT)
        and (((welt[RL_W_KETTEN] >= RL_KETTEN_KETTE) and (welt[RL_W_KETTEN] <= RL_KETTEN_STURM))
             or (welt[RL_W_KETTEN] == RL_KETTEN_STILLER_KRIEG))) then
       NOption(600, RLM_Route, 004);
-   if (rlm_talente_da) then
-      NOption(950, RLM_Talente, 004);
+   if (rlm_draussen_da) then
+      NOption(107, RLM_Draussen, 004);
 #ifdef RLM_EXTRA_OPTIONEN
    RLM_EXTRA_OPTIONEN
 #endif
+   NOption(115, RLM_Ende, 004);
+   NLowOption(116, RLM_Kasse);
+end
+
+// Wie das Haus gefuehrt wird: Preise, Anteil, Moral, Personal, Ausbau
+procedure RLM_Fuehrung begin
+   Reply(105);
+   NOption(111, RLM_Preise, 004);
+   NOption(112, RLM_Anteil, 004);
+   NOption(113, RLM_Moral, 004);
+   NOption(118, RLM_Personal, 004);
+   NOption(117, RLM_Ausbau, 004);
 #ifdef RL_DEBUG
    NOption(195, RLM_DebugZimmer, 001);
    NOption(194, RLM_Abspann, 001);
 #endif
-   NOption(115, RLM_Ende, 004);
-   NLowOption(116, RLM_Kasse);
+   NOption(109, RLM_Start, 004);
+end
+
+// Geschaefte ausserhalb des Hauses: andere Staedte, Talente, Jobs
+procedure rlm_draussen_da begin
+   return ((h == RL_DEN) or rlm_talente_da);
+end
+
+procedure RLM_Draussen begin
+   Reply(108);
+   // Die Gosse kennt die anderen Staedte (Umsetzung 6)
+   if (h == RL_DEN) then
+      NOption(620, RLM_Staedte, 004);
+   if (rlm_talente_da) then
+      NOption(950, RLM_Talente, 004);
+   NOption(109, RLM_Start, 004);
 end
 
 procedure RLM_Kasse begin
@@ -389,7 +418,7 @@ procedure RLM_Talente begin
    if ((h != RL_VAULT_CITY) and (welt[RL_W_TALUS] == RL_TS_OFFEN)) then NOption(957, RLM_Talus, 004);
    if ((welt[RL_W_TALUS] == RL_TS_DA) and (welt[RL_W_TALUS_LOYAL] < 100) and (dude_iq >= 7)) then
       GOption(958, RLM_TalusLesen, 004);
-   NOption(959, RLM_Start, 004);
+   NOption(959, RLM_Draussen, 004);
 end
 
 // Vesper: Geleitschutz, Umweg oder Passierschein

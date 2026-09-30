@@ -943,6 +943,34 @@ def _s_giq_option(vm, sp):
     sp.dialog_optionen.append((text, proc, reaktion))
 
 
+# Optionsfenster der Engine (game_dialog.cc, _gdProcessUpdate): Text ab y = 5, eine
+# Option wird nur angelegt, wenn ihr unteres Ende unter 112 bleibt; der Rest faellt
+# still weg. Schrift 101: Zeilenhoehe 10, Breite 383 px. Zeichen schaetzen wir
+# vorsichtig mit 6.5 px (etwa 58 je Zeile), dazu das Aufzaehlungszeichen "o ".
+OPT_ZEILE, OPT_OBEN, OPT_UNTEN, OPT_ZEICHEN = 10, 5, 112, 58
+
+
+def _zeilen(text, breite=OPT_ZEICHEN):
+    n, laenge = 1, 0
+    for wort in text.split():
+        if laenge and laenge + 1 + len(wort) > breite:
+            n, laenge = n + 1, len(wort)
+        else:
+            laenge = laenge + (1 if laenge else 0) + len(wort)
+    return n
+
+
+def optionen_passen_nicht(texte):
+    """Die Optionen, die die Engine nicht mehr anzeigen wuerde."""
+    oben = OPT_OBEN
+    for i, t in enumerate(texte):
+        hoehe = _zeilen('o ' + t) * OPT_ZEILE
+        if hoehe + oben + 2 >= OPT_UNTEN:
+            return texte[i:]
+        oben += hoehe + 2
+    return []
+
+
 def _s_gsay_end(vm, sp):
     sp.dialog_lauf(vm)
 
@@ -1483,6 +1511,9 @@ class Spiel:
         while True:
             antwort = self.dialog_antwort
             optionen = [(t, self._proc_name(vm, pr), r) for t, pr, r in self.dialog_optionen]
+            zu_viel = optionen_passen_nicht([o[0] for o in optionen])
+            if zu_viel:
+                self.dialog_fehler.append(f'Optionen passen nicht ins Fenster, es fehlen: {zu_viel}')
             i = self.spieler.waehle(antwort, optionen)
             text, _, _ = optionen[i]
             proc = self.dialog_optionen[i][1]

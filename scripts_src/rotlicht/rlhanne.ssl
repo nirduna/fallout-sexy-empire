@@ -110,13 +110,9 @@ procedure Node700 begin
       if (dude_caps >= RL_HANNE_PREIS) then
          NOption(704, Node721, 004);
    end
-   if (welt[RL_W_VC_PAPIERE] == RL_PAPIERE_KEINE) then begin
-      if (rl_vc_buerger) then
-         NOption(705, Node730, 004);
-      if (has_skill(dude_obj, SKILL_SCIENCE) >= 60) then
-         BOption(706, Node731, 004);
+   // Die Papiere in einem eigenen Knoten, damit alles ins Optionsfenster passt
+   if (welt[RL_W_VC_PAPIERE] == RL_PAPIERE_KEINE) then
       NOption(707, Node732, 004);
-   end
    NOption(708, Node999, 004);
    NLowOption(709, Node999);
 end
@@ -165,6 +161,10 @@ procedure Node732 begin
       Reply(733);
    else
       Reply(732);
+   if (rl_vc_buerger) then
+      NOption(705, Node730, 004);
+   if (has_skill(dude_obj, SKILL_SCIENCE) >= 60) then
+      BOption(706, Node731, 004);
    NOption(711, Node700, 004);
 end
 

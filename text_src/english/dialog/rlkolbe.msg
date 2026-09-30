@@ -58,6 +58,11 @@
 {102}{}{ customers. What's left: $}
 {103}{}{. There's $}
 {104}{}{ in the till. Metzger's cut is already gone.}
+{105}{}{Which part.}
+{106}{}{How the house is run.}
+{107}{}{Business outside.}
+{108}{}{Outside. Talk.}
+{109}{}{Something else.}
 {110}{}{The till.}
 {111}{}{The prices.}
 {112}{}{What the people get.}

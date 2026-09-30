@@ -50,6 +50,8 @@ Nach jedem Test laufen allgemeine Prüfungen:
 | kein fehlender Text | „Error“ im Dialog oder in der Meldungszeile |
 | keine Antwort ohne Option | Text, der nie angezeigt wird, weil der Dialog vorher endet |
 | kein Array-Zugriff außerhalb der Grenzen | still falsche Werte (0) |
+| jedes Optionsmenü passt ins Fenster | Optionen fehlen still, auch „Later.“. Nachgebildet nach `_gdProcessUpdate` der Engine: Zeilenhöhe 10, Fläche von y 5 bis 112, geschätzt 58 Zeichen je Zeile. Das reicht für etwa acht einzeilige Optionen |
+| kein schwarzer Bildschirm | `gfade_out` ohne `gfade_in` |
 
 **Szenarien:**
 
@@ -77,6 +79,10 @@ Nach jedem Test laufen allgemeine Prüfungen:
      - Das Handbuch von sslc warnt selbst, dass die höheren Stufen komplexen Code brechen können.
    - **Behebung:** Der Build nutzt jetzt `-O1`. Diese Stufe entfernt nur ungenutzte Variablen und Prozeduren. Seitdem stimmt die Wochenrechnung mit dem Simulator überein.
 2. **Essie nach der Auslieferung:** Bis ihr Skript sie entfernte, konnte man sie noch ansprechen, und dann erschien „Error“. Jetzt beendet sie das Gespräch sofort.
+3. **Das Hauptmenü der Madames war zu lang.**
+   - **Ursache:** Die Engine legt nur Optionen an, die ganz ins Fenster passen, und lässt den Rest ohne Meldung weg.
+   - **Folge:** In fast jedem Spielstand fiel „Later.“ weg, im Debug-Build auch die Debug-Optionen. Das Gespräch hätte man dann nicht mehr verlassen können.
+   - **Behebung:** Das Hauptmenü hat zwei Untermenüs: „Let's go over how the house is run.“ mit Preisen, Anteil, Moral, Personal und Ausbau, und „Business outside these walls.“ mit anderen Städten und Talenten. Hannes Papiere liegen jetzt in einem eigenen Knoten.
 
 ---
 

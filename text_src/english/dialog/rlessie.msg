@@ -8,6 +8,11 @@
 {103}{}{. There's $}
 {104}{}{ in the till.}
 
+{105}{}{Which part? I'll tell you straight, whatever it is.}
+{106}{}{Let's go over how the house is run.}
+{107}{}{Business outside these walls.}
+{108}{}{Outside the Den? Or outside this door? Both are dangerous.}
+{109}{}{Something else.}
 {110}{}{Give me what's in the till.}
 {111}{}{Let's talk prices.}
 {112}{}{Let's talk about what our people get.}
