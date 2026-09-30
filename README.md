@@ -39,6 +39,8 @@ Konzept und Skripte für eine Addon-Modifikation für **Fallout 2** (sfall 4.x).
 
 Alle 16 Schritte des [Fahrplans](docs/fahrplan.md) sind umgesetzt. Im Spiel getestet ist bisher nur die Gosse. Was sonst noch offen ist, steht in [Umsetzung 16, Abschnitt 5](docs/umsetzung-16-abschluss.md#5-was-im-spiel-noch-offen-ist).
 
+Recherche für eigene Grafiken (Szenerie, Leuchtreklame, Köpfe, Endslides), noch nicht umgesetzt: [docs/recherche-grafik.md](docs/recherche-grafik.md).
+
 ## Testpaket installieren
 
 `tools/paket.py` baut für ein RPU-Release einen sfall-Mod-Ordner `mods/rotlicht` und legt eine `ANLEITUNG.txt` dazu: Installation, die sechs Häuser und ihre Eingänge, das Menü der Madame, Debug-Tasten und was zu prüfen ist. Kurz:
